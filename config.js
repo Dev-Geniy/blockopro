@@ -29,10 +29,11 @@ const googleProvider = new firebase.auth.GoogleAuthProvider();
 const IMGBB_KEY = "22de10db6eb1f3ec3fca012dcc566961";
 
 // ==========================================
-// 4. ДИЗАЙН-СИСТЕМА И БРЕНДИНГ
+// 4. ДИЗАЙН-СИСТЕМА
 // ==========================================
 const APP_NAME = "Blocko Cloud";
 
+// Цвета для шапок колонок
 const COL_COLORS = {
   default: { bg: 'bg-gray-100 dark:bg-gray-800/60', border: 'border-gray-200 dark:border-gray-700/50', hex: '#64748b' },
   blue:    { bg: 'bg-blue-50 dark:bg-indigo-900/30', border: 'border-blue-200 dark:border-indigo-500/30', hex: '#3b82f6' },
