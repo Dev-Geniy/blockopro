@@ -555,7 +555,11 @@ function ensureUserTag(data) {
   }
 }
 
-function loadBoard() {
+async function loadBoard() {
+  // Получаем актуальный тариф пользователя из БД
+  const meta = await db.collection("users_meta").doc(currentUser.id).get();
+  userPlan = meta.exists ? (meta.data().plan || 'free') : 'free';
+  const logoText = document.querySelector('header h1'); 
   if (isLocalBoard) {
     document.getElementById('localBadge').classList.remove('hidden');
     document.getElementById('shareLinkContainer').style.display = 'none';
