@@ -1,6 +1,3 @@
-// ========================================== 
-// 1. КЛЮЧИ И НАСТРОЙКИ FIREBASE
-// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyAUfLY36bB1oWhBxNYXIzFIrAe61iCoZFM",
   authDomain: "flowboard-3d053.firebaseapp.com",
@@ -11,10 +8,6 @@ const firebaseConfig = {
   measurementId: "G-WM851HTC0E"
 };
 
-// ==========================================
-// 2. ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ И АВТОРИЗАЦИИ
-// ==========================================
-// Проверяем, чтобы Firebase не инициализировался дважды (полезно для стабильности)
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -22,18 +15,12 @@ if (!firebase.apps.length) {
 const db = firebase.firestore();
 const auth = firebase.auth();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
-
-// ==========================================
-// 3. API КЛЮЧ ДЛЯ ЗАГРУЗКИ КАРТИНОК
-// ==========================================
 const IMGBB_KEY = "22de10db6eb1f3ec3fca012dcc566961";
 
-// ==========================================
-// 4. ДИЗАЙН-СИСТЕМА
-// ==========================================
-const APP_NAME = "Blocko Cloud";
+// Глобальная переменная тарифа
+let userPlan = 'free'; 
 
-// Цвета для шапок колонок
+const APP_NAME = "Blocko Cloud";
 const COL_COLORS = {
   default: { bg: 'bg-gray-100 dark:bg-gray-800/60', border: 'border-gray-200 dark:border-gray-700/50', hex: '#64748b' },
   blue:    { bg: 'bg-blue-50 dark:bg-indigo-900/30', border: 'border-blue-200 dark:border-indigo-500/30', hex: '#3b82f6' },
