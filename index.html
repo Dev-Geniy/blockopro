@@ -428,32 +428,60 @@ let onlineBoards = [];
 let savedBoardOrder = JSON.parse(localStorage.getItem('blocko_boards_order')) || [];
 let sortableInstance = null;
 
+// Глобальная переменная тарифа (теперь берется из БД)
+let userPlan = 'free'; 
+
 auth.onAuthStateChanged(async (user) => {
   const authScreen = document.getElementById('authScreen');
   const dashScreen = document.getElementById('dashboardScreen');
+  
   if (user) {
-    currentUser = { id: user.uid, name: user.displayName, avatar: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}` };
-    
-    // Подтягиваем тариф из базы данных
-    const userDoc = await db.collection("users").doc(user.uid).get();
-    if (userDoc.exists) {
-      userPlan = userDoc.data().plan || 'free';
-    } else {
-      userPlan = 'free';
-      await db.collection("users").doc(user.uid).set({ plan: 'free', name: user.displayName });
-    }
+    currentUser = { 
+        id: user.uid, 
+        name: user.displayName, 
+        avatar: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}` 
+    };
 
-    authScreen.classList.add('hidden');
-    dashScreen.classList.remove('hidden');
-    dashScreen.classList.add('flex');
-    document.getElementById('dashAvatar').src = currentUser.avatar;
-    document.getElementById('dashUserName').innerText = currentUser.name;
-    
-    // Обновляем название в шапке в зависимости от тарифа
-    const planLabel = userPlan === 'free' ? 'Free' : (userPlan === 'freelancer' ? 'Freelancer' : 'PRO');
-    document.querySelector('h1').innerHTML = `Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">${planLabel}</span>`;
-    
-    subscribeToBoards(user.uid);
+    try {
+      // 1. Получаем тариф напрямую из Firestore
+      const userDoc = await db.collection("users").doc(user.uid).get();
+      
+      if (userDoc.exists) {
+        userPlan = userDoc.data().plan || 'free';
+      } else {
+        // Если пользователя нет в БД, создаем запись с Free тарифом
+        userPlan = 'free';
+        await db.collection("users").doc(user.uid).set({ 
+            plan: 'free', 
+            email: user.email,
+            name: user.displayName 
+        });
+      }
+
+      // 2. Обновляем интерфейс (Blocko Cloud + Тариф)
+      const planNames = { 'free': 'Free', 'freelancer': 'Freelancer', 'pro': 'PRO' };
+      const planLabel = planNames[userPlan] || 'Free';
+      
+      // Ищем заголовок и меняем его
+      const brandLogo = document.querySelector('h1 span.text-transparent');
+      if(brandLogo) brandLogo.innerText = planLabel;
+      
+      // Везде по коду меняем Blocko Pro на Blocko Cloud (текстом)
+      document.title = `Blocko Cloud - ${planLabel}`;
+
+      // 3. Показываем дашборд
+      authScreen.classList.add('hidden');
+      dashScreen.classList.remove('hidden');
+      dashScreen.classList.add('flex');
+      
+      document.getElementById('dashAvatar').src = currentUser.avatar;
+      document.getElementById('dashUserName').innerText = currentUser.name;
+
+      subscribeToBoards(user.uid);
+    } catch (error) {
+      console.error("Ошибка загрузки профиля:", error);
+      showSystemToast('Ошибка', 'Не удалось загрузить данные профиля', 'alert-circle', 'text-red-500', 'bg-red-50');
+    }
   } else {
     authScreen.classList.remove('hidden');
     dashScreen.classList.add('hidden');
