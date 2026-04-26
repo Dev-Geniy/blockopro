@@ -436,51 +436,33 @@ auth.onAuthStateChanged(async (user) => {
   const dashScreen = document.getElementById('dashboardScreen');
   
   if (user) {
-    currentUser = { 
-        id: user.uid, 
-        name: user.displayName, 
-        avatar: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}` 
-    };
-
+    currentUser = { id: user.uid, name: user.displayName, avatar: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}` };
+    
     try {
-      // 1. Получаем тариф напрямую из Firestore
+      // Загружаем профиль
       const userDoc = await db.collection("users").doc(user.uid).get();
-      
       if (userDoc.exists) {
         userPlan = userDoc.data().plan || 'free';
       } else {
-        // Если пользователя нет в БД, создаем запись с Free тарифом
         userPlan = 'free';
-        await db.collection("users").doc(user.uid).set({ 
-            plan: 'free', 
-            email: user.email,
-            name: user.displayName 
-        });
+        await db.collection("users").doc(user.uid).set({ plan: 'free', name: user.displayName, email: user.email });
       }
 
-      // 2. Обновляем интерфейс (Blocko Cloud + Тариф)
+      // UI Branding
       const planNames = { 'free': 'Free', 'freelancer': 'Freelancer', 'pro': 'PRO' };
       const planLabel = planNames[userPlan] || 'Free';
-      
-      // Ищем заголовок и меняем его
       const brandLogo = document.querySelector('h1 span.text-transparent');
       if(brandLogo) brandLogo.innerText = planLabel;
-      
-      // Везде по коду меняем Blocko Pro на Blocko Cloud (текстом)
-      document.title = `Blocko Cloud - ${planLabel}`;
 
-      // 3. Показываем дашборд
       authScreen.classList.add('hidden');
       dashScreen.classList.remove('hidden');
       dashScreen.classList.add('flex');
-      
       document.getElementById('dashAvatar').src = currentUser.avatar;
       document.getElementById('dashUserName').innerText = currentUser.name;
-
+      
       subscribeToBoards(user.uid);
-    } catch (error) {
-      console.error("Ошибка загрузки профиля:", error);
-      showSystemToast('Ошибка', 'Не удалось загрузить данные профиля', 'alert-circle', 'text-red-500', 'bg-red-50');
+    } catch (e) {
+      console.error("Auth error:", e);
     }
   } else {
     authScreen.classList.remove('hidden');
