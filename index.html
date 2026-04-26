@@ -428,22 +428,38 @@ let onlineBoards = [];
 let savedBoardOrder = JSON.parse(localStorage.getItem('blocko_boards_order')) || [];
 let sortableInstance = null;
 
-auth.onAuthStateChanged((user) => {
+auth.onAuthStateChanged(async (user) => {
   const authScreen = document.getElementById('authScreen');
   const dashScreen = document.getElementById('dashboardScreen');
   if (user) {
     currentUser = { id: user.uid, name: user.displayName, avatar: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}` };
+    
+    // Получаем тариф из базы
+    const meta = await db.collection("users_meta").doc(user.uid).get();
+    userPlan = meta.exists ? (meta.data().plan || 'free') : 'free';
+    
     authScreen.classList.add('hidden');
     dashScreen.classList.remove('hidden');
     dashScreen.classList.add('flex');
     document.getElementById('dashAvatar').src = currentUser.avatar;
     document.getElementById('dashUserName').innerText = currentUser.name;
+    
+    updateUIBrand(); // Устанавливаем название с тарифом
     subscribeToBoards(user.uid);
   } else {
     authScreen.classList.remove('hidden');
     dashScreen.classList.add('hidden');
   }
 });
+
+function updateUIBrand() {
+  const brandEl = document.querySelector('h1 span.text-transparent');
+  if (brandEl) {
+    // Для index.html: Blocko + Тариф
+    const planName = userPlan === 'free' ? 'Free' : (userPlan === 'freelancer' ? 'Freelancer' : 'PRO');
+    brandEl.innerText = planName;
+  }
+}
 
 function loginWithGoogle() { auth.signInWithPopup(googleProvider); }
 function logout() { auth.signOut(); }
@@ -593,16 +609,24 @@ function closeCreateModal() { document.getElementById('createBoardModal').classL
 // Читаем тариф из памяти или ставим Free
 let userPlan = localStorage.getItem('blocko_user_plan') || 'free'; 
 
-function upgradeTo(plan) {
+async function upgradeTo(plan) {
   showSystemToast('Оформление...', `Связываемся с платежным шлюзом для ${plan.toUpperCase()}`, 'credit-card', 'text-blue-500', 'bg-blue-50');
   
-  setTimeout(() => {
+  try {
+    // Сохраняем тариф в профиль пользователя в Firebase
+    await db.collection("users_meta").doc(currentUser.id).set({
+      plan: plan,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
     userPlan = plan;
-    localStorage.setItem('blocko_user_plan', plan); // СОХРАНЯЕМ ТАРИФ НА УСТРОЙСТВЕ
     closePricingModal();
+    updateUIBrand(); // Обновляем заголовок сразу
     showSystemToast('Тариф обновлен! 🎉', `Теперь вам доступен план ${plan.toUpperCase()}`, 'shield-check', 'text-green-500', 'bg-green-50');
     renderBoardsGrid();
-  }, 2000);
+  } catch (e) {
+    showSystemToast('Ошибка', 'Не удалось обновить тариф в облаке.', 'alert-circle', 'text-red-500', 'bg-red-50');
+  }
 }
 
 // Открытие модалки тарифов
