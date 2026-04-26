@@ -646,23 +646,29 @@ function closeCreateModal() { document.getElementById('createBoardModal').classL
 let userPlan = localStorage.getItem('blocko_user_plan') || 'free'; 
 
 async function upgradeTo(plan) {
-  showSystemToast('Оформление...', `Связываемся с платежным шлюзом для ${plan.toUpperCase()}`, 'credit-card', 'text-blue-500', 'bg-blue-50');
+  showSystemToast('Обновление...', 'Сохраняем ваш новый тариф в облаке', 'cloud-upload', 'text-blue-500', 'bg-blue-50');
   
   try {
-    // Сохраняем новый тариф в облако
-    await db.collection("users").doc(currentUser.id).update({ plan: plan });
-    userPlan = plan;
+    // Сохраняем в Firebase
+    await db.collection("users").doc(currentUser.id).update({ 
+      plan: plan,
+      lastUpgrade: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    userPlan = plan; // Обновляем локально
     
-    setTimeout(() => {
-      closePricingModal();
-      showSystemToast('Тариф обновлен! 🎉', `Теперь вам доступен план ${plan.toUpperCase()}`, 'shield-check', 'text-green-500', 'bg-green-50');
-      // Перезагружаем интерфейс для отображения нового тарифа в логотипе
-      const planLabel = plan === 'free' ? 'Free' : (plan === 'freelancer' ? 'Freelancer' : 'PRO');
-      document.querySelector('h1').innerHTML = `Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">${planLabel}</span>`;
-      renderBoardsGrid();
-    }, 1500);
+    // Обновляем визуальную часть (логотип)
+    const planNames = { 'free': 'Free', 'freelancer': 'Freelancer', 'pro': 'PRO' };
+    document.querySelector('h1 span.text-transparent').innerText = planNames[plan];
+
+    closePricingModal();
+    showSystemToast('Успешно! 🎉', `Тариф ${plan.toUpperCase()} активирован`, 'shield-check', 'text-green-500', 'bg-green-50');
+    
+    // Перерисовываем сетку (чтобы пропали замки, если были)
+    renderBoardsGrid();
   } catch (e) {
-    showSystemToast('Ошибка', 'Не удалось обновить тариф в базе.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    console.error(e);
+    showSystemToast('Ошибка', 'Не удалось сохранить тариф', 'alert-circle', 'text-red-500', 'bg-red-50');
   }
 }
 
