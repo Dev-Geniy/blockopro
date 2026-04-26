@@ -556,72 +556,44 @@ function ensureUserTag(data) {
 }
 
 async function loadBoard() {
-  // Получаем актуальный тариф пользователя из БД
-  const meta = await db.collection("users_meta").doc(currentUser.id).get();
-  userPlan = meta.exists ? (meta.data().plan || 'free') : 'free';
-  const logoText = document.querySelector('header h1'); 
-  if (isLocalBoard) {
-    document.getElementById('localBadge').classList.remove('hidden');
-    document.getElementById('shareLinkContainer').style.display = 'none';
-    document.getElementById('btnTeam').style.display = 'none';
-    document.getElementById('btnChat').style.display = 'none';
-    document.getElementById('viewChatContainer').style.display = 'none';
-    
-    const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
-    if (localBoards[BOARD_ID]) {
-      boardData = localBoards[BOARD_ID];
-      ensureUserTag(boardData);
-      processBoardData(boardData);
-    } else {
-      alert("Локальная доска не найдена!"); window.location.href = 'index.html';
-    }
-  } else {
-    document.getElementById('shareUrlText').innerText = window.location.href;
-    const docRef = db.collection("boards").doc(BOARD_ID);
-    
-    docRef.onSnapshot((doc) => {
-      if (doc.exists) {
-        let data = doc.data();
-        let updates = {};
-        let needsUpdate = false;
+  if (!currentUser) return;
 
-        if (!data.users || !data.users[currentUser.id]) {
-           updates[`users.${currentUser.id}`] = { 
-               name: currentUser.name || "User", 
-               avatar: currentUser.avatar || "", 
-               role: data.owner === currentUser.id ? 'owner' : 'editor' 
-           };
-           needsUpdate = true;
-        }
-        
-        if (!data.members || !data.members.includes(currentUser.id)) {
-            updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
-            needsUpdate = true;
-        }
-        
-        if (needsUpdate) { docRef.update(updates).catch(console.error); }
-        
-        boardData = data;
+  try {
+    // 1. Сначала всегда подтягиваем актуальный тариф
+    const userDoc = await db.collection("users").doc(currentUser.id).get();
+    if (userDoc.exists) {
+      userPlan = userDoc.data().plan || 'free';
+    }
+
+    if (isLocalBoard) {
+      document.getElementById('localBadge').classList.remove('hidden');
+      const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+      if (localBoards[BOARD_ID]) {
+        boardData = localBoards[BOARD_ID];
         ensureUserTag(boardData);
         processBoardData(boardData);
-        renderMembersSidebar();
-        
-        if (isFirstChatLoad) initChatListener(docRef);
       } else {
-        document.getElementById('boardTitleHeader').innerText = "Синхронизация...";
-        document.getElementById('board').innerHTML = `
-          <div class="w-full text-center py-20 flex flex-col items-center">
-            <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-full flex items-center justify-center mb-4">
-              <i data-lucide="loader-2" class="w-8 h-8 animate-spin"></i>
-            </div>
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Получаем данные...</h2>
-            <p class="text-gray-500 text-sm mb-6 max-w-md">Секундочку, синхронизируем данные с сервером.</p>
-            <button onclick="window.location.href='index.html'" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-sm font-bold transition-all active:scale-95">Вернуться назад</button>
-          </div>
-        `;
-        lucide.createIcons();
+        window.location.href = 'index.html';
       }
-    }, (error) => { console.error("Ошибка Firebase:", error); });
+    } else {
+      document.getElementById('shareUrlText').innerText = window.location.href;
+      const docRef = db.collection("boards").doc(BOARD_ID);
+      
+      docRef.onSnapshot((doc) => {
+        if (doc.exists) {
+          boardData = doc.data();
+          ensureUserTag(boardData);
+          processBoardData(boardData);
+          renderMembersSidebar();
+          if (isFirstChatLoad) initChatListener(docRef);
+        } else {
+          alert("Доска не найдена");
+          window.location.href = 'index.html';
+        }
+      });
+    }
+  } catch (err) {
+    console.error("Load board error:", err);
   }
 }
 
