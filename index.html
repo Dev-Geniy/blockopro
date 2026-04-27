@@ -705,6 +705,15 @@ auth.onAuthStateChanged((user) => {
     document.getElementById('dashAvatar').src = currentUser.avatar;
     document.getElementById('dashUserName').innerText = currentUser.name;
     subscribeToBoards(user.uid);
+
+    // --- ПЕРЕХВАТ ИНВАЙТ-ССЫЛКИ ПРИ ВХОДЕ ---
+    const joinId = new URLSearchParams(window.location.search).get('join');
+    if (joinId) {
+      // Очищаем URL, чтобы при обновлении страницы скрипт не срабатывал дважды
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Даем доскам секунду на загрузку и запускаем логику добавления
+      setTimeout(() => joinBoardById(joinId), 500); 
+    }
   } else {
     authScreen.classList.remove('hidden');
     dashScreen.classList.add('hidden');
@@ -1246,15 +1255,34 @@ async function joinBoardById(id) {
   try {
     const docRef = db.collection("boards").doc(id);
     const doc = await docRef.get();
+    
     if (doc.exists) {
-      if (doc.data().members?.includes(currentUser.id)) return showSystemToast('Внимание', 'Вы уже состоите в этом проекте!', 'info', 'text-blue-500', 'bg-blue-50');
-      await docRef.update({
-        members: firebase.firestore.FieldValue.arrayUnion(currentUser.id),
-        [`users.${currentUser.id}`]: { name: currentUser.name, avatar: currentUser.avatar, role: 'editor' }
-      });
-      window.location.href = `board.html?b=${id}`;
-    } else { showSystemToast('Не найдено', 'Проект с таким ID не существует.', 'alert-circle', 'text-red-500', 'bg-red-50'); }
-  } catch (e) { showSystemToast('Ошибка', 'Нет доступа или неверный ID.', 'alert-triangle', 'text-red-500', 'bg-red-50'); }
+      const data = doc.data();
+      const isMember = data.members?.includes(currentUser.id);
+      
+      // Если пользователь еще не участник — прописываем его в базу
+      if (!isMember) {
+        await docRef.update({
+          members: firebase.firestore.FieldValue.arrayUnion(currentUser.id),
+          [`users.${currentUser.id}`]: { name: currentUser.name, avatar: currentUser.avatar, role: 'editor' }
+        });
+        showSystemToast('Успех', 'Проект добавлен в ваше рабочее пространство!', 'check-circle', 'text-green-500', 'bg-green-50');
+      }
+
+      // ПРОВЕРКА ПАРОЛЯ ПРЯМО ИЗ ИНДЕКСА
+      if (data.password && sessionStorage.getItem('blocko_auth_' + id) !== data.password) {
+         // Проект защищен. Вызываем окно пароля (которое мы делали ранее)
+         tryEnterBoard(id, true);
+      } else {
+         // Пароль не нужен или уже введен — пускаем на доску
+         window.location.href = `board.html?b=${id}`;
+      }
+    } else { 
+      showSystemToast('Не найдено', 'Проект с таким ID не существует.', 'alert-circle', 'text-red-500', 'bg-red-50'); 
+    }
+  } catch (e) { 
+    showSystemToast('Ошибка', 'Нет доступа или неверный ID.', 'alert-triangle', 'text-red-500', 'bg-red-50'); 
+  }
 }
 
 function copyBoardId(btn, id) { 
@@ -1271,13 +1299,14 @@ function copyBoardId(btn, id) {
 }
   
 function copyBoardLink(btn, id) {
-  const url = window.location.origin + window.location.pathname.replace('index.html', '') + 'board.html?b=' + id;
+  // Генерируем ссылку, ведущую на index.html с параметром join
+  const url = window.location.origin + window.location.pathname.replace('index.html', '') + '?join=' + id;
   navigator.clipboard.writeText(url); 
   if(btn) showToastFeedback(btn, 'check', 'text-green-500');
   
   showSystemToast(
     'Ссылка скопирована!', 
-    'Пользователь должен быть авторизован в Blocko Pro, чтобы ссылка сработала.', 
+    'Отправьте её коллеге. Она добавит проект в его дашборд.', 
     'link', 
     'text-indigo-500', 
     'bg-indigo-50 dark:bg-indigo-900/30'
