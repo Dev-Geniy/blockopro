@@ -1325,7 +1325,10 @@ function deleteCustomTag(tagId) {
 }
 
 function checkAILimit() {
-  if (userPlan === 'pro') return true; // Безлимит
+  const currentPlanKey = userPlan.toUpperCase();
+  const planLimits = PLANS[currentPlanKey] || PLANS.FREE; 
+  
+  if (planLimits.aiLimit === 999) return true; // Безлимит для Company (Pro)
   
   let aiUsage = JSON.parse(localStorage.getItem('blocko_ai_usage')) || { date: new Date().toDateString(), count: 0 };
   
@@ -1334,10 +1337,8 @@ function checkAILimit() {
     aiUsage = { date: new Date().toDateString(), count: 0 };
   }
   
-  const limit = userPlan === 'freelancer' ? 15 : 3; // Freelancer = 15, Free = 3
-  
-  if (aiUsage.count >= limit) {
-    showSystemToast('Лимит AI исчерпан', `Доступно ${limit} запросов в день на вашем тарифе.`, 'lock', 'text-amber-500', 'bg-amber-50');
+  if (aiUsage.count >= planLimits.aiLimit) {
+    showSystemToast('Лимит AI исчерпан', `Доступно ${planLimits.aiLimit} запросов в день на вашем тарифе.`, 'lock', 'text-amber-500', 'bg-amber-50');
     return false;
   }
   
