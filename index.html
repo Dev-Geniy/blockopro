@@ -666,6 +666,12 @@
 </div>
   
 <script>
+// --- ИНИЦИАЛИЗАЦИЯ ПРИ СТАРТЕ (ИКОНКИ И ТЕМА) ---
+if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+document.addEventListener('DOMContentLoaded', () => {
+  lucide.createIcons();
+});
+
 // --- ТРЕКИНГ ПАРТНЕРСКОЙ ССЫЛКИ ---
 const urlParams = new URLSearchParams(window.location.search);
 const incomingRefId = urlParams.get('ref');
