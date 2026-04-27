@@ -20,6 +20,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-functions-compat.js"></script>
   <script src="config.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -760,16 +761,39 @@ function closeCreateModal() { document.getElementById('createBoardModal').classL
 // Читаем тариф из памяти или ставим Free
 let userPlan = localStorage.getItem('blocko_user_plan') || 'free'; 
 
-function upgradeTo(plan) {
-  showSystemToast('Оформление...', `Связываемся с платежным шлюзом для ${plan.toUpperCase()}`, 'credit-card', 'text-blue-500', 'bg-blue-50');
-  
-  setTimeout(() => {
-    userPlan = plan;
-    localStorage.setItem('blocko_user_plan', plan); // СОХРАНЯЕМ ТАРИФ НА УСТРОЙСТВЕ
+// --- PRODUCTION БИЛЛИНГ И ПАРТНЕРСКИЕ НАЧИСЛЕНИЯ ---
+async function upgradeTo(planId) {
+  if (!currentUser) {
     closePricingModal();
-    showSystemToast('Тариф обновлен! 🎉', `Теперь вам доступен план ${plan.toUpperCase()}`, 'shield-check', 'text-green-500', 'bg-green-50');
-    renderBoardsGrid();
-  }, 2000);
+    return showSystemToast('Ошибка', 'Пожалуйста, войдите в систему для оплаты.', 'lock', 'text-red-500', 'bg-red-50');
+  }
+
+  const btnOgText = event.currentTarget.innerHTML;
+  event.currentTarget.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>';
+  lucide.createIcons();
+
+  showSystemToast('Безопасное соединение...', `Инициализация защищенного шлюза...`, 'shield', 'text-blue-500', 'bg-blue-50');
+
+  try {
+    // ВЫЗОВ ЗАЩИЩЕННОЙ СЕРВЕРНОЙ ФУНКЦИИ (Backend)
+    const processSubscription = firebase.functions().httpsCallable('processSubscription');
+    const result = await processSubscription({ planId: planId });
+
+    if (result.data.success) {
+      userPlan = planId;
+      localStorage.setItem('blocko_user_plan', planId);
+      closePricingModal();
+      showSystemToast('Оплата успешна! 🎉', `Вы перешли на тариф ${planId.toUpperCase()}`, 'shield-check', 'text-green-500', 'bg-green-50');
+      
+      renderBoardsGrid();
+      if(typeof loadAffiliateStats === 'function') loadAffiliateStats();
+    }
+  } catch (error) {
+    console.error("Ошибка биллинга:", error);
+    showSystemToast('Сбой транзакции', 'Транзакция отклонена сервером.', 'alert-circle', 'text-red-500', 'bg-red-50');
+  } finally {
+    if(event && event.currentTarget) event.currentTarget.innerHTML = btnOgText;
+  }
 }
 
 // Открытие модалки тарифов
