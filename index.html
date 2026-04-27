@@ -836,7 +836,8 @@ function copyAffiliateLink() {
 async function loadAffiliateStats() {
   if (!currentUser) return;
   try {
-    const doc = await db.collection('affiliates').doc(currentUser.uid).get();
+    // ИСПРАВЛЕНИЕ: здесь и ниже используем currentUser.id
+    const doc = await db.collection('affiliates').doc(currentUser.id).get();
     const data = doc.exists ? doc.data() : { signups: 0, earnedCredits: 0, paidSignups: 0 };
     
     const signups = data.signups || 0;
@@ -846,7 +847,8 @@ async function loadAffiliateStats() {
     document.getElementById('statSignups').innerText = signups;
     document.getElementById('statEarned').innerText = credits + ' кр.';
     
-    const userRef = db.collection('users').doc(currentUser.uid);
+    // ИСПРАВЛЕНИЕ: здесь тоже используем currentUser.id
+    const userRef = db.collection('users').doc(currentUser.id);
     let highestBadge = 'none';
 
     // Логика зажигания бейджей
@@ -875,7 +877,7 @@ async function loadAffiliateStats() {
       highestBadge = 'ambassador';
     }
 
-    // Сохраняем статус бейджа в профиль пользователя (для рамок в будущем)
+    // Сохраняем статус бейджа в профиль пользователя
     await userRef.set({ badgeStatus: highestBadge }, { merge: true });
 
   } catch (e) {
@@ -1100,7 +1102,8 @@ async function buyCoinsPack(amount, usdPrice) {
   openConfirmModal('Пополнить счет?', `Имитация оплаты $${usdPrice}. Подтвердить начисление ${amount} монет?`, 'Оплатить', false, async () => {
     closeTopUpModal();
     try {
-      const userRef = db.collection('users').doc(currentUser.uid);
+      // ИСПРАВЛЕНИЕ: здесь тоже используем currentUser.id
+      const userRef = db.collection('users').doc(currentUser.id);
       await userRef.set({ coins: firebase.firestore.FieldValue.increment(amount) }, { merge: true });
       confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 }, zIndex: 9999 });
       showSystemToast('Счет пополнен!', `Начислено ${amount} монет. Вы можете вернуться к оплате тарифа.`, 'coins', 'text-amber-500', 'bg-amber-50');
