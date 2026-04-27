@@ -1141,28 +1141,43 @@ async function buyStoreItem(itemId, price) {
   if (!currentUser) return;
   
   const affRef = db.collection('affiliates').doc(currentUser.id);
+  const userRef = db.collection('users').doc(currentUser.id);
+  
   const doc = await affRef.get();
   const balance = doc.exists ? (doc.data().earnedCredits || 0) : 0;
 
   if (balance < price) {
-    return showSystemToast('Недостаточно баллов', `Нужно еще ${price - balance} кр. Приглашайте друзей!`, 'alert-circle', 'text-amber-500', 'bg-amber-50');
+    return showSystemToast('Недостаточно баллов', `Нужно еще ${price - balance} кр.`, 'alert-circle', 'text-amber-500', 'bg-amber-50');
   }
 
   try {
-    await affRef.update({ 
+    const batch = db.batch();
+
+    // 1. Списываем баллы у партнера
+    batch.update(affRef, { 
       earnedCredits: firebase.firestore.FieldValue.increment(-price) 
     });
+
+    // 2. ВЫДАЧА ТОВАРА: Если купили AI запросы, добавляем их в профиль пользователя
+    if (itemId === 'extra_ai') {
+      batch.update(userRef, { 
+        bonusAiLimit: firebase.firestore.FieldValue.increment(50) 
+      });
+    }
+
+    // Здесь можно добавить (if itemId === 'другой_id') для остальных товаров
+
+    await batch.commit();
     
-    // Праздничный эффект
     if (typeof confetti === 'function') {
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
     }
 
-    showSystemToast('Успешная покупка! 🎉', `Услуга "${itemId}" будет активирована в ближайшее время.`, 'check-circle', 'text-green-500', 'bg-green-50');
+    showSystemToast('Куплено! 🚀', `Товар "${itemId}" активирован мгновенно.`, 'check-circle', 'text-green-500', 'bg-green-50');
     loadAffiliateStats(); 
   } catch (e) {
-    console.error("Ошибка покупки:", e);
-    showSystemToast('Ошибка', 'Не удалось провести списание.', 'x-circle', 'text-red-500', 'bg-red-50');
+    console.error("Ошибка активации:", e);
+    showSystemToast('Ошибка', 'Сбой при выдаче товара.', 'x-circle', 'text-red-500', 'bg-red-50');
   }
 }
 </script>
