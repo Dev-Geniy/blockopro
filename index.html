@@ -283,11 +283,8 @@
           <a href="javascript:void(0)" onclick="openPricingModal()" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
             <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Тарифы
           </a>
-          <a href="#" class="text-sm font-bold text-gray-400 dark:text-gray-600 transition-colors flex items-center gap-3 cursor-not-allowed opacity-50">
-             <div class="w-1.5 h-1.5 rounded-full bg-gray-400"></div> Наши продукты
-          </a>
-          <a href="#" class="text-sm font-bold text-gray-400 dark:text-gray-600 transition-colors flex items-center gap-3 cursor-not-allowed opacity-50">
-             <div class="w-1.5 h-1.5 rounded-full bg-gray-400"></div> Партнерка
+          <a href="javascript:void(0)" onclick="openAffiliateModal()" class="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors flex items-center gap-3 group">
+             <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 opacity-100 shadow-[0_0_8px_rgba(99,102,241,0.8)]"></div> Партнерская сеть
           </a>
           <a href="#" class="text-sm font-bold text-gray-400 dark:text-gray-600 transition-colors flex items-center gap-3 cursor-not-allowed opacity-50">
              <div class="w-1.5 h-1.5 rounded-full bg-gray-400"></div> Поддержка
@@ -416,7 +413,66 @@
   </div>
 </div>
 
+<!-- модалка партнерской программы -->
+<div id="affiliateModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="bg-white dark:bg-gray-900 p-8 sm:p-12 rounded-[3rem] w-full max-w-4xl shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto transform transition-transform scale-95" id="affiliateContent">
+    
+    <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <button onclick="closeAffiliateModal()" class="absolute top-8 right-8 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-full transition-colors z-20">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
+    
+    <div class="text-center mb-10 relative z-10">
+      <div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/20"><i data-lucide="gem" class="w-8 h-8"></i></div>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-3">Ваша Партнерская Сеть</h2>
+      <p class="text-gray-500 dark:text-gray-400 text-sm max-w-lg mx-auto">Получайте 20% с каждой оплаты привлеченного пользователя навсегда. Пригласите 10 человек и получите тариф Company бесплатно!</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 mb-10">
+      <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-6 rounded-3xl text-center">
+        <i data-lucide="users" class="w-6 h-6 text-blue-500 mx-auto mb-2"></i>
+        <div class="text-3xl font-black text-gray-900 dark:text-white mb-1" id="statSignups">0</div>
+        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Регистраций</div>
+      </div>
+      <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-6 rounded-3xl text-center">
+        <i data-lucide="credit-card" class="w-6 h-6 text-emerald-500 mx-auto mb-2"></i>
+        <div class="text-3xl font-black text-gray-900 dark:text-white mb-1" id="statEarned">$0</div>
+        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Заработано</div>
+      </div>
+      <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-6 rounded-3xl text-center flex flex-col justify-center">
+        <div class="flex justify-between items-end mb-2">
+          <span class="text-xs font-bold text-gray-500">Цель: Pro Статус</span>
+          <span class="text-xs font-black text-indigo-500" id="affiliateProgressText">0/10</span>
+        </div>
+        <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
+          <div id="affiliateProgressBar" class="bg-indigo-500 h-full transition-all duration-1000" style="width: 0%"></div>
+        </div>
+        <div class="text-[10px] text-gray-400" id="affiliateRewardText">Осталось пригласить пользователей</div>
+      </div>
+    </div>
+
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 p-6 rounded-3xl relative z-10">
+      <label class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-3 block">Ваша уникальная ссылка</label>
+      <div class="flex gap-3">
+        <input type="text" id="affiliateLinkInput" readonly class="flex-1 bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-700 rounded-xl px-4 py-3 text-sm font-mono dark:text-gray-300 outline-none">
+        <button onclick="copyAffiliateLink()" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all flex items-center gap-2">
+          <i data-lucide="copy" class="w-4 h-4"></i> Скопировать
+        </button>
+      </div>
+    </div>
+    
+  </div>
+</div>
+  
 <script>
+// --- ТРЕКИНГ ПАРТНЕРСКОЙ ССЫЛКИ ---
+const urlParams = new URLSearchParams(window.location.search);
+const incomingRefId = urlParams.get('ref');
+if (incomingRefId) {
+  localStorage.setItem('blocko_ref_id', incomingRefId);
+}
+  
 // Функция задержки для поиска
 function debounce(func, timeout = 300) {
   let timer;
@@ -450,7 +506,113 @@ auth.onAuthStateChanged((user) => {
   }
 });
 
-function loginWithGoogle() { auth.signInWithPopup(googleProvider); }
+async function loginWithGoogle() { 
+  try {
+    const result = await auth.signInWithPopup(googleProvider);
+    const user = result.user;
+    
+    // Проверка и создание профиля пользователя в глобальной базе (Важно для партнерки)
+    const userRef = db.collection('users').doc(user.uid);
+    const doc = await userRef.get();
+    
+    if (!doc.exists) {
+      const savedRefId = localStorage.getItem('blocko_ref_id');
+      
+      // Создаем профиль новичка и привязываем к рефералу
+      await userRef.set({
+        name: user.displayName,
+        email: user.email,
+        avatar: user.photoURL,
+        plan: 'free',
+        referredBy: savedRefId || null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      
+      // Если он пришел по чьей-то ссылке, добавляем рефералу +1 в статистику регистраций
+      if (savedRefId) {
+        const affiliateRef = db.collection('affiliates').doc(savedRefId);
+        await affiliateRef.set({
+          signups: firebase.firestore.FieldValue.increment(1)
+        }, { merge: true });
+      }
+    }
+  } catch (error) {
+    console.error("Ошибка авторизации:", error);
+    showSystemToast('Ошибка', 'Не удалось войти в систему.', 'alert-circle', 'text-red-500', 'bg-red-50');
+  }
+}
+
+// --- ЛОГИКА ПАРТНЕРСКОЙ ПРОГРАММЫ ---
+function openAffiliateModal() {
+  if (!currentUser) return showSystemToast('Авторизация', 'Войдите в систему, чтобы получить партнерскую ссылку.', 'lock', 'text-amber-500', 'bg-amber-50');
+  
+  const modal = document.getElementById('affiliateModal');
+  const content = document.getElementById('affiliateContent');
+  const linkInput = document.getElementById('affiliateLinkInput');
+  
+  // Генерируем ссылку: берем текущий домен и добавляем ref
+  const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+  linkInput.value = `${baseUrl}?ref=${currentUser.id}`;
+  
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    modal.classList.remove('opacity-0');
+    content.classList.remove('scale-95');
+    content.classList.add('scale-100');
+  }, 10);
+  
+  loadAffiliateStats();
+  lucide.createIcons();
+}
+
+function closeAffiliateModal() {
+  const modal = document.getElementById('affiliateModal');
+  const content = document.getElementById('affiliateContent');
+  modal.classList.add('opacity-0');
+  content.classList.remove('scale-100');
+  content.classList.add('scale-95');
+  setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function copyAffiliateLink() {
+  const linkInput = document.getElementById('affiliateLinkInput');
+  navigator.clipboard.writeText(linkInput.value);
+  showSystemToast('Ссылка скопирована!', 'Поделитесь ей в сети и получайте 20% от оплат ваших рефералов.', 'copy', 'text-indigo-500', 'bg-indigo-50');
+}
+
+async function loadAffiliateStats() {
+  if (!currentUser) return;
+  try {
+    const doc = await db.collection('affiliates').doc(currentUser.id).get();
+    const data = doc.exists ? doc.data() : { signups: 0, earned: 0 };
+    
+    const signups = data.signups || 0;
+    const earned = data.earned || 0;
+    
+    document.getElementById('statSignups').innerText = signups;
+    document.getElementById('statEarned').innerText = '$' + earned;
+    
+    // Считаем прогресс до Pro-статуса
+    const progress = Math.min((signups / 10) * 100, 100);
+    document.getElementById('affiliateProgressText').innerText = `${signups}/10`;
+    document.getElementById('affiliateProgressBar').style.width = `${progress}%`;
+    
+    const rewardText = document.getElementById('affiliateRewardText');
+    if (signups >= 10) {
+       rewardText.innerText = 'Вы выполнили цель! Ваш аккаунт улучшен до Pro 🎉';
+       rewardText.classList.replace('text-gray-400', 'text-emerald-500');
+       rewardText.classList.add('font-bold');
+    } else {
+       rewardText.innerText = `Осталось пригласить: ${10 - signups} чел.`;
+       rewardText.classList.replace('text-emerald-500', 'text-gray-400');
+       rewardText.classList.remove('font-bold');
+    }
+  } catch (e) {
+    console.error("Ошибка загрузки статистики аффилейта:", e);
+  }
+}
+// ----------------- конец логики партнерки -----------------
+  
 function logout() { auth.signOut(); }
 
 // Получение локальных досок
@@ -874,6 +1036,7 @@ window.addEventListener('click', (e) => {
   if (e.target.id === 'joinBoardModal') closeJoinModal();
   if (e.target.id === 'backupModal') closeBackupModal();
   if (e.target.id === 'pricingModal') closePricingModal();
+  if (e.target.id === 'affiliateModal') closeAffiliateModal();
 });
 
 let toastTimeout;
