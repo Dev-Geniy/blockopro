@@ -429,7 +429,7 @@
       <p class="text-gray-500 dark:text-gray-400 text-sm max-w-lg mx-auto">Получайте 20% с каждой оплаты привлеченного пользователя навсегда. Пригласите 10 человек и получите тариф Company бесплатно!</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 mb-10">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 mb-10">
       <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-6 rounded-3xl text-center">
         <i data-lucide="users" class="w-6 h-6 text-blue-500 mx-auto mb-2"></i>
         <div class="text-3xl font-black text-gray-900 dark:text-white mb-1" id="statSignups">0</div>
@@ -455,6 +455,14 @@
       </div>
     </div>
 
+    <div class="mb-10 relative z-10">
+      <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+        <i data-lucide="shopping-bag" class="w-4 h-4"></i> Потратить баллы на услуги
+      </h4>
+      <div id="blockoStoreGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        </div>
+    </div>
+    
     <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 p-6 rounded-3xl relative z-10">
       <label class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-3 block">Ваша уникальная ссылка</label>
       <div class="flex gap-3">
@@ -587,17 +595,16 @@ async function loadAffiliateStats() {
   if (!currentUser) return;
   try {
     const doc = await db.collection('affiliates').doc(currentUser.id).get();
-    // По умолчанию ставим 0, если данных в базе еще нет
     const data = doc.exists ? doc.data() : { signups: 0, earnedCredits: 0 };
     
     const signups = data.signups || 0;
     const credits = data.earnedCredits || 0;
     
-    // Обновляем текст в твоих новых блоках
+    // Обновляем статистику
     document.getElementById('statSignups').innerText = signups;
     document.getElementById('statEarned').innerText = credits + ' кр.';
     
-    // Считаем прогресс до цели (10 человек)
+    // Обновляем прогресс-бар
     const progress = Math.min((signups / 10) * 100, 100);
     document.getElementById('affiliateProgressText').innerText = `${signups}/10`;
     document.getElementById('affiliateProgressBar').style.width = `${progress}%`;
@@ -606,12 +613,27 @@ async function loadAffiliateStats() {
     if (signups >= 10) {
        rewardText.innerText = 'Цель достигнута! Доступен Pro статус 🎉';
        rewardText.classList.replace('text-gray-400', 'text-emerald-500');
-       rewardText.classList.add('font-bold');
-    } else {
-       rewardText.innerText = `Пригласите еще ${10 - signups} чел. для бонуса`;
+    }
+
+    // Отрисовка товаров из магазина (из config.js)
+    const storeGrid = document.getElementById('blockoStoreGrid');
+    if (storeGrid && typeof BLOCKO_STORE !== 'undefined') {
+      storeGrid.innerHTML = BLOCKO_STORE.map(item => `
+        <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-4 rounded-2xl flex flex-col gap-3 hover:border-indigo-500 transition-colors">
+          <div class="flex justify-between items-start">
+            <div class="p-2 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-lg">
+               <i data-lucide="${item.icon}" class="w-4 h-4"></i>
+            </div>
+            <span class="text-xs font-black text-gray-900 dark:text-white">${item.price} кр.</span>
+          </div>
+          <div class="text-[11px] font-bold text-gray-700 dark:text-gray-300 leading-tight">${item.name}</div>
+          <button onclick="buyStoreItem('${item.id}', ${item.price})" class="w-full py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-bold rounded-lg active:scale-95 transition-all">Купить</button>
+        </div>
+      `).join('');
+      lucide.createIcons(); // Обновляем иконки Lucide
     }
   } catch (e) {
-    console.error("Ошибка обновления UI партнерки:", e);
+    console.error("Ошибка партнерки:", e);
   }
 }
   
@@ -1114,6 +1136,31 @@ document.addEventListener('keydown', (e) => {
     if (typeof closePricingModal === 'function') closePricingModal();
   }
 });
+
+async function buyStoreItem(itemId, price) {
+  if (!currentUser) return;
+  
+  const affRef = db.collection('affiliates').doc(currentUser.id);
+  const doc = await affRef.get();
+  const balance = doc.exists ? (doc.data().earnedCredits || 0) : 0;
+
+  if (balance < price) {
+    return showSystemToast('Недостаточно баллов', `Нужно еще ${price - balance} кр. Приглашайте друзей!`, 'alert-circle', 'text-amber-500', 'bg-amber-50');
+  }
+
+  // Списываем баллы
+  try {
+    await affRef.update({ 
+      earnedCredits: firebase.firestore.FieldValue.increment(-price) 
+    });
+    
+    showSystemToast('Успешная покупка!', `Услуга "${itemId}" активирована.`, 'check-circle', 'text-green-500', 'bg-green-50');
+    loadAffiliateStats(); // Сразу обновляем баланс на экране
+  } catch (e) {
+    console.error("Ошибка покупки:", e);
+    showSystemToast('Ошибка', 'Не удалось провести списание.', 'x-circle', 'text-red-500', 'bg-red-50');
+  }
+}
 </script>
 </body>
 </html>
