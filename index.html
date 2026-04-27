@@ -1000,18 +1000,18 @@ function closeTopUpModal() {
 }
 
 async function buyCoinsPack(amount, usdPrice) {
-  if(!confirm(`Имитация оплаты $${usdPrice}. Подтвердить начисление ${amount} монет?`)) return;
-  
-  closeTopUpModal();
-  try {
-    const userRef = db.collection('users').doc(currentUser.id);
-    await userRef.set({ coins: firebase.firestore.FieldValue.increment(amount) }, { merge: true });
-    confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 }, zIndex: 9999 });
-    showSystemToast('Счет пополнен!', `Начислено ${amount} монет. Вы можете вернуться к оплате тарифа.`, 'coins', 'text-amber-500', 'bg-amber-50');
-    setTimeout(() => openPricingModal(), 2000); // Автоматически возвращаем к тарифам
-  } catch(e) {
-    showSystemToast('Ошибка', 'Не удалось пополнить счет.', 'x-circle', 'text-red-500', 'bg-red-50');
-  }
+  openConfirmModal('Пополнить счет?', `Имитация оплаты $${usdPrice}. Подтвердить начисление ${amount} монет?`, 'Оплатить', false, async () => {
+    closeTopUpModal();
+    try {
+      const userRef = db.collection('users').doc(currentUser.uid);
+      await userRef.set({ coins: firebase.firestore.FieldValue.increment(amount) }, { merge: true });
+      confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 }, zIndex: 9999 });
+      showSystemToast('Счет пополнен!', `Начислено ${amount} монет. Вы можете вернуться к оплате тарифа.`, 'coins', 'text-amber-500', 'bg-amber-50');
+      setTimeout(() => openPricingModal(), 2000); 
+    } catch(e) {
+      showSystemToast('Ошибка', 'Не удалось пополнить счет.', 'x-circle', 'text-red-500', 'bg-red-50');
+    }
+  });
 }
 
 // Открытие модалки тарифов
@@ -1162,19 +1162,19 @@ function confirmJoinBoard() {
 }
 
 async function joinBoardById(id) {
-  if (id.startsWith('local_')) return alert("Это локальный ID, его нельзя найти в сети.");
+  if (id.startsWith('local_')) return showSystemToast('Ошибка', 'Это локальный ID, его нельзя найти в сети.', 'x-circle', 'text-red-500', 'bg-red-50');
   try {
     const docRef = db.collection("boards").doc(id);
     const doc = await docRef.get();
     if (doc.exists) {
-      if (doc.data().members?.includes(currentUser.id)) return alert("Вы уже в этом проекте!");
+      if (doc.data().members?.includes(currentUser.id)) return showSystemToast('Внимание', 'Вы уже состоите в этом проекте!', 'info', 'text-blue-500', 'bg-blue-50');
       await docRef.update({
         members: firebase.firestore.FieldValue.arrayUnion(currentUser.id),
         [`users.${currentUser.id}`]: { name: currentUser.name, avatar: currentUser.avatar, role: 'editor' }
       });
       window.location.href = `board.html?b=${id}`;
-    } else { alert("Доска не найдена."); }
-  } catch (e) { alert("Ошибка доступа."); }
+    } else { showSystemToast('Не найдено', 'Проект с таким ID не существует.', 'alert-circle', 'text-red-500', 'bg-red-50'); }
+  } catch (e) { showSystemToast('Ошибка', 'Нет доступа или неверный ID.', 'alert-triangle', 'text-red-500', 'bg-red-50'); }
 }
 
 function copyBoardId(btn, id) { 
@@ -1211,31 +1211,34 @@ function showToastFeedback(el, icon, color) {
 
 // Функция: Покинуть чужую доску
 async function leaveBoard(id) {
-  if(!confirm("Вы уверены, что хотите покинуть этот проект?")) return;
-  
-  try {
-    const docRef = db.collection("boards").doc(id);
-    
-    // Удаляем свой ID из массива members и свой объект из словаря users
-    await docRef.update({
-      members: firebase.firestore.FieldValue.arrayRemove(currentUser.id),
-      [`users.${currentUser.id}`]: firebase.firestore.FieldValue.delete()
-    });
-    
-    // Firebase onSnapshot автоматически обновит сетку проектов, 
-    // так как мы больше не находимся в массиве members этой доски
-  } catch (error) {
-    console.error("Ошибка выхода из проекта:", error);
-    alert("Произошла ошибка при выходе из проекта.");
-  }
+  openConfirmModal('Покинуть проект?', 'Вы больше не сможете просматривать и редактировать задачи в этом проекте.', 'Выйти', true, async () => {
+    try {
+      const docRef = db.collection("boards").doc(id);
+      
+      await docRef.update({
+        members: firebase.firestore.FieldValue.arrayRemove(currentUser.id),
+        [`users.${currentUser.id}`]: firebase.firestore.FieldValue.delete()
+      });
+      
+      showSystemToast('Успех', 'Вы покинули проект.', 'log-out', 'text-orange-500', 'bg-orange-50');
+    } catch (error) {
+      console.error("Ошибка выхода из проекта:", error);
+      showSystemToast('Ошибка', 'Произошла ошибка при выходе из проекта.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    }
+  });
 }
 
 function deleteBoard(id, isLocal) { 
-  if(!confirm("Удалить проект навсегда?")) return;
-  if(isLocal) {
-    const local = getLocalBoards(); delete local[id];
-    localStorage.setItem('blocko_local_boards', JSON.stringify(local)); renderBoardsGrid();
-  } else { db.collection("boards").doc(id).delete(); }
+  openConfirmModal('Удалить проект навсегда?', 'Вы уверены? Это действие навсегда удалит доску и все её задачи.', 'Удалить', true, () => {
+    if(isLocal) {
+      const local = getLocalBoards(); delete local[id];
+      localStorage.setItem('blocko_local_boards', JSON.stringify(local)); renderBoardsGrid();
+      showSystemToast('Удалено', 'Локальный проект успешно удален.', 'trash-2', 'text-red-500', 'bg-red-50');
+    } else { 
+      db.collection("boards").doc(id).delete(); 
+      showSystemToast('Удалено', 'Облачный проект успешно удален.', 'trash-2', 'text-red-500', 'bg-red-50');
+    }
+  });
 }
 
 function generateAvatarById(uid) {
@@ -1359,6 +1362,160 @@ async function buyStoreItem(itemId, price) {
     showSystemToast('Ошибка', 'Не удалось связаться с базой данных.', 'x-circle', 'text-red-500', 'bg-red-50');
   }
 }
+
+// ==========================================
+// ЛОГИКА КАСТОМНЫХ ОКЕН ПОДТВЕРЖДЕНИЯ
+// ==========================================
+let confirmCallback = null;
+
+function openConfirmModal(title, desc, confirmText, isDanger, callback) {
+  document.getElementById('confirmTitle').innerText = title;
+  document.getElementById('confirmDesc').innerText = desc;
+  
+  const iconBg = document.getElementById('confirmIconBg');
+  const icon = document.getElementById('confirmIcon');
+  const btn = document.getElementById('confirmBtnAction');
+  
+  if (isDanger) {
+    iconBg.className = "mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm";
+    icon.setAttribute('data-lucide', 'trash-2');
+    btn.className = "flex-1 py-3.5 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg shadow-red-500/25 active:scale-95 transition-all";
+  } else {
+    iconBg.className = "mx-auto w-16 h-16 bg-amber-50 dark:bg-amber-900/30 text-amber-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm";
+    icon.setAttribute('data-lucide', 'alert-circle');
+    btn.className = "flex-1 py-3.5 text-sm font-bold text-white bg-amber-500 hover:bg-amber-400 rounded-xl shadow-lg shadow-amber-500/25 active:scale-95 transition-all";
+  }
+  btn.innerText = confirmText;
+  lucide.createIcons();
+  confirmCallback = callback;
+  
+  const modal = document.getElementById('customConfirmModal');
+  const content = document.getElementById('confirmModalContent');
+  modal.classList.remove('hidden');
+  setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+}
+
+function closeConfirmModal() {
+  const modal = document.getElementById('customConfirmModal');
+  const content = document.getElementById('confirmModalContent');
+  modal.classList.add('opacity-0');
+  content.classList.remove('scale-100'); content.classList.add('scale-95');
+  setTimeout(() => { modal.classList.add('hidden'); confirmCallback = null; }, 300);
+}
+
+function executeConfirm() {
+  if (confirmCallback) confirmCallback();
+  closeConfirmModal();
+}
+
+// ==========================================
+// ЛОГИКА ДЕТАЛЕЙ ТАРИФОВ (Безрамочное окно)
+// ==========================================
+const PLAN_DETAILS_MAP = {
+  'free': {
+    name: 'Тариф Free',
+    desc: 'Идеальный старт для личного использования и маленьких проектов. Вы получаете базовый функционал без ограничений по времени. Переходите на новый уровень, когда почувствуете, что готовы к большему.',
+    color: 'emerald', icon: 'leaf',
+    features: [
+      { icon: 'cloud', val: '1 Проект', title: 'Облачное хранилище' },
+      { icon: 'users', val: 'До 3-х', title: 'Членов команды' },
+      { icon: 'hard-drive', val: '∞', title: 'Офлайн проекты' },
+      { icon: 'bot', val: 'Базовый', title: 'AI Ассистент' }
+    ]
+  },
+  'freelancer': {
+    name: 'Тариф Freelancer',
+    desc: 'Расширяет границы вашего творчества. Управляйте сразу несколькими проектами одновременно, приглашайте фрилансеров в команду и используйте продвинутые инструменты искусственного интеллекта для ускорения рутины.',
+    color: 'blue', icon: 'zap',
+    features: [
+      { icon: 'cloud', val: '10 Проектов', title: 'Облачное хранилище' },
+      { icon: 'users', val: 'До 10-ти', title: 'В каждой команде' },
+      { icon: 'bot', val: 'Продвинутый', title: 'AI Ассистент' },
+      { icon: 'headphones', val: '24/7', title: 'Саппорт' }
+    ]
+  },
+  'pro': {
+    name: 'Тариф Company',
+    desc: 'Профессиональная среда для компаний. Никаких лимитов. Продвинутое управление ролями, полная безопасность файлов и максимальные мощности нейросетей. Построен для бизнеса, требующего полного контроля.',
+    color: 'amber', icon: 'building-2',
+    features: [
+      { icon: 'cloud', val: 'Безлимит', title: 'Облачные проекты' },
+      { icon: 'users', val: 'Безлимит', title: 'Команды и роли' },
+      { icon: 'flame', val: 'Сгорающие', title: 'Файлы в чате' },
+      { icon: 'sparkles', val: 'Максимум', title: 'Мощь нейросетей' }
+    ]
+  }
+};
+
+function openPlanDetails(planId) {
+  closePricingModal(); // Закрываем основное окно тарифов
+  
+  const data = PLAN_DETAILS_MAP[planId];
+  if (!data) return;
+
+  const modal = document.getElementById('planDetailsModal');
+  const content = document.getElementById('planDetailsContent');
+  
+  document.getElementById('planTitle').innerText = data.name;
+  document.getElementById('planDesc').innerText = data.desc;
+  
+  // Оформление главной иконки
+  const iconWrapper = document.getElementById('planIconWrapper');
+  iconWrapper.className = `w-24 h-24 rounded-[2rem] flex items-center justify-center mb-8 mx-auto shadow-2xl relative bg-${data.color}-50 dark:bg-${data.color}-500/10 text-${data.color}-500 border border-${data.color}-200 dark:border-${data.color}-800`;
+  document.getElementById('planIconGlow').className = `absolute inset-0 rounded-[2rem] blur-2xl opacity-60 bg-${data.color}-500`;
+  
+  const iconEl = document.getElementById('planIcon');
+  iconEl.setAttribute('data-lucide', data.icon);
+  iconEl.className = "w-12 h-12 relative z-10";
+
+  // Сетка фич
+  const grid = document.getElementById('planFeaturesGrid');
+  grid.innerHTML = data.features.map(f => `
+    <div class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 dark:bg-black/20 hover:bg-white/10 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-800">
+      <div class="p-3 rounded-xl bg-${data.color}-50 dark:bg-${data.color}-500/20 text-${data.color}-500 flex-shrink-0">
+         <i data-lucide="${f.icon}" class="w-6 h-6"></i>
+      </div>
+      <div>
+         <h4 class="font-extrabold text-gray-900 dark:text-white text-lg">${f.val}</h4>
+         <p class="text-xs text-gray-500 font-medium uppercase tracking-widest mt-1">${f.title}</p>
+      </div>
+    </div>
+  `).join('');
+
+  lucide.createIcons();
+
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    modal.classList.remove('opacity-0');
+    content.classList.remove('scale-95');
+    content.classList.add('scale-100');
+  }, 10);
+}
+
+function closePlanDetails() {
+  const modal = document.getElementById('planDetailsModal');
+  const content = document.getElementById('planDetailsContent');
+  modal.classList.add('opacity-0');
+  content.classList.remove('scale-100');
+  content.classList.add('scale-95');
+  setTimeout(() => { 
+    modal.classList.add('hidden');
+    openPricingModal(); // Возвращаемся к выбору тарифов
+  }, 300);
+}
+
+// Добавляем новые модалки в общие слушатели (закрытие по клику на фон и ESC)
+window.addEventListener('click', (e) => {
+  if (e.target.id === 'customConfirmModal') closeConfirmModal();
+  if (e.target.id === 'planDetailsModal') closePlanDetails();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (!document.getElementById('planDetailsModal').classList.contains('hidden')) closePlanDetails();
+    if (!document.getElementById('customConfirmModal').classList.contains('hidden')) closeConfirmModal();
+  }
+});
 </script>
 </body>
 </html>
