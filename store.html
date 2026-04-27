@@ -3,84 +3,81 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Магазин - Blocko Pro</title>
+  <title>Blocko Market - Магазин улучшений</title>
 
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
-
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-  
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="config.js"></script>
-
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    .dark ::-webkit-scrollbar-thumb { background: #334155; }
-    .glass-modal { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .shelf-title { position: relative; display: flex; items-center: center; gap: 1rem; margin-bottom: 2rem; }
+    .shelf-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
+    .card-zoom:hover { transform: translateY(-8px) scale(1.02); }
   </style>
-
   <script>
-    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
   </script>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
 
-<header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-20 flex justify-between items-center">
+<header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center">
   <div class="flex items-center gap-4">
-    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500" title="На главную">
-      <i data-lucide="arrow-left" class="w-5 h-5"></i>
-    </a>
+    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
     <div>
-      <h1 class="text-2xl font-bold tracking-tight flex items-center gap-2">
-        <i data-lucide="shopping-bag" class="w-6 h-6 text-indigo-500"></i> Магазин Blocko
-      </h1>
-      <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">
-        Улучшения, AI-лимиты и подарки
-      </p>
+      <h1 class="text-xl font-bold tracking-tight">Blocko Market</h1>
+      <p class="text-[10px] text-blue-500 font-bold uppercase tracking-[0.2em]">Upgrade your power</p>
     </div>
   </div>
 
-  <div class="flex items-center gap-4">
-    <div class="flex flex-col items-end">
-      <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Бонусы</span>
-      <div class="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-black bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-lg border border-indigo-100 dark:border-indigo-800/50">
-        <i data-lucide="gem" class="w-4 h-4"></i> <span id="balanceBonus">0</span>
-      </div>
+  <div class="flex gap-4">
+    <div class="flex flex-col items-end px-4 border-r border-gray-800">
+      <span class="text-[9px] font-bold text-gray-500 uppercase">Бонусные баллы</span>
+      <div class="flex items-center gap-2 text-indigo-400 font-black"><i data-lucide="gem" class="w-4 h-4"></i> <span id="valCredits">0</span></div>
     </div>
     <div class="flex flex-col items-end">
-      <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Монеты</span>
-      <div class="flex items-center gap-1.5 text-amber-500 dark:text-amber-400 font-black bg-amber-50 dark:bg-amber-900/30 px-3 py-1 rounded-lg border border-amber-100 dark:border-amber-800/50">
-        <i data-lucide="coins" class="w-4 h-4"></i> <span id="balanceReal">0</span>
-      </div>
+      <span class="text-[9px] font-bold text-gray-500 uppercase">Реальные монеты</span>
+      <div class="flex items-center gap-2 text-amber-500 font-black"><i data-lucide="coins" class="w-4 h-4"></i> <span id="valCoins">0</span></div>
     </div>
   </div>
 </header>
 
-<main class="p-8 max-w-6xl mx-auto w-full flex-1">
-  <div class="mb-10 text-center">
-    <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">Прокачай свой <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Workflow</span></h2>
-    <p class="text-gray-500 max-w-2xl mx-auto">Покупай улучшения за реальные монеты или используй бонусные баллы, заработанные в нашей партнерской программе.</p>
-  </div>
-
-  <div id="storeGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
+<main class="p-8 max-w-7xl mx-auto w-full flex-1">
+  
+  <section class="mb-16">
+    <div class="shelf-title">
+      <div class="p-2 bg-blue-500/10 rounded-lg text-blue-500"><i data-lucide="zap" class="w-5 h-5"></i></div>
+      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Полка 1: Лимиты Нейросети</h2>
     </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="shelfAI"></div>
+  </section>
+
+  <section class="mb-16">
+    <div class="shelf-title">
+      <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-500"><i data-lucide="shield-check" class="w-5 h-5"></i></div>
+      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Полка 2: Тарифы за приглашения (Кредиты)</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="shelfPlans"></div>
+  </section>
+
+  <section class="mb-16">
+    <div class="shelf-title">
+      <div class="p-2 bg-rose-500/10 rounded-lg text-rose-500"><i data-lucide="gift" class="w-5 h-5"></i></div>
+      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Полка 3: Подарочные Gift-Сундуки (Coins)</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="shelfGifts"></div>
+  </section>
+
 </main>
 
 <div id="globalToast" class="fixed bottom-6 right-6 z-[100] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
-  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30">
-    <i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i>
-  </div>
-  <div>
-    <h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4>
-    <p id="toastDesc" class="text-xs text-gray-500 leading-relaxed">Описание</p>
-  </div>
+  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30"><i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i></div>
+  <div><h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4><p id="toastDesc" class="text-xs text-gray-500 leading-relaxed"></p></div>
 </div>
 
 <script>
@@ -88,190 +85,108 @@
   lucide.createIcons();
 
   let currentUser = null;
-  let currentBalances = { real: 0, bonus: 0 };
+  let balances = { coins: 0, credits: 0 };
 
-  // Ассортимент магазина
-  const STORE_ITEMS = [
-    {
-      id: 'ai_pack_50',
-      title: 'Пакет +50 AI',
-      desc: 'Разовое добавление 50 генераций к вашему лимиту искусственного интеллекта.',
-      icon: 'zap',
-      color: 'blue',
-      priceReal: 100, // Цена в монетах
-      priceBonus: 300 // Цена в партнерских баллах
-    },
-    {
-      id: 'ai_sub_month',
-      title: 'AI MAX (Месяц)',
-      desc: 'Подписка на 30 дней. Ежедневный обновляемый лимит: 250 AI-запросов в день.',
-      icon: 'sparkles',
-      color: 'indigo',
-      priceReal: 500,
-      priceBonus: 1500
-    },
-    {
-      id: 'gift_friend',
-      title: 'Подарок другу',
-      desc: 'Купить уникальный код, который подарит другу тариф Company на 1 месяц.',
-      icon: 'gift',
-      color: 'rose',
-      priceReal: 800,
-      priceBonus: 2500
-    },
-    {
-      id: 'premium_bg',
-      title: 'Свой фон навсегда',
-      desc: 'Разблокирует возможность загружать свои обои проектов даже на тарифе Free.',
-      icon: 'image',
-      color: 'emerald',
-      priceReal: 150,
-      priceBonus: 500
-    }
-  ];
+  const PRODUCTS = {
+    AI: [
+      { id: 'ai_50', name: 'AI Импульс', desc: 'Разовое добавление +50 генераций.', price: 200, currency: 'credits', icon: 'zap', color: 'blue' },
+      { id: 'ai_200', name: 'AI Шторм', desc: 'Разовое добавление +200 генераций.', price: 600, currency: 'credits', icon: 'zap-off', color: 'cyan' },
+      { id: 'ai_daily_sub', name: 'AI Безлимит (Месяц)', desc: '250 генераций в день, обновление каждые 24 часа.', price: 1500, currency: 'credits', icon: 'sparkles', color: 'indigo' }
+    ],
+    PLANS: [
+      { id: 'plan_freelancer', name: 'Freelancer Cloud', desc: 'Разблокирует 10 облачных досок навсегда.', price: 1000, currency: 'credits', icon: 'user', color: 'emerald' },
+      { id: 'plan_company', name: 'Company Cloud', desc: 'Безлимит облачных досок и командных ролей.', price: 3000, currency: 'credits', icon: 'building', color: 'purple' },
+      { id: 'vip_status', name: 'VIP Статус', desc: 'Особая золотая иконка и приоритет в поддержке.', price: 5000, currency: 'credits', icon: 'award', color: 'amber' }
+    ],
+    GIFTS: [
+      { id: 'gift_20', name: 'Gift Box $20', desc: 'Создает код на 2000 монет для любого пользователя.', price: 200, currency: 'coins', icon: 'box', color: 'rose' },
+      { id: 'gift_100', name: 'Gift Box $100', desc: 'Создает код на 10 000 монет для подарка коллеге.', price: 1000, currency: 'coins', icon: 'package', color: 'pink' },
+      { id: 'gift_200', name: 'Gift Chest $200', desc: 'Эпический сундук на 20 000 монет. Лучший выбор.', price: 2000, currency: 'coins', icon: 'archive', color: 'orange' }
+    ]
+  };
 
   auth.onAuthStateChanged(user => {
-    if (user) {
-      currentUser = user;
-      loadBalances();
-      renderStore();
-    } else {
-      window.location.href = 'index.html';
-    }
+    if (user) { currentUser = user; loadBalances(); renderAll(); }
+    else { window.location.href = 'index.html'; }
   });
 
   async function loadBalances() {
-    try {
-      // 1. Читаем реальные монеты из профиля пользователя
-      const userDoc = await db.collection('users').doc(currentUser.uid).get();
-      if (userDoc.exists) {
-        currentBalances.real = userDoc.data().coins || 0;
-      }
-
-      // 2. Читаем бонусные баллы из партнерской коллекции
-      const affDoc = await db.collection('affiliates').doc(currentUser.uid).get();
-      if (affDoc.exists) {
-        currentBalances.bonus = affDoc.data().earnedCredits || 0;
-      }
-
-      // Обновляем интерфейс
-      document.getElementById('balanceReal').innerText = currentBalances.real;
-      document.getElementById('balanceBonus').innerText = currentBalances.bonus;
-
-    } catch (e) {
-      console.error("Ошибка загрузки балансов:", e);
-    }
+    const userDoc = await db.collection('users').doc(currentUser.uid).get();
+    const affDoc = await db.collection('affiliates').doc(currentUser.uid).get();
+    balances.coins = userDoc.exists ? (userDoc.data().coins || 0) : 0;
+    balances.credits = affDoc.exists ? (affDoc.data().earnedCredits || 0) : 0;
+    document.getElementById('valCoins').innerText = balances.coins;
+    document.getElementById('valCredits').innerText = balances.credits;
   }
 
-  function renderStore() {
-    const grid = document.getElementById('storeGrid');
-    
-    grid.innerHTML = STORE_ITEMS.map(item => `
-      <div class="bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-6 rounded-[2rem] hover:border-${item.color}-400 transition-all duration-300 shadow-sm flex flex-col relative overflow-hidden group">
-        
-        <div class="p-3 bg-${item.color}-50 dark:bg-${item.color}-900/20 text-${item.color}-500 rounded-2xl w-14 h-14 flex items-center justify-center mb-5 border border-${item.color}-100 dark:border-${item.color}-800/50 group-hover:scale-110 transition-transform">
-          <i data-lucide="${item.icon}" class="w-6 h-6"></i>
-        </div>
-        
-        <h3 class="text-xl font-bold mb-2 text-gray-900 dark:text-white">${item.title}</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 flex-1">${item.desc}</p>
-        
-        <div class="space-y-3">
-          <button onclick="buyItem('${item.id}', 'real', ${item.priceReal})" class="w-full py-3 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 text-amber-600 dark:text-amber-400 font-bold rounded-xl flex items-center justify-between px-4 transition-colors border border-amber-200 dark:border-amber-800/50">
-            <span>За монеты</span>
-            <span class="flex items-center gap-1"><i data-lucide="coins" class="w-4 h-4"></i> ${item.priceReal}</span>
-          </button>
-          
-          <button onclick="buyItem('${item.id}', 'bonus', ${item.priceBonus})" class="w-full py-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl flex items-center justify-between px-4 transition-colors border border-indigo-200 dark:border-indigo-800/50">
-            <span>За бонусы</span>
-            <span class="flex items-center gap-1"><i data-lucide="gem" class="w-4 h-4"></i> ${item.priceBonus}</span>
-          </button>
-        </div>
+  function renderShelf(data, containerId) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = data.map(p => `
+      <div class="card-zoom bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2.5rem] shadow-sm flex flex-col transition-all duration-300">
+        <div class="w-12 h-12 bg-${p.color}-500/10 text-${p.color}-500 rounded-2xl flex items-center justify-center mb-4"><i data-lucide="${p.icon}"></i></div>
+        <h3 class="font-bold text-lg mb-1">${p.name}</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-6 flex-1">${p.desc}</p>
+        <button onclick="handlePurchase('${p.id}', '${p.currency}', ${p.price})" class="w-full py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${p.currency === 'coins' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'} active:scale-95">
+          Купить за ${p.price} ${p.currency === 'coins' ? 'Coins' : 'Credits'}
+        </button>
       </div>
     `).join('');
-    
     lucide.createIcons();
   }
 
-  async function buyItem(itemId, currencyType, price) {
-    // Проверка баланса
-    if (currencyType === 'real' && currentBalances.real < price) {
-      return showSystemToast('Недостаточно монет', 'Пополните баланс реальных монет.', 'alert-circle', 'text-red-500', 'bg-red-50');
-    }
-    if (currencyType === 'bonus' && currentBalances.bonus < price) {
-      return showSystemToast('Недостаточно бонусов', 'Приглашайте друзей, чтобы заработать баллы.', 'alert-circle', 'text-amber-500', 'bg-amber-50');
-    }
+  function renderAll() {
+    renderShelf(PRODUCTS.AI, 'shelfAI');
+    renderShelf(PRODUCTS.PLANS, 'shelfPlans');
+    renderShelf(PRODUCTS.GIFTS, 'shelfGifts');
+  }
 
-    if (!confirm(`Вы уверены, что хотите купить этот товар за ${price} ${currencyType === 'real' ? 'монет' : 'бонусов'}?`)) return;
+  async function handlePurchase(prodId, currency, price) {
+    if (currency === 'coins' && balances.coins < price) return showSystemToast('Недостаточно монет', 'Пополните баланс реальной валютой.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    if (currency === 'credits' && balances.credits < price) return showSystemToast('Недостаточно кредитов', 'Приглашайте больше партнеров!', 'alert-circle', 'text-indigo-500', 'bg-indigo-50');
+
+    if (!confirm('Подтвердить покупку?')) return;
 
     try {
       const batch = db.batch();
       const userRef = db.collection('users').doc(currentUser.uid);
       const affRef = db.collection('affiliates').doc(currentUser.uid);
 
-      // 1. Списываем валюту
-      if (currencyType === 'real') {
-        batch.set(userRef, { coins: firebase.firestore.FieldValue.increment(-price) }, { merge: true });
-      } else {
-        batch.set(affRef, { earnedCredits: firebase.firestore.FieldValue.increment(-price) }, { merge: true });
-      }
+      // Списание
+      if (currency === 'coins') batch.update(userRef, { coins: firebase.firestore.FieldValue.increment(-price) });
+      else batch.update(affRef, { earnedCredits: firebase.firestore.FieldValue.increment(-price) });
 
-      // 2. Выдаем товар
-      if (itemId === 'ai_pack_50') {
-        batch.set(userRef, { bonusAiLimit: firebase.firestore.FieldValue.increment(50) }, { merge: true });
-      } 
-      else if (itemId === 'ai_sub_month') {
-        // Подписка на 30 дней (250 запросов в день)
-        const expiresAt = Date.now() + (30 * 24 * 60 * 60 * 1000);
-        batch.set(userRef, { aiDailySub: true, aiSubExpires: expiresAt }, { merge: true });
+      // Логика выдачи
+      if (prodId.startsWith('ai_')) {
+        if (prodId === 'ai_50') batch.set(userRef, { bonusAiLimit: firebase.firestore.FieldValue.increment(50) }, { merge: true });
+        if (prodId === 'ai_200') batch.set(userRef, { bonusAiLimit: firebase.firestore.FieldValue.increment(200) }, { merge: true });
+        if (prodId === 'ai_daily_sub') batch.set(userRef, { aiDailySub: true, aiSubExpires: Date.now() + (30*24*60*60*1000) }, { merge: true });
       }
-      else if (itemId === 'premium_bg') {
-        batch.set(userRef, { unlockedCustomBg: true }, { merge: true });
-      }
-      else if (itemId === 'gift_friend') {
-        // Создаем уникальный код в специальной коллекции
-        const giftCode = 'GIFT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-        const giftRef = db.collection('gifts').doc(giftCode);
-        batch.set(giftRef, { 
-          creator: currentUser.uid, 
-          type: 'pro_month',
-          isUsed: false,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        alert(`Ваш подарочный код: ${giftCode}\nСохраните его и передайте другу!`);
+      
+      if (prodId.startsWith('plan_')) batch.update(userRef, { plan: prodId.replace('plan_', '') });
+
+      if (prodId.startsWith('gift_')) {
+        const amount = parseInt(prodId.replace('gift_', '')) * 100; // Пример курса $1 = 100 монет
+        const code = 'GIFT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        batch.set(db.collection('gifts').doc(code), { creator: currentUser.uid, amount, isUsed: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        alert('Ваш Gift-код: ' + code);
       }
 
       await batch.commit();
-
-      // Запускаем салют
-      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
-      
-      showSystemToast('Успешная покупка!', 'Ваш аккаунт обновлен.', 'check-circle', 'text-green-500', 'bg-green-50');
-      
-      // Обновляем балансы на экране
-      await loadBalances();
-
-    } catch (e) {
-      console.error("Ошибка при покупке:", e);
-      showSystemToast('Ошибка', 'Не удалось провести транзакцию.', 'x-circle', 'text-red-500', 'bg-red-50');
-    }
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+      showSystemToast('Поздравляем!', 'Покупка успешно завершена.', 'check-circle', 'text-green-500', 'bg-green-50');
+      loadBalances();
+    } catch (e) { console.error(e); }
   }
 
-  let toastTimeout;
-  function showSystemToast(title, desc, iconName, iconColor, bgColor) {
-    const toast = document.getElementById('globalToast');
+  function showSystemToast(title, desc, icon, color, bg) {
+    const t = document.getElementById('globalToast');
     document.getElementById('toastTitle').innerText = title;
     document.getElementById('toastDesc').innerText = desc;
-    
-    const iconEl = document.getElementById('toastIcon');
-    iconEl.setAttribute('data-lucide', iconName);
-    iconEl.className = `w-5 h-5 ${iconColor}`;
-    document.getElementById('toastIconBg').className = `p-2.5 rounded-full flex-shrink-0 ${bgColor}`;
+    document.getElementById('toastIcon').setAttribute('data-lucide', icon);
+    document.getElementById('toastIconBg').className = `p-2.5 rounded-full flex-shrink-0 ${bg}`;
     lucide.createIcons();
-
-    toast.classList.remove('translate-y-24', 'opacity-0');
-    clearTimeout(toastTimeout);
-    toastTimeout = setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 5000);
+    t.classList.remove('translate-y-24', 'opacity-0');
+    setTimeout(() => t.classList.add('translate-y-24', 'opacity-0'), 5000);
   }
 </script>
 </body>
