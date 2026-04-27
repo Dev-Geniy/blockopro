@@ -859,10 +859,13 @@ function renameBoard() {
 function persist() { updateBoardData({ columns }); }
   
 function copyShareLink() { 
-  navigator.clipboard.writeText(window.location.href); 
+  // Формируем ссылку на index с параметром join, даже находясь на странице board.html
+  const url = window.location.origin + window.location.pathname.replace('board.html', '').replace('index.html', '') + '?join=' + BOARD_ID;
+  navigator.clipboard.writeText(url); 
+  
   showSystemToast(
     'Ссылка-приглашение скопирована!', 
-    'Отправьте её команде. Для входа потребуется авторизация Google.', 
+    'Отправьте её команде. Проект автоматически добавится в их рабочее пространство.', 
     'link', 
     'text-indigo-500', 
     'bg-indigo-50 dark:bg-indigo-900/30'
