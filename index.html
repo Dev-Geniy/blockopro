@@ -651,24 +651,19 @@ async function confirmCreateBoard() {
 
   // ПРОВЕРКА ЛИМИТОВ ОБЛАЧНЫХ ПРОЕКТОВ
   if (type === 'online') {
-    // Считаем проекты, где текущий пользователь является владельцем
     const ownedOnlineCount = onlineBoards.filter(b => b.owner === currentUser.id).length;
     
-    if (userPlan === 'free' && ownedOnlineCount >= 1) {
-      closeCreateModal();
-      openPricingModal();
-      showSystemToast('Лимит достигнут', 'На Free тарифе доступен только 1 облачный проект.', 'lock', 'text-amber-500', 'bg-amber-50');
-      return;
-    }
+    // Берем ключ тарифа (FREE, FREELANCER, COMPANY) и достаем лимит из config.js
+    const currentPlanKey = userPlan.toUpperCase();
+    const planLimits = PLANS[currentPlanKey] || PLANS.FREE; 
     
-    if (userPlan === 'freelancer' && ownedOnlineCount >= 10) {
+    if (ownedOnlineCount >= planLimits.boardsLimit) {
       closeCreateModal();
       openPricingModal();
-      showSystemToast('Лимит достигнут', 'На тарифе Freelancer доступно до 10 облачных проектов.', 'lock', 'text-amber-500', 'bg-amber-50');
+      showSystemToast('Лимит достигнут', `На вашем тарифе доступно до ${planLimits.boardsLimit} облачных проектов.`, 'lock', 'text-amber-500', 'bg-amber-50');
       return;
     }
   }
-
   // Если проверки пройдены — создаем проект
   const newBoard = {
     title, 
