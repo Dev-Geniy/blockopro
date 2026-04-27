@@ -593,8 +593,17 @@ function loadBoard() {
     document.getElementById('viewChatContainer').style.display = 'none';
     
     const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
-    if (localBoards[BOARD_ID]) {
-      boardData = localBoards[BOARD_ID];
+    const data = localBoards[BOARD_ID];
+
+    if (data) {
+      // --- ПРОВЕРКА ПАРОЛЯ (ЛОКАЛЬНАЯ ДОСКА) ---
+      if (data.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== data.password) {
+        alert("Доступ защищен паролем."); 
+        window.location.href = 'index.html'; 
+        return;
+      }
+
+      boardData = data;
       ensureUserTag(boardData);
       processBoardData(boardData);
     } else {
@@ -607,6 +616,14 @@ function loadBoard() {
     docRef.onSnapshot((doc) => {
       if (doc.exists) {
         let data = doc.data();
+
+        // --- ПРОВЕРКА ПАРОЛЯ (ОБЛАЧНАЯ ДОСКА) ---
+        if (data.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== data.password) {
+          alert("Доступ к облачному проекту защищен паролем.");
+          window.location.href = 'index.html';
+          return;
+        }
+
         let updates = {};
         let needsUpdate = false;
 
