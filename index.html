@@ -67,28 +67,30 @@
         Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Pro</span>
       </h1>
     </div>
-    <div class="flex items-center gap-5">
+    <div class="flex items-center gap-4 sm:gap-5">
+      
+      <a href="store.html" class="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-100 dark:border-amber-800/50 shadow-sm font-bold text-sm transition-transform hover:scale-105 active:scale-95">
+        <i data-lucide="shopping-cart" class="w-4 h-4"></i><span>Магазин</span>
+      </a>
+
       <div class="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2 border border-gray-200 dark:border-gray-700 focus-within:border-blue-500 transition-colors">
         <i data-lucide="search" class="w-4 h-4 text-gray-400 mr-2"></i>
         <input id="searchInput" oninput="debouncedRender()" placeholder="Поиск проектов..." class="bg-transparent outline-none text-sm w-48 dark:text-white" />
       </div>
 
-      <div class="flex items-center gap-2">
-        <button onclick="openPricingModal()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors shadow-sm" title="Тарифные планы">
-          <i data-lucide="credit-card" class="w-5 h-5"></i>
-        </button>
-        <a href="store.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 text-gray-600 dark:text-gray-400 hover:text-amber-500 transition-colors shadow-sm" title="Магазин улучшений">
-          <i data-lucide="shopping-cart" class="w-5 h-5"></i>
-        </a>
-      </div>
+      <button onclick="openPricingModal()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-100 dark:border-blue-800/50 shadow-sm font-bold text-sm transition-transform hover:scale-105 active:scale-95">
+        <i data-lucide="credit-card" class="w-4 h-4"></i><span class="hidden lg:inline">Тариф</span>
+      </button>
 
-      <a href="my-tasks.html" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 border border-indigo-100 dark:border-indigo-800/50 shadow-sm font-bold text-sm transition-transform hover:scale-105 active:scale-95">
+      <a href="my-tasks.html" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-100 dark:border-indigo-800/50 shadow-sm font-bold text-sm transition-transform hover:scale-105 active:scale-95">
         <i data-lucide="layout-list" class="w-4 h-4"></i><span class="hidden lg:inline">Мои задачи</span>
       </a>
-      <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-600 dark:text-gray-400 transition-colors">
+
+      <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors shadow-sm">
         <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
       </button>
-      <div class="flex items-center gap-3 pl-5 border-l border-gray-200 dark:border-gray-800">
+      
+      <div class="flex items-center gap-3 pl-2 sm:pl-5 border-l border-gray-200 dark:border-gray-800">
         <div class="text-right hidden sm:block">
           <div id="dashUserName" class="text-sm font-bold">User</div>
           <button onclick="logout()" class="text-xs text-gray-500 hover:text-red-500 transition-colors">Выйти</button>
