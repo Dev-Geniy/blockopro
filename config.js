@@ -14,7 +14,6 @@ const firebaseConfig = {
 // ==========================================
 // 2. ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ И АВТОРИЗАЦИИ
 // ==========================================
-// Проверяем, чтобы Firebase не инициализировался дважды (полезно для стабильности)
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -24,15 +23,23 @@ const auth = firebase.auth();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 
 // ==========================================
-// 3. API КЛЮЧ ДЛЯ ЗАГРУЗКИ КАРТИНОК
+// 3. API КЛЮЧИ И ВНЕШНИЕ СЕРВИСЫ
 // ==========================================
 const IMGBB_KEY = "22de10db6eb1f3ec3fca012dcc566961";
+const AI_ENDPOINT = "https://text.pollinations.ai/";
 
 // ==========================================
-// 4. ДИЗАЙН-СИСТЕМА (Общая для всех страниц)
+// 4. БИЗНЕС-ЛОГИКА И ТАРИФЫ (Roadmap 2026)
 // ==========================================
+const PLANS = {
+  FREE: { id: 'free', boardsLimit: 1, aiLimit: 3 },
+  FREELANCER: { id: 'freelancer', boardsLimit: 10, aiLimit: 15 },
+  COMPANY: { id: 'pro', boardsLimit: 999, aiLimit: 999 }
+};
 
-// Цвета для шапок колонок
+// ==========================================
+// 5. ДИЗАЙН-СИСТЕМА
+// ==========================================
 const COL_COLORS = {
   default: { bg: 'bg-gray-100 dark:bg-gray-800/60', border: 'border-gray-200 dark:border-gray-700/50', hex: '#64748b' },
   blue:    { bg: 'bg-blue-50 dark:bg-indigo-900/30', border: 'border-blue-200 dark:border-indigo-500/30', hex: '#3b82f6' },
@@ -41,7 +48,6 @@ const COL_COLORS = {
   amber:   { bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-200 dark:border-amber-500/30', hex: '#f59e0b' }
 };
 
-// Доступные теги (Labels) для карточек
 const AVAILABLE_TAGS = [
   { id: 'bug', name: 'Bug', color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800' },
   { id: 'feature', name: 'Feature', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
