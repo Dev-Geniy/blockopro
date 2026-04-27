@@ -16,9 +16,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .shelf-title { position: relative; display: flex; items-center: center; gap: 1rem; margin-bottom: 2rem; }
+    .shelf-title { position: relative; display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
     .shelf-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
     .card-zoom:hover { transform: translateY(-8px) scale(1.02); }
+    .glass-modal { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
   </style>
   <script>
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
@@ -36,13 +37,16 @@
   </div>
 
   <div class="flex gap-4">
-    <div class="flex flex-col items-end px-4 border-r border-gray-800">
-      <span class="text-[9px] font-bold text-gray-500 uppercase">Бонусные баллы</span>
-      <div class="flex items-center gap-2 text-indigo-400 font-black"><i data-lucide="gem" class="w-4 h-4"></i> <span id="valCredits">0</span></div>
+    <div class="flex flex-col items-end px-4 border-r border-gray-200 dark:border-gray-800">
+      <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Бонусные баллы</span>
+      <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-black"><i data-lucide="gem" class="w-4 h-4"></i> <span id="valCredits">0</span></div>
     </div>
-    <div class="flex flex-col items-end">
-      <span class="text-[9px] font-bold text-gray-500 uppercase">Реальные монеты</span>
-      <div class="flex items-center gap-2 text-amber-500 font-black"><i data-lucide="coins" class="w-4 h-4"></i> <span id="valCoins">0</span></div>
+    
+    <div onclick="openTopUpModal()" class="flex flex-col items-end cursor-pointer group">
+      <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest group-hover:text-amber-500 transition-colors">Реальные монеты</span>
+      <div class="flex items-center gap-2 text-amber-500 font-black bg-amber-50 dark:bg-amber-900/30 px-3 py-1 rounded-lg border border-amber-200 dark:border-amber-800/50 group-hover:scale-105 transition-transform">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i> <span id="valCoins">0</span>
+      </div>
     </div>
   </div>
 </header>
@@ -51,29 +55,70 @@
   
   <section class="mb-16">
     <div class="shelf-title">
-      <div class="p-2 bg-blue-500/10 rounded-lg text-blue-500"><i data-lucide="zap" class="w-5 h-5"></i></div>
-      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Полка 1: Лимиты Нейросети</h2>
+      <div class="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg text-blue-500 border border-blue-100 dark:border-blue-900"><i data-lucide="zap" class="w-5 h-5"></i></div>
+      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Лимиты Нейросети</h2>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="shelfAI"></div>
   </section>
 
   <section class="mb-16">
     <div class="shelf-title">
-      <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-500"><i data-lucide="shield-check" class="w-5 h-5"></i></div>
-      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Полка 2: Тарифы за приглашения (Кредиты)</h2>
+      <div class="p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg text-indigo-500 border border-indigo-100 dark:border-indigo-900"><i data-lucide="shield-check" class="w-5 h-5"></i></div>
+      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Тарифные Планы</h2>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="shelfPlans"></div>
   </section>
 
   <section class="mb-16">
     <div class="shelf-title">
-      <div class="p-2 bg-rose-500/10 rounded-lg text-rose-500"><i data-lucide="gift" class="w-5 h-5"></i></div>
-      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Полка 3: Подарочные Gift-Сундуки (Coins)</h2>
+      <div class="p-2 bg-rose-50 dark:bg-rose-500/10 rounded-lg text-rose-500 border border-rose-100 dark:border-rose-900"><i data-lucide="gift" class="w-5 h-5"></i></div>
+      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Подарочные Gift-Сундуки</h2>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="shelfGifts"></div>
   </section>
 
 </main>
+
+<div id="topUpModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/80 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-900 p-8 rounded-[2rem] w-full max-w-lg shadow-2xl relative border border-gray-200 dark:border-gray-800">
+    <button onclick="closeTopUpModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-800 dark:hover:text-white p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    
+    <div class="text-center mb-8">
+      <div class="mx-auto w-16 h-16 bg-amber-100 dark:bg-amber-900/30 text-amber-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20"><i data-lucide="coins" class="w-8 h-8"></i></div>
+      <h2 class="text-2xl font-black text-gray-900 dark:text-white">Пополнить Монеты</h2>
+      <p class="text-sm text-gray-500 mt-2">Приобретайте реальные монеты для оплаты услуг и подарков.</p>
+    </div>
+
+    <div class="space-y-4">
+      <button onclick="buyCoinsPack(1000, 10)" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
+        <div class="flex items-center gap-3">
+          <i data-lucide="circle-dollar-sign" class="w-6 h-6 text-amber-500"></i>
+          <div class="text-left"><div class="font-bold dark:text-white">Набор Новичка</div><div class="text-xs text-gray-500">1 000 Монет</div></div>
+        </div>
+        <div class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl text-sm group-hover:scale-105 transition-transform">$10.00</div>
+      </button>
+
+      <button onclick="buyCoinsPack(5000, 45)" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-amber-300 dark:border-amber-600 relative overflow-hidden group shadow-lg shadow-amber-500/10">
+        <div class="absolute -right-4 -top-4 w-16 h-16 bg-amber-500/10 rounded-full blur-xl"></div>
+        <div class="flex items-center gap-3 relative z-10">
+          <i data-lucide="gem" class="w-6 h-6 text-amber-500"></i>
+          <div class="text-left"><div class="font-bold dark:text-white">Популярный <span class="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full ml-2">-10%</span></div><div class="text-xs text-gray-500">5 000 Монет</div></div>
+        </div>
+        <div class="px-4 py-2 bg-amber-500 text-white font-bold rounded-xl text-sm group-hover:scale-105 transition-transform relative z-10">$45.00</div>
+      </button>
+
+      <button onclick="buyCoinsPack(12000, 100)" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
+        <div class="flex items-center gap-3">
+          <i data-lucide="crown" class="w-6 h-6 text-amber-500"></i>
+          <div class="text-left"><div class="font-bold dark:text-white">Максимальный</div><div class="text-xs text-gray-500">12 000 Монет (Бонус 2000)</div></div>
+        </div>
+        <div class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl text-sm group-hover:scale-105 transition-transform">$100.00</div>
+      </button>
+    </div>
+    
+    <p class="text-center text-[10px] text-gray-400 mt-6"><i data-lucide="lock" class="w-3 h-3 inline pb-0.5"></i> Оплата защищена 256-bit шифрованием (Тестовый режим)</p>
+  </div>
+</div>
 
 <div id="globalToast" class="fixed bottom-6 right-6 z-[100] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
   <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30"><i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i></div>
@@ -89,19 +134,19 @@
 
   const PRODUCTS = {
     AI: [
-      { id: 'ai_50', name: 'AI Импульс', desc: 'Разовое добавление +50 генераций.', price: 200, currency: 'credits', icon: 'zap', color: 'blue' },
-      { id: 'ai_200', name: 'AI Шторм', desc: 'Разовое добавление +200 генераций.', price: 600, currency: 'credits', icon: 'zap-off', color: 'cyan' },
-      { id: 'ai_daily_sub', name: 'AI Безлимит (Месяц)', desc: '250 генераций в день, обновление каждые 24 часа.', price: 1500, currency: 'credits', icon: 'sparkles', color: 'indigo' }
+      { id: 'ai_50', name: 'AI Импульс', desc: 'Разовое добавление +50 генераций.', priceCoins: 200, priceCredits: 600, icon: 'zap', color: 'blue' },
+      { id: 'ai_200', name: 'AI Шторм', desc: 'Разовое добавление +200 генераций.', priceCoins: 600, priceCredits: 1800, icon: 'zap-off', color: 'cyan' },
+      { id: 'ai_daily_sub', name: 'AI Безлимит (Месяц)', desc: '250 генераций в день, обновление каждые 24 часа.', priceCoins: 1500, priceCredits: 4500, icon: 'sparkles', color: 'indigo' }
     ],
     PLANS: [
-      { id: 'plan_freelancer', name: 'Freelancer Cloud', desc: 'Разблокирует 10 облачных досок навсегда.', price: 1000, currency: 'credits', icon: 'user', color: 'emerald' },
-      { id: 'plan_company', name: 'Company Cloud', desc: 'Безлимит облачных досок и командных ролей.', price: 3000, currency: 'credits', icon: 'building', color: 'purple' },
-      { id: 'vip_status', name: 'VIP Статус', desc: 'Особая золотая иконка и приоритет в поддержке.', price: 5000, currency: 'credits', icon: 'award', color: 'amber' }
+      { id: 'plan_freelancer', name: 'Freelancer Cloud', desc: 'Разблокирует 10 облачных досок навсегда.', priceCoins: 600, priceCredits: 1800, icon: 'user', color: 'emerald' },
+      { id: 'plan_company', name: 'Company Cloud', desc: 'Безлимит облачных досок и командных ролей.', priceCoins: 1900, priceCredits: 5700, icon: 'building', color: 'purple' },
+      { id: 'vip_status', name: 'VIP Статус', desc: 'Особая золотая иконка и приоритет в поддержке.', priceCoins: 5000, priceCredits: 15000, icon: 'award', color: 'amber' }
     ],
     GIFTS: [
-      { id: 'gift_20', name: 'Gift Box $20', desc: 'Создает код на 2000 монет для любого пользователя.', price: 200, currency: 'coins', icon: 'box', color: 'rose' },
-      { id: 'gift_100', name: 'Gift Box $100', desc: 'Создает код на 10 000 монет для подарка коллеге.', price: 1000, currency: 'coins', icon: 'package', color: 'pink' },
-      { id: 'gift_200', name: 'Gift Chest $200', desc: 'Эпический сундук на 20 000 монет. Лучший выбор.', price: 2000, currency: 'coins', icon: 'archive', color: 'orange' }
+      { id: 'gift_20', name: 'Gift Box $20', desc: 'Создает код на 2000 монет для любого пользователя.', priceCoins: 2000, priceCredits: null, icon: 'box', color: 'rose' },
+      { id: 'gift_100', name: 'Gift Box $100', desc: 'Создает код на 10 000 монет для подарка коллеге.', priceCoins: 10000, priceCredits: null, icon: 'package', color: 'pink' },
+      { id: 'gift_200', name: 'Gift Chest $200', desc: 'Эпический сундук на 20 000 монет. Лучший выбор.', priceCoins: 20000, priceCredits: null, icon: 'archive', color: 'orange' }
     ]
   };
 
@@ -122,13 +167,14 @@
   function renderShelf(data, containerId) {
     const container = document.getElementById(containerId);
     container.innerHTML = data.map(p => `
-      <div class="card-zoom bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2.5rem] shadow-sm flex flex-col transition-all duration-300">
-        <div class="w-12 h-12 bg-${p.color}-500/10 text-${p.color}-500 rounded-2xl flex items-center justify-center mb-4"><i data-lucide="${p.icon}"></i></div>
-        <h3 class="font-bold text-lg mb-1">${p.name}</h3>
+      <div class="card-zoom bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2.5rem] shadow-sm flex flex-col transition-all duration-300 relative overflow-hidden">
+        <div class="w-12 h-12 bg-${p.color}-50 dark:bg-${p.color}-500/10 text-${p.color}-500 rounded-2xl flex items-center justify-center mb-4 border border-${p.color}-100 dark:border-${p.color}-900"><i data-lucide="${p.icon}"></i></div>
+        <h3 class="font-bold text-lg mb-1 dark:text-white">${p.name}</h3>
         <p class="text-xs text-gray-500 dark:text-gray-400 mb-6 flex-1">${p.desc}</p>
-        <button onclick="handlePurchase('${p.id}', '${p.currency}', ${p.price})" class="w-full py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${p.currency === 'coins' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'} active:scale-95">
-          Купить за ${p.price} ${p.currency === 'coins' ? 'Coins' : 'Credits'}
-        </button>
+        <div class="space-y-2 mt-auto relative z-10">
+          ${p.priceCoins ? `<button onclick="handlePurchase('${p.id}', 'coins', ${p.priceCoins})" class="w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white shadow-lg shadow-amber-500/20 active:scale-95"><i data-lucide="coins" class="w-4 h-4"></i> ${p.priceCoins} Монет</button>` : ''}
+          ${p.priceCredits ? `<button onclick="handlePurchase('${p.id}', 'credits', ${p.priceCredits})" class="w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 active:scale-95"><i data-lucide="gem" class="w-4 h-4"></i> ${p.priceCredits} Бонусов</button>` : ''}
+        </div>
       </div>
     `).join('');
     lucide.createIcons();
@@ -141,8 +187,13 @@
   }
 
   async function handlePurchase(prodId, currency, price) {
-    if (currency === 'coins' && balances.coins < price) return showSystemToast('Недостаточно монет', 'Пополните баланс реальной валютой.', 'alert-circle', 'text-red-500', 'bg-red-50');
-    if (currency === 'credits' && balances.credits < price) return showSystemToast('Недостаточно кредитов', 'Приглашайте больше партнеров!', 'alert-circle', 'text-indigo-500', 'bg-indigo-50');
+    if (currency === 'coins' && balances.coins < price) {
+      openTopUpModal();
+      return showSystemToast('Недостаточно монет', 'Пополните баланс для совершения покупки.', 'alert-circle', 'text-amber-500', 'bg-amber-50');
+    }
+    if (currency === 'credits' && balances.credits < price) {
+      return showSystemToast('Недостаточно кредитов', 'Приглашайте больше партнеров!', 'alert-circle', 'text-indigo-500', 'bg-indigo-50');
+    }
 
     if (!confirm('Подтвердить покупку?')) return;
 
@@ -165,7 +216,7 @@
       if (prodId.startsWith('plan_')) batch.update(userRef, { plan: prodId.replace('plan_', '') });
 
       if (prodId.startsWith('gift_')) {
-        const amount = parseInt(prodId.replace('gift_', '')) * 100; // Пример курса $1 = 100 монет
+        const amount = parseInt(prodId.replace('gift_', '')) * 100;
         const code = 'GIFT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         batch.set(db.collection('gifts').doc(code), { creator: currentUser.uid, amount, isUsed: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
         alert('Ваш Gift-код: ' + code);
@@ -176,6 +227,33 @@
       showSystemToast('Поздравляем!', 'Покупка успешно завершена.', 'check-circle', 'text-green-500', 'bg-green-50');
       loadBalances();
     } catch (e) { console.error(e); }
+  }
+
+  // --- ЛОГИКА ПОПОЛНЕНИЯ (ИМИТАЦИЯ ОПЛАТЫ) ---
+  function openTopUpModal() {
+    const el = document.getElementById('topUpModal');
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.remove('opacity-0'), 10);
+  }
+  function closeTopUpModal() {
+    const el = document.getElementById('topUpModal');
+    el.classList.add('opacity-0');
+    setTimeout(() => el.classList.add('hidden'), 300);
+  }
+
+  async function buyCoinsPack(amount, usdPrice) {
+    if(!confirm(`Имитация оплаты $${usdPrice}. Подтвердить начисление ${amount} монет?`)) return;
+    
+    closeTopUpModal();
+    try {
+      const userRef = db.collection('users').doc(currentUser.uid);
+      await userRef.set({ coins: firebase.firestore.FieldValue.increment(amount) }, { merge: true });
+      confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 } });
+      showSystemToast('Счет пополнен!', `Начислено ${amount} монет.`, 'coins', 'text-amber-500', 'bg-amber-50');
+      loadBalances();
+    } catch(e) {
+      showSystemToast('Ошибка', 'Не удалось пополнить счет.', 'x-circle', 'text-red-500', 'bg-red-50');
+    }
   }
 
   function showSystemToast(title, desc, icon, color, bg) {
