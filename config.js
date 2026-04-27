@@ -66,3 +66,28 @@ const AVAILABLE_TAGS = [
   { id: 'urgent', name: 'Urgent', color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
   { id: 'design', name: 'Design', color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800' }
 ];
+
+// ==========================================
+// 6. НАГРАДЫ ПАРТНЕРСКОЙ ПРОГРАММЫ
+// ==========================================
+const REWARDS = {
+  FRIEND: { 
+    required: 10, 
+    plan: 'freelancer', 
+    days: 14, 
+    desc: "Доступ к смене аватара + 14 дней тарифа Freelancer" 
+  },
+  PARTNER: { 
+    required: 25, 
+    plan: 'pro', 
+    days: 14, 
+    desc: "Светящаяся рамка + 14 дней тарифа Company" 
+  },
+  AMBASSADOR: { 
+    required: 50, 
+    paidRequired: 10, 
+    plan: 'pro', 
+    days: 60, 
+    desc: "Анимированная рамка + 60 дней тарифа Company" 
+  }
+};
