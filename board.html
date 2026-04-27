@@ -596,9 +596,9 @@ function loadBoard() {
     const data = localBoards[BOARD_ID];
 
     if (data) {
-      // --- ПРОВЕРКА ПАРОЛЯ (ЛОКАЛЬНАЯ ДОСКА) ---
+      // --- ПРОВЕРКА ПАРОЛЯ ДЛЯ ОФЛАЙН (ВСЕГДА ДЛЯ ВСЕХ) ---
       if (data.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== data.password) {
-        alert("Доступ защищен паролем."); 
+        alert("Доступ к офлайн доске защищен паролем."); 
         window.location.href = 'index.html'; 
         return;
       }
@@ -616,14 +616,10 @@ function loadBoard() {
     docRef.onSnapshot((doc) => {
       if (doc.exists) {
         let data = doc.data();
+        const isOwner = data.owner === currentUser.id;
 
-        // --- ПРОВЕРКА ПАРОЛЯ (ОБЛАЧНАЯ ДОСКА) ---
-        if (data.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== data.password) {
-          alert("Доступ к облачному проекту защищен паролем.");
-          window.location.href = 'index.html';
-          return;
-        }
-
+        // --- 1. ЛОГИКА АВТО-ДОБАВЛЕНИЯ В ПРОЕКТЫ (ПЕРЕД ПРОВЕРКОЙ ПАРОЛЯ) ---
+        // Мы обновляем членство в проекте СРАЗУ, чтобы доска закрепилась в Dashboard
         let updates = {};
         let needsUpdate = false;
 
@@ -631,7 +627,7 @@ function loadBoard() {
            updates[`users.${currentUser.id}`] = { 
                name: currentUser.name || "User", 
                avatar: currentUser.avatar || "", 
-               role: data.owner === currentUser.id ? 'owner' : 'editor' 
+               role: isOwner ? 'owner' : 'editor' 
            };
            needsUpdate = true;
         }
@@ -641,29 +637,46 @@ function loadBoard() {
             needsUpdate = true;
         }
         
-        if (needsUpdate) { docRef.update(updates).catch(console.error); }
-        
+        // Если пользователя нет в проекте — записываем его в Firebase
+        if (needsUpdate) { 
+          docRef.update(updates).catch(console.error); 
+        }
+
+        // --- 2. ПРОВЕРКА ПАРОЛЯ (ДЛЯ ВСЕХ, КРОМЕ ВЛАДЕЛЬЦА) ---
+        // Если пароль не введен, мы выкидываем на индекс, но пользователь уже добавлен в участники
+        if (!isOwner && data.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== data.password) {
+          alert("Проект защищен. Доска добавлена в ваше рабочее пространство. Введите пароль для входа.");
+          window.location.href = 'index.html';
+          return;
+        }
+
+        // --- 3. ЗАГРУЗКА ДАННЫХ (ЕСЛИ ВСЁ ОК) ---
         boardData = data;
         ensureUserTag(boardData);
         processBoardData(boardData);
         renderMembersSidebar();
         
         if (isFirstChatLoad) initChatListener(docRef);
+
       } else {
+        // Состояние ожидания/синхронизации
         document.getElementById('boardTitleHeader').innerText = "Синхронизация...";
         document.getElementById('board').innerHTML = `
           <div class="w-full text-center py-20 flex flex-col items-center">
-            <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-full flex items-center justify-center mb-4">
+            <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-full flex items-center justify-center mb-4 border border-blue-100 dark:border-blue-800">
               <i data-lucide="loader-2" class="w-8 h-8 animate-spin"></i>
             </div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Получаем данные...</h2>
-            <p class="text-gray-500 text-sm mb-6 max-w-md">Секундочку, синхронизируем данные с сервером.</p>
-            <button onclick="window.location.href='index.html'" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-sm font-bold transition-all active:scale-95">Вернуться назад</button>
+            <p class="text-gray-50 text-sm mb-6 max-w-md">Проверяем доступ и синхронизируем данные.</p>
+            <button onclick="window.location.href='index.html'" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm">Вернуться на главную</button>
           </div>
         `;
         lucide.createIcons();
       }
-    }, (error) => { console.error("Ошибка Firebase:", error); });
+    }, (error) => { 
+      console.error("Ошибка Firebase:", error); 
+      showSystemToast('Ошибка сети', 'Не удалось связаться с облаком.', 'wifi-off', 'text-red-500', 'bg-red-50');
+    });
   }
 }
 
