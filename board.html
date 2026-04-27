@@ -1328,28 +1328,33 @@ async function checkAILimit() {
   const currentPlanKey = userPlan.toUpperCase();
   const baseLimit = PLANS[currentPlanKey]?.aiLimit || PLANS.FREE.aiLimit; 
   
-  if (baseLimit === 999) return true; // Безлимит для Pro
+  if (baseLimit === 999) return true; 
 
-  // Получаем бонусный лимит из профиля пользователя в Firestore
-  const userDoc = await db.collection('users').doc(currentUser.id).get();
-  const bonusLimit = userDoc.exists ? (userDoc.data().bonusAiLimit || 0) : 0;
-  
-  const totalLimit = baseLimit + bonusLimit; // Суммируем тариф и купленные бонусы
+  try {
+    const userDoc = await db.collection('users').doc(currentUser.id).get();
+    // Если документа нет или поля нет — используем 0
+    const bonusLimit = (userDoc.exists && userDoc.data().bonusAiLimit) ? userDoc.data().bonusAiLimit : 0;
+    
+    const totalLimit = baseLimit + bonusLimit;
 
-  let aiUsage = JSON.parse(localStorage.getItem('blocko_ai_usage')) || { date: new Date().toDateString(), count: 0 };
-  
-  if (aiUsage.date !== new Date().toDateString()) {
-    aiUsage = { date: new Date().toDateString(), count: 0 };
+    let aiUsage = JSON.parse(localStorage.getItem('blocko_ai_usage')) || { date: new Date().toDateString(), count: 0 };
+    
+    if (aiUsage.date !== new Date().toDateString()) {
+      aiUsage = { date: new Date().toDateString(), count: 0 };
+    }
+    
+    if (aiUsage.count >= totalLimit) {
+      showSystemToast('Лимит исчерпан', `Доступно: ${totalLimit} (Бонус: ${bonusLimit})`, 'lock', 'text-amber-500', 'bg-amber-50');
+      return false;
+    }
+    
+    aiUsage.count++;
+    localStorage.setItem('blocko_ai_usage', JSON.stringify(aiUsage));
+    return true;
+  } catch (e) {
+    console.error("Ошибка проверки лимита:", e);
+    return false; // На всякий случай блокируем, если нет интернета
   }
-  
-  if (aiUsage.count >= totalLimit) {
-    showSystemToast('Лимит исчерпан', `Доступно ${totalLimit} запр. (Тариф: ${baseLimit} + Бонус: ${bonusLimit})`, 'lock', 'text-amber-500', 'bg-amber-50');
-    return false;
-  }
-  
-  aiUsage.count++;
-  localStorage.setItem('blocko_ai_usage', JSON.stringify(aiUsage));
-  return true;
 }
   
 async function generateAIDescription() {
