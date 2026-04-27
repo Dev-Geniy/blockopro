@@ -392,26 +392,32 @@
     </div>
   </div>
 
-<!-- Прайс модвлка -->
+<!-- Прайс модальное окно -->
 <div id="pricingModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
   <div class="bg-white dark:bg-gray-900 p-8 sm:p-12 rounded-[3rem] w-full max-w-6xl shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto transform transition-transform scale-95" id="pricingContent">
     
-    <div class="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
-    <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute -top-32 -right-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-32 -left-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-    <button onclick="closePricingModal()" class="absolute top-8 right-8 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-full transition-colors z-20">
+    <button onclick="closePricingModal()" class="absolute top-8 right-8 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20">
       <i data-lucide="x" class="w-6 h-6"></i>
     </button>
     
     <div class="text-center mb-12 relative z-10">
+      <div class="relative w-24 h-24 mx-auto mb-6">
+        <div class="absolute inset-0 bg-blue-500 blur-2xl opacity-20 rounded-[2rem]"></div>
+        <div class="relative w-full h-full bg-blue-50 dark:bg-blue-500/10 text-blue-500 rounded-[2rem] flex items-center justify-center border border-blue-100 dark:border-blue-900 shadow-inner">
+          <i data-lucide="zap" class="w-12 h-12"></i>
+        </div>
+      </div>
       <span class="text-blue-500 font-bold text-xs uppercase tracking-[0.3em] mb-3 block">Масштабируйте свой поток</span>
       <h2 class="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4">Выберите тарифный план</h2>
-      <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto">Достигнут лимит текущего плана? Перейдите на новый уровень продуктивности.</p>
+      <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto font-medium">Достигнут лимит текущего плана? Перейдите на новый уровень продуктивности.</p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
       
-      <div class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 relative overflow-hidden">
+      <div class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 relative overflow-hidden hover:-translate-y-1">
         <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
         <div class="mb-8 flex flex-col items-center">
           <div class="relative w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100 dark:border-emerald-900 transition-transform duration-500 group-hover:scale-110 shadow-inner">
@@ -430,8 +436,8 @@
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 mt-0.5"></i> <b>Безлимит</b> Device-проектов</li>
           <li class="flex items-start gap-3 text-sm text-gray-400"><i data-lucide="alert-circle" class="w-5 h-5 mt-0.5"></i> Ограниченный AI ассистент</li>
         </ul>
-        <div class="space-y-3 mt-auto relative z-10">
-          <button onclick="closePricingModal()" class="w-full py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 transition-colors">Текущий план</button>
+        <div class="space-y-3 mt-auto relative z-10 w-full">
+          <button onclick="closePricingModal()" class="w-full py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors active:scale-95">Текущий план</button>
           <button onclick="openPlanDetails('free')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-emerald-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
         </div>
       </div>
@@ -456,13 +462,13 @@
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> 10 участников на доску</li>
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> Увеличенный лимит AI</li>
         </ul>
-        <div class="space-y-3 mt-auto relative z-10">
-          <button onclick="upgradeTo('freelancer')" class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all">Активировать план</button>
+        <div class="space-y-3 mt-auto relative z-10 w-full">
+          <button onclick="upgradeTo('freelancer')" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all">Активировать план</button>
           <button onclick="openPlanDetails('freelancer')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-blue-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
         </div>
       </div>
 
-      <div class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-500 relative overflow-hidden">
+      <div class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-500 relative overflow-hidden hover:-translate-y-1">
         <div class="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
         <div class="mb-8 flex flex-col items-center">
           <div class="relative w-16 h-16 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-500 group-hover:scale-110 shadow-inner">
@@ -481,8 +487,8 @@
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-amber-500 mt-0.5"></i> Продвинутые роли (Editor/Viewer)</li>
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-amber-500 mt-0.5"></i> Сгорающие файлы в чате</li>
         </ul>
-        <div class="space-y-3 mt-auto relative z-10">
-          <button onclick="upgradeTo('pro')" class="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl">Активировать план</button>
+        <div class="space-y-3 mt-auto relative z-10 w-full">
+          <button onclick="upgradeTo('pro')" class="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl">Активировать план</button>
           <button onclick="openPlanDetails('pro')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-amber-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
         </div>
       </div>
@@ -491,106 +497,7 @@
   </div>
 </div>
 
-<!-- модалка партнерской программы -->
-<div id="pricingModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
-  <div class="bg-white dark:bg-gray-900 p-8 sm:p-12 rounded-[3rem] w-full max-w-6xl shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto transform transition-transform scale-95" id="pricingContent">
-    
-    <div class="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
-    <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl"></div>
-
-    <button onclick="closePricingModal()" class="absolute top-8 right-8 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-full transition-colors z-20">
-      <i data-lucide="x" class="w-6 h-6"></i>
-    </button>
-    
-    <div class="text-center mb-12 relative z-10">
-      <span class="text-blue-500 font-bold text-xs uppercase tracking-[0.3em] mb-3 block">Масштабируйте свой поток</span>
-      <h2 class="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4">Выберите тарифный план</h2>
-      <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto">Достигнут лимит текущего плана? Перейдите на новый уровень продуктивности.</p>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
-      
-      <div class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-        <div class="mb-8 flex flex-col items-center">
-          <div class="relative w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100 dark:border-emerald-900 transition-transform duration-500 group-hover:scale-110 shadow-inner">
-            <div class="absolute inset-0 bg-emerald-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
-            <i data-lucide="leaf" class="w-8 h-8 relative z-10"></i>
-          </div>
-          <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Free</h3>
-          <p class="text-sm text-gray-500 mt-2">Для персонального старта.</p>
-        </div>
-        <div class="mb-8 flex items-center justify-center gap-2 text-gray-900 dark:text-white transition-transform duration-500 group-hover:scale-95">
-          <span class="text-5xl font-black">0</span>
-          <span class="text-gray-400 font-bold uppercase text-xs mt-3">Монет</span>
-        </div>
-        <ul class="space-y-5 mb-10 flex-1 relative z-10">
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 mt-0.5"></i> 1 облачный проект (Cloud)</li>
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 mt-0.5"></i> <b>Безлимит</b> Device-проектов</li>
-          <li class="flex items-start gap-3 text-sm text-gray-400"><i data-lucide="alert-circle" class="w-5 h-5 mt-0.5"></i> Ограниченный AI ассистент</li>
-        </ul>
-        <div class="space-y-3 mt-auto relative z-10">
-          <button onclick="closePricingModal()" class="w-full py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 transition-colors">Текущий план</button>
-          <button onclick="openPlanDetails('free')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-emerald-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
-        </div>
-      </div>
-
-      <div class="group bg-white dark:bg-gray-900 border-2 border-blue-500 p-10 rounded-[2.5rem] flex flex-col shadow-2xl shadow-blue-500/10 scale-105 z-10 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/20">
-        <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-full shadow-lg">Most Popular</div>
-        <div class="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-        <div class="mb-8 mt-4 flex flex-col items-center">
-          <div class="relative w-16 h-16 bg-blue-500 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30 transition-transform duration-500 group-hover:scale-110">
-            <div class="absolute inset-0 bg-blue-500 blur-xl opacity-40 group-hover:opacity-60 transition-opacity"></div>
-            <i data-lucide="zap" class="w-8 h-8 relative z-10"></i>
-          </div>
-          <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Freelancer</h3>
-          <p class="text-sm text-gray-500 mt-2">Для активной работы.</p>
-        </div>
-        <div class="mb-8 flex items-center justify-center gap-2 text-amber-500 transition-transform duration-500 group-hover:scale-95">
-          <i data-lucide="coins" class="w-8 h-8"></i>
-          <span class="text-5xl font-black">600</span>
-        </div>
-        <ul class="space-y-5 mb-10 flex-1 relative z-10">
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> 10 облачных проектов</li>
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> 10 участников на доску</li>
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> Увеличенный лимит AI</li>
-        </ul>
-        <div class="space-y-3 mt-auto relative z-10">
-          <button onclick="upgradeTo('freelancer')" class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all">Активировать план</button>
-          <button onclick="openPlanDetails('freelancer')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-blue-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
-        </div>
-      </div>
-
-      <div class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-500 relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-        <div class="mb-8 flex flex-col items-center">
-          <div class="relative w-16 h-16 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-500 group-hover:scale-110 shadow-inner">
-            <div class="absolute inset-0 bg-amber-500 blur-xl opacity-0 group-hover:opacity-20 transition-opacity"></div>
-            <i data-lucide="building-2" class="w-8 h-8 relative z-10"></i>
-          </div>
-          <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Company</h3>
-          <p class="text-sm text-gray-500 mt-2">Для мощных команд.</p>
-        </div>
-        <div class="mb-8 flex items-center justify-center gap-2 text-amber-500 transition-transform duration-500 group-hover:scale-95">
-          <i data-lucide="coins" class="w-8 h-8"></i>
-          <span class="text-5xl font-black">1900</span>
-        </div>
-        <ul class="space-y-5 mb-10 flex-1 relative z-10">
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-amber-500 mt-0.5"></i> <b>Безлимит</b> Cloud-проектов</li>
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-amber-500 mt-0.5"></i> Продвинутые роли (Editor/Viewer)</li>
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-amber-500 mt-0.5"></i> Сгорающие файлы в чате</li>
-        </ul>
-        <div class="space-y-3 mt-auto relative z-10">
-          <button onclick="upgradeTo('pro')" class="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl">Активировать план</button>
-          <button onclick="openPlanDetails('pro')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-amber-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- Партнёрская модалка -->
+<!-- Партнёрка модальное окно -->
 <div id="affiliateModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
   <div class="bg-white dark:bg-gray-900 p-8 sm:p-12 rounded-[3rem] w-full max-w-4xl shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto transform transition-transform scale-95" id="affiliateContent">
     
@@ -608,12 +515,12 @@
           <i data-lucide="network" class="w-12 h-12"></i>
         </div>
       </div>
+      <span class="text-indigo-500 font-bold text-xs uppercase tracking-[0.3em] mb-3 block">Развивайте экосистему</span>
       <h2 class="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4">Ваша Партнерская Сеть</h2>
       <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto font-medium">Получайте 20% с каждой оплаты привлеченного пользователя навсегда. Достигайте новых статусов и разблокируйте уникальные награды!</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10 mb-12">
-      
       <div class="group bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-8 rounded-[2.5rem] text-center relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1">
         <div class="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
         <div class="w-16 h-16 bg-blue-50 dark:bg-blue-500/10 text-blue-500 rounded-[1.5rem] flex items-center justify-center mx-auto mb-4 border border-blue-100 dark:border-blue-900 transition-transform duration-500 group-hover:scale-110 shadow-inner">
@@ -625,12 +532,12 @@
       
       <div class="group bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-200 dark:border-indigo-500/30 p-8 rounded-[2.5rem] text-center relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/20 hover:-translate-y-1">
         <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-        <div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-500/30 text-indigo-500 rounded-[1.5rem] flex items-center justify-center mx-auto mb-4 border border-indigo-200 dark:border-indigo-800 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-inner relative z-10">
+        <div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-500/30 text-indigo-500 rounded-[1.5rem] flex items-center justify-center mx-auto mb-4 border border-indigo-200 dark:border-indigo-800 transition-transform duration-500 group-hover:scale-110 shadow-inner relative z-10">
           <i data-lucide="gem" class="w-8 h-8 relative z-10"></i>
         </div>
         <div class="text-5xl font-black text-indigo-600 dark:text-indigo-400 mb-2 tracking-tight relative z-10" id="statEarned">0 кр.</div>
         <div class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-6 relative z-10">Мой баланс</div>
-        <button onclick="window.location.href='store.html'" class="w-full py-4 bg-indigo-600 text-white rounded-2xl text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/25 active:scale-95 flex items-center justify-center gap-2 relative z-10">
+        <button onclick="window.location.href='store.html'" class="w-full py-3.5 bg-indigo-600 text-white rounded-2xl text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/25 active:scale-95 flex items-center justify-center gap-2 relative z-10">
           <i data-lucide="shopping-bag" class="w-5 h-5"></i> Потратить в Магазине
         </button>
       </div>
@@ -641,7 +548,6 @@
         <i data-lucide="award" class="w-5 h-5 text-amber-500"></i> Зал Славы (Достижения)
       </h4>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
         <div id="badgeFriend" class="opacity-40 grayscale bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-8 rounded-[2.5rem] flex flex-col items-center text-center transition-all duration-700">
            <div class="w-16 h-16 rounded-[1.5rem] bg-blue-100 dark:bg-blue-900/40 text-blue-500 flex items-center justify-center mb-4 border border-blue-200 dark:border-blue-800 shadow-inner"><i data-lucide="user-plus" class="w-8 h-8"></i></div>
            <h5 class="font-extrabold text-lg dark:text-white mb-1">Друг проекта</h5>
@@ -665,7 +571,6 @@
              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1" id="ambassadorDesc">50 приглашенных</p>
            </div>
         </div>
-
       </div>
     </div>
     
@@ -674,9 +579,7 @@
         <i data-lucide="link" class="w-4 h-4"></i> Ваша уникальная ссылка
       </label>
       <div class="flex flex-col sm:flex-row gap-4">
-        <div class="flex-1 relative">
-          <input type="text" id="affiliateLinkInput" readonly class="w-full h-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:border-blue-500 rounded-2xl px-6 py-4 text-sm font-mono dark:text-gray-300 outline-none transition-colors shadow-sm text-center sm:text-left">
-        </div>
+        <input type="text" id="affiliateLinkInput" readonly class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:border-blue-500 rounded-2xl px-6 py-4 text-sm font-mono dark:text-gray-300 outline-none transition-colors shadow-sm">
         <button onclick="copyAffiliateLink()" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap">
           <i data-lucide="copy" class="w-5 h-5"></i> Скопировать
         </button>
