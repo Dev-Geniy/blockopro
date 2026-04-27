@@ -45,6 +45,12 @@
     .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     @keyframes deadline-pulse { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 70% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
     .deadline-overdue { border-color: #ef4444 !important; animation: deadline-pulse 2s infinite; }
+    
+    /* Стили для рамок достижений */
+    @keyframes rainbow-border { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    .ambassador-frame { padding: 3px; background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: rainbow-border 3s linear infinite; border-radius: 50%; display: inline-flex; }
+    .partner-frame { padding: 3px; background: linear-gradient(45deg, #6366f1, #a855f7, #ec4899); border-radius: 50%; display: inline-flex; }
+    .friend-frame { padding: 3px; background: linear-gradient(45deg, #3b82f6, #06b6d4); border-radius: 50%; display: inline-flex; }
   </style>
 
   <script>
@@ -511,17 +517,40 @@ let selectedColColor = 'default';
 let boardData = {};
 let isFirstChatLoad = true; // ОДНА переменная чата
   
-auth.onAuthStateChanged((user) => {
+auth.onAuthStateChanged(async (user) => {
   if (user) {
     const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
-    currentUser = { id: user.uid, name: user.displayName, avatar: safeAvatar };
+    
+    // Получаем статус бейджа из профиля
+    let badgeStatus = 'none';
+    try {
+      const userDoc = await db.collection('users').doc(user.uid).get();
+      if (userDoc.exists) badgeStatus = userDoc.data().badgeStatus || 'none';
+    } catch(e) {}
+
+    currentUser = { id: user.uid, name: user.displayName, avatar: safeAvatar, badge: badgeStatus };
     document.getElementById('commentMyAvatar').src = currentUser.avatar;
+    
     if (!BOARD_ID) window.location.href = 'index.html'; 
     else loadBoard();
   } else {
     window.location.href = 'index.html'; 
   }
 });
+
+// Глобальная функция для отрисовки аватарки с рамкой
+function getAvatarHTML(userObj, sizeClass) {
+  const badge = userObj.badge || 'none';
+  let wrapClass = '';
+  if (badge === 'ambassador') wrapClass = 'ambassador-frame';
+  else if (badge === 'partner') wrapClass = 'partner-frame';
+  else if (badge === 'friend') wrapClass = 'friend-frame';
+  
+  if (wrapClass) {
+    return `<div class="${wrapClass} shadow-sm flex-shrink-0"><img src="${userObj.avatar}" class="${sizeClass} rounded-full object-cover border-2 border-gray-900" title="${userObj.name}"/></div>`;
+  }
+  return `<img src="${userObj.avatar}" class="${sizeClass} rounded-full flex-shrink-0 object-cover border border-gray-200 dark:border-gray-700 shadow-sm" title="${userObj.name}" />`;
+}
 
 function updateBoardData(updates) {
   if (isLocalBoard) {
@@ -672,61 +701,6 @@ function downloadAndBurn(msgId, filename, base64url) {
   // 3. Скрываем в интерфейсе
   const msgDiv = document.getElementById('msg_' + msgId);
   if(msgDiv) msgDiv.innerHTML = `<div class="p-3 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl text-xs italic"><i data-lucide="flame" class="w-4 h-4 inline mr-1"></i>Файл уничтожен навсегда</div>`;
-  lucide.createIcons();
-}
-
-function renderSingleMessage(msg, container, msgId) {
-  const isMe = msg.user.id === currentUser.id;
-  const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
-  
-  let attachHtml = '';
-  if (msg.attachment) {
-    if (msg.attachment.type === 'image') {
-      attachHtml = `<img src="${msg.attachment.url}" class="rounded-xl mt-1.5 w-full cursor-pointer border border-black/10 dark:border-white/10 shadow-sm hover:opacity-90" onclick="window.open('${msg.attachment.url}', '_blank')" />`;
-    } else {
-      const isExpired = msg.attachment.expiresAt && Date.now() > msg.attachment.expiresAt;
-      
-      if (isExpired) {
-         attachHtml = `<div class="mt-1.5 text-[10px] text-gray-500 italic p-2 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 w-full overflow-hidden">⏳ Срок хранения файла истек</div>`;
-      } else {
-          const isBurn = msg.attachment.retention === 'burn';
-          const fileIcon = isBurn ? 'flame' : 'file';
-          const fileColor = isBurn ? 'text-orange-500' : (isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300');
-          // Добавили flex-shrink-0, чтобы бейджик не сжимался
-          const badgeHtml = isBurn ? `<span class="flex-shrink-0 text-[8px] uppercase tracking-wider bg-orange-500/20 text-orange-500 font-bold px-1.5 py-0.5 rounded">1 скачивание</span>` : '';
-          
-          const downloadBtn = isBurn 
-            ? `<button onclick="downloadAndBurn('${msgId}', '${msg.attachment.name}', '${msg.attachment.url}')" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors flex-shrink-0" title="Скачать и уничтожить"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></button>`
-            : `<a href="${msg.attachment.url}" download="${msg.attachment.name}" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></a>`;
-
-          attachHtml = `
-            <div class="mt-1.5 flex items-center gap-3 bg-white/10 dark:bg-black/20 p-2.5 rounded-xl border ${isMe ? 'border-white/20' : 'border-gray-200 dark:border-gray-700'} w-full overflow-hidden">
-              <div class="p-2 bg-white/20 dark:bg-white/10 rounded-lg flex-shrink-0"><i data-lucide="${fileIcon}" class="w-4 h-4 ${fileColor}"></i></div>
-              <div class="flex-1 min-w-0 flex flex-col">
-                <div class="flex items-center gap-2 w-full">
-                  <span class="text-xs font-bold truncate flex-1 min-w-0 ${isMe ? 'text-white' : 'text-gray-800 dark:text-gray-200'}" title="${msg.attachment.name}">${msg.attachment.name}</span>
-                  ${badgeHtml}
-                </div>
-                <span class="text-[9px] ${isMe ? 'text-white/70' : 'text-gray-500'}">${msg.attachment.size}</span>
-              </div>
-              ${downloadBtn}
-            </div>`;
-      }
-    }
-  }
-
-  const textHtml = msg.text ? `<div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>` : '';
-
-  container.innerHTML += `
-    <div id="msg_${msgId}" class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'} mt-2">
-      <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm flex-shrink-0" />
-      <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] w-full">
-        <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
-        ${textHtml}
-        ${attachHtml}
-      </div>
-    </div>
-  `;
   lucide.createIcons();
 }
 
@@ -927,7 +901,7 @@ function renderMembersSidebar() {
     }
     return `
       <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-        <img src="${user.avatar}" class="w-10 h-10 rounded-full bg-gray-200 shadow-sm" />
+        ${getAvatarHTML(user, 'w-10 h-10')}
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-0.5"><span class="font-bold text-sm text-gray-900 dark:text-white truncate">${user.name} ${isMe ? '(Вы)' : ''}</span></div>
           ${roleBadge}
@@ -938,6 +912,60 @@ function renderMembersSidebar() {
   }).join('');
 }
 
+function renderSingleMessage(msg, container, msgId) {
+  const isMe = msg.user.id === currentUser.id;
+  const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+  
+  let attachHtml = '';
+  if (msg.attachment) {
+    if (msg.attachment.type === 'image') {
+      attachHtml = `<img src="${msg.attachment.url}" class="rounded-xl mt-1.5 w-full cursor-pointer border border-black/10 dark:border-white/10 shadow-sm hover:opacity-90" onclick="window.open('${msg.attachment.url}', '_blank')" />`;
+    } else {
+      const isExpired = msg.attachment.expiresAt && Date.now() > msg.attachment.expiresAt;
+      
+      if (isExpired) {
+         attachHtml = `<div class="mt-1.5 text-[10px] text-gray-500 italic p-2 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 w-full overflow-hidden">⏳ Срок хранения файла истек</div>`;
+      } else {
+          const isBurn = msg.attachment.retention === 'burn';
+          const fileIcon = isBurn ? 'flame' : 'file';
+          const fileColor = isBurn ? 'text-orange-500' : (isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300');
+          const badgeHtml = isBurn ? `<span class="flex-shrink-0 text-[8px] uppercase tracking-wider bg-orange-500/20 text-orange-500 font-bold px-1.5 py-0.5 rounded">1 скачивание</span>` : '';
+          
+          const downloadBtn = isBurn 
+            ? `<button onclick="downloadAndBurn('${msgId}', '${msg.attachment.name}', '${msg.attachment.url}')" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors flex-shrink-0" title="Скачать и уничтожить"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></button>`
+            : `<a href="${msg.attachment.url}" download="${msg.attachment.name}" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></a>`;
+
+          attachHtml = `
+            <div class="mt-1.5 flex items-center gap-3 bg-white/10 dark:bg-black/20 p-2.5 rounded-xl border ${isMe ? 'border-white/20' : 'border-gray-200 dark:border-gray-700'} w-full overflow-hidden">
+              <div class="p-2 bg-white/20 dark:bg-white/10 rounded-lg flex-shrink-0"><i data-lucide="${fileIcon}" class="w-4 h-4 ${fileColor}"></i></div>
+              <div class="flex-1 min-w-0 flex flex-col">
+                <div class="flex items-center gap-2 w-full">
+                  <span class="text-xs font-bold truncate flex-1 min-w-0 ${isMe ? 'text-white' : 'text-gray-800 dark:text-gray-200'}" title="${msg.attachment.name}">${msg.attachment.name}</span>
+                  ${badgeHtml}
+                </div>
+                <span class="text-[9px] ${isMe ? 'text-white/70' : 'text-gray-500'}">${msg.attachment.size}</span>
+              </div>
+              ${downloadBtn}
+            </div>`;
+      }
+    }
+  }
+
+  const textHtml = msg.text ? `<div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>` : '';
+
+  container.innerHTML += `
+    <div id="msg_${msgId}" class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'} mt-2">
+      ${getAvatarHTML(msg.user, 'w-8 h-8')}
+      <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] w-full">
+        <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
+        ${textHtml}
+        ${attachHtml}
+      </div>
+    </div>
+  `;
+  lucide.createIcons();
+}
+  
 function sendChatMessage() {
   if (isLocalBoard) return;
   const text = document.getElementById('chatInput').value.trim();
@@ -1326,25 +1354,32 @@ function deleteCustomTag(tagId) {
 
 async function checkAILimit() {
   const currentPlanKey = userPlan.toUpperCase();
-  const baseLimit = PLANS[currentPlanKey]?.aiLimit || PLANS.FREE.aiLimit; 
+  let baseLimit = PLANS[currentPlanKey]?.aiLimit || PLANS.FREE.aiLimit; 
   
   if (baseLimit === 999) return true; 
 
   try {
     const userDoc = await db.collection('users').doc(currentUser.id).get();
-    // Если документа нет или поля нет — используем 0
-    const bonusLimit = (userDoc.exists && userDoc.data().bonusAiLimit) ? userDoc.data().bonusAiLimit : 0;
+    const data = userDoc.exists ? userDoc.data() : {};
     
+    // Проверка активной подписки AI Безлимит (Месяц) из магазина
+    const now = Date.now();
+    if (data.aiDailySub && data.aiSubExpires && data.aiSubExpires > now) {
+      baseLimit = 250; // Ставим дневной лимит 250 запросов
+    }
+    
+    const bonusLimit = data.bonusAiLimit || 0; // Сюда плюсуются разовые пакеты +50
     const totalLimit = baseLimit + bonusLimit;
 
     let aiUsage = JSON.parse(localStorage.getItem('blocko_ai_usage')) || { date: new Date().toDateString(), count: 0 };
     
+    // Логика ежедневного обнуления лимитов
     if (aiUsage.date !== new Date().toDateString()) {
       aiUsage = { date: new Date().toDateString(), count: 0 };
     }
     
     if (aiUsage.count >= totalLimit) {
-      showSystemToast('Лимит исчерпан', `Доступно: ${totalLimit} (Бонус: ${bonusLimit})`, 'lock', 'text-amber-500', 'bg-amber-50');
+      showSystemToast('Лимит исчерпан', `Доступно на сегодня: ${totalLimit}. Обновите тариф в Магазине или подождите до завтра!`, 'lock', 'text-amber-500', 'bg-amber-50');
       return false;
     }
     
@@ -1353,7 +1388,7 @@ async function checkAILimit() {
     return true;
   } catch (e) {
     console.error("Ошибка проверки лимита:", e);
-    return false; // На всякий случай блокируем, если нет интернета
+    return false;
   }
 }
   
