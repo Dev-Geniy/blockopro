@@ -148,7 +148,17 @@
       <div class="space-y-5">
         <div>
           <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Название доски</label>
-          <input type="text" id="newBoardTitle" placeholder="Например: Разработка сайта..." class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-all">
+          <input type="text" id="newBoardTitle" placeholder="Например: Секретный запуск..." class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-all">
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block flex justify-between">
+            Пароль доступа <span class="text-[10px] text-blue-500 font-black uppercase">Опционально</span>
+          </label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="password" id="newBoardPassword" placeholder="Оставьте пустым для свободного входа" class="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-all">
+          </div>
         </div>
         
         <div>
@@ -158,7 +168,7 @@
               <input type="radio" name="boardType" value="online" checked class="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 accent-blue-500">
               <div>
                 <span class="font-bold text-sm block text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Cloud (Командная)</span>
-                <span class="text-xs text-gray-500 mt-1 block leading-relaxed">Сохраняется в базу данных. Можно приглашать людей по ссылке и ID. Онлайн синхронизация.</span>
+                <span class="text-xs text-gray-500 mt-1 block leading-relaxed">Пароль защитит вход для всех участников.</span>
               </div>
             </label>
             
@@ -166,7 +176,7 @@
               <input type="radio" name="boardType" value="local" class="mt-1 w-4 h-4 text-emerald-600 border-gray-300 focus:ring-emerald-500 accent-emerald-500">
               <div>
                 <span class="font-bold text-sm block text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Device (Только моя)</span>
-                <span class="text-xs text-gray-500 mt-1 block leading-relaxed">Сохраняется в память браузера (Offline). Работает без интернета. Можно скачивать бэкапы.</span>
+                <span class="text-xs text-gray-500 mt-1 block leading-relaxed">Пароль сохранится только в этом браузере.</span>
               </div>
             </label>
           </div>
@@ -390,6 +400,28 @@
 
     <div id="planFeaturesGrid" class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10 w-full max-w-4xl mx-auto text-left border-t border-gray-200 dark:border-gray-800 pt-12">
       </div>
+  </div>
+</div>
+  
+  <!-- Пароль на проект -->
+  <div id="passwordEntryModal" class="hidden fixed inset-0 z-[250] flex items-center justify-center bg-gray-900/80 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-800 text-center transform transition-transform scale-95" id="passwordEntryContent">
+    <button onclick="closePasswordPrompt()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+      <i data-lucide="x" class="w-5 h-5"></i>
+    </button>
+    
+    <div class="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-[1.5rem] flex items-center justify-center mx-auto mb-6 border border-amber-100 dark:border-amber-900 shadow-inner">
+      <i data-lucide="lock" class="w-10 h-10"></i>
+    </div>
+    
+    <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">Проект защищен</h2>
+    <p class="text-sm text-gray-500 mb-8">Введите пароль для доступа к данным.</p>
+    
+    <input type="password" id="boardEntryPassword" placeholder="Ваш секретный код" onkeypress="if(event.key==='Enter') submitBoardPassword()" class="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-center text-lg font-bold tracking-widest focus:ring-2 focus:ring-amber-500 transition-all dark:text-white mb-6">
+    
+    <button onclick="submitBoardPassword()" class="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
+      Открыть доступ
+    </button>
   </div>
 </div>
   
@@ -826,15 +858,11 @@ function subscribeToBoards(userId) {
 function renderBoardsGrid() {
   const grid = document.getElementById('boardsGrid');
   const query = document.getElementById('searchInput')?.value.toLowerCase() || '';
-  
-  // Безопасное слияние онлайн и локальных досок
   const localBoardsObj = getLocalBoards() || {};
   const localBoardsArr = Object.values(localBoardsObj);
   const combinedBoards = [...onlineBoards, ...localBoardsArr];
 
-  // Безопасная сортировка
   let safeBoardOrder = Array.isArray(savedBoardOrder) ? savedBoardOrder : [];
-  
   let sortedBoards = combinedBoards.sort((a, b) => {
     let indexA = safeBoardOrder.indexOf(a.id);
     let indexB = safeBoardOrder.indexOf(b.id);
@@ -852,63 +880,50 @@ function renderBoardsGrid() {
       document.getElementById('statTotalTasks').innerText = tasksCount;
   }
 
-  // добавляем lucide.createIcons() перед return
   if (filtered.length === 0) {
-    grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-500">Проекты не найдены. Создайте новый или загрузите.</div>`;
+    grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-500">Проекты не найдены.</div>`;
     lucide.createIcons(); 
     return;
   }
 
-grid.innerHTML = filtered.map(data => {
+  grid.innerHTML = filtered.map(data => {
     const isLocal = data.id && data.id.startsWith('local_');
+    const hasPassword = !!data.password; // ПРОВЕРКА ПАРОЛЯ
     const ownerInfo = data.users && data.users[data.owner] ? data.users[data.owner] : { name: 'Владелец', avatar: generateAvatarById(data.owner || 'U') };
     
-    // Делаем нижние кнопки действий (Скачать/Скопировать/Ссылка) более премиальными
     const actionButtons = isLocal ? `
-      <button onclick="event.stopPropagation(); exportLocalBoard('${data.id}')" class="p-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-800 rounded-xl transition-all shadow-sm border border-emerald-100 dark:border-emerald-800/50" title="Скачать бэкап">
-        <i data-lucide="download" class="w-4 h-4"></i>
-      </button>
+      <button onclick="event.stopPropagation(); exportLocalBoard('${data.id}')" class="p-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-800 rounded-xl transition-all shadow-sm border border-emerald-100 dark:border-emerald-800/50" title="Скачать бэкап"><i data-lucide="download" class="w-4 h-4"></i></button>
     ` : `
-      <button onclick="event.stopPropagation(); copyBoardId(this, '${data.id}')" class="p-2.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all shadow-sm border border-gray-200 dark:border-gray-700" title="Скопировать ID">
-        <i data-lucide="copy" class="w-4 h-4"></i>
-      </button>
-      <button onclick="event.stopPropagation(); copyBoardLink(this, '${data.id}')" class="p-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 hover:bg-indigo-100 dark:hover:bg-indigo-800 rounded-xl transition-all shadow-sm border border-indigo-100 dark:border-indigo-800/50" title="Ссылка-приглашение">
-        <i data-lucide="link" class="w-4 h-4"></i>
-      </button>
+      <button onclick="event.stopPropagation(); copyBoardId(this, '${data.id}')" class="p-2.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 rounded-xl transition-all shadow-sm border border-gray-200 dark:border-gray-700" title="Скопировать ID"><i data-lucide="copy" class="w-4 h-4"></i></button>
+      <button onclick="event.stopPropagation(); copyBoardLink(this, '${data.id}')" class="p-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-all shadow-sm border border-indigo-100 dark:border-indigo-800/50" title="Ссылка-приглашение"><i data-lucide="link" class="w-4 h-4"></i></button>
     `;
 
-    // Плавающее меню верхних действий (Удалить/Выйти/Архив)
     let cardActions = `<button onclick="event.stopPropagation(); window.location.href='archive.html?b=${data.id}'" class="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-xl transition-colors" title="Архив проекта"><i data-lucide="archive" class="w-4 h-4"></i></button>`;
+    if (isLocal || data.owner === currentUser.id) cardActions += `<button onclick="event.stopPropagation(); deleteBoard('${data.id}', ${isLocal})" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-colors" title="Удалить проект"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+    else cardActions += `<button onclick="event.stopPropagation(); leaveBoard('${data.id}')" class="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-xl transition-colors" title="Покинуть проект"><i data-lucide="log-out" class="w-4 h-4"></i></button>`;
 
-    if (isLocal || data.owner === currentUser.id) {
-        cardActions += `<button onclick="event.stopPropagation(); deleteBoard('${data.id}', ${isLocal})" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-colors" title="Удалить проект"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
-    } else {
-        cardActions += `<button onclick="event.stopPropagation(); leaveBoard('${data.id}')" class="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-xl transition-colors" title="Покинуть проект"><i data-lucide="log-out" class="w-4 h-4"></i></button>`;
-    }
-
+    // ИЗМЕНЕН ОНКЛИК НА tryEnterBoard
     return `
-    <div data-id="${data.id}" onclick="window.location.href='board.html?b=${data.id}'" class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-8 rounded-[2.5rem] hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 relative overflow-hidden flex flex-col h-full cursor-pointer hover:-translate-y-1">
-      
+    <div data-id="${data.id}" onclick="tryEnterBoard('${data.id}', ${hasPassword})" class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-8 rounded-[2.5rem] hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 relative overflow-hidden flex flex-col h-full cursor-pointer hover:-translate-y-1">
       <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-      
       <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
       
       <div class="flex justify-between items-start mb-6 relative z-10">
         <div class="flex items-center gap-4">
-          <div class="relative w-14 h-14 bg-blue-50 dark:bg-blue-500/10 text-blue-500 rounded-[1.2rem] flex items-center justify-center border border-blue-100 dark:border-blue-900 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-inner">
-             <div class="absolute inset-0 bg-blue-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
+          <div class="relative w-14 h-14 bg-blue-50 dark:bg-blue-500/10 text-blue-500 rounded-[1.2rem] flex items-center justify-center border border-blue-100 dark:border-blue-900 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
              <i data-lucide="layout-template" class="w-7 h-7 relative z-10"></i>
           </div>
-          ${isLocal ? `<span class="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-black px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm uppercase tracking-widest"><i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Офлайн</span>` : ''}
+          <div class="flex flex-col gap-1">
+            ${isLocal ? `<span class="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[9px] font-black px-2 py-1 rounded-lg flex items-center gap-1 uppercase tracking-widest"><i data-lucide="hard-drive" class="w-3 h-3"></i> Офлайн</span>` : ''}
+            ${hasPassword ? `<span class="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-[9px] font-black px-2 py-1 rounded-lg flex items-center gap-1 uppercase tracking-widest"><i data-lucide="lock" class="w-3 h-3"></i> Защищено</span>` : ''}
+          </div>
         </div>
-        
         <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
            ${cardActions}
         </div>
       </div>
 
-      <h3 class="text-2xl font-extrabold mb-4 text-gray-900 dark:text-white line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors tracking-tight relative z-10">${data.title || 'Без названия'}</h3>
-      
+      <h3 class="text-2xl font-extrabold mb-4 text-gray-900 dark:text-white line-clamp-1 group-hover:text-blue-600 transition-colors tracking-tight relative z-10">${data.title || 'Без названия'}</h3>
       <div class="flex items-center gap-3 mb-8 bg-gray-50/50 dark:bg-gray-800/30 p-3 rounded-2xl border border-gray-100 dark:border-gray-700/50 relative z-10 group-hover:bg-white dark:group-hover:bg-gray-800 transition-colors">
          <img src="${ownerInfo.avatar}" class="w-9 h-9 rounded-full border-2 border-white dark:border-gray-700 shadow-sm">
          <div class="flex flex-col">
@@ -916,34 +931,26 @@ grid.innerHTML = filtered.map(data => {
            <span class="text-sm font-bold text-gray-700 dark:text-gray-200 leading-tight">${ownerInfo.name}</span>
          </div>
       </div>
-      
       <div class="flex items-center justify-between mt-auto pt-6 border-t border-gray-100 dark:border-gray-800/50 relative z-10">
-        <div class="flex gap-2">
-           ${actionButtons}
-        </div>
-        
-        <div class="flex items-center gap-3">
-          <div class="flex -space-x-3 hover:space-x-1 transition-all duration-300">
-             ${isLocal ? `<img src="${currentUser.avatar}" class="w-9 h-9 rounded-full border-2 border-white dark:border-gray-900 shadow-sm hover:z-10 transition-transform hover:scale-110" title="Вы" />` : 
-               (data.members || []).slice(0,4).map(uid => `<img src="${generateAvatarById(uid)}" class="w-9 h-9 rounded-full border-2 border-white dark:border-gray-900 shadow-sm hover:z-10 transition-transform hover:scale-110" />`).join('')
-             }
-             ${data.members && data.members.length > 4 ? `<div class="w-9 h-9 rounded-full border-2 border-white dark:border-gray-900 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-500 shadow-sm z-0">+${data.members.length - 4}</div>` : ''}
-          </div>
+        <div class="flex gap-2">${actionButtons}</div>
+        <div class="flex -space-x-3 hover:space-x-1 transition-all duration-300">
+           ${isLocal ? `<img src="${currentUser.avatar}" class="w-9 h-9 rounded-full border-2 border-white dark:border-gray-900 shadow-sm" />` : 
+             (data.members || []).slice(0,4).map(uid => `<img src="${generateAvatarById(uid)}" class="w-9 h-9 rounded-full border-2 border-white dark:border-gray-900 shadow-sm hover:z-10 transition-transform hover:scale-110" />`).join('')
+           }
         </div>
       </div>
     </div>
     `
   }).join('');
-  
   lucide.createIcons();
-
+  
   if (sortableInstance) sortableInstance.destroy();
   sortableInstance = new Sortable(grid, {
     animation: 200, ghostClass: 'sortable-ghost', dragClass: 'sortable-drag', delay: 150, delayOnTouchOnly: true,
     onEnd: function () {
       const items = grid.querySelectorAll('[data-id]');
       savedBoardOrder = Array.from(items).map(el => el.getAttribute('data-id'));
-      localStorage.setItem('blocko_boards_order', JSON.stringify(savedBoardOrder));
+      localStorage.setItem('blocko_boards_order', JSON.stringify(sortedBoards));
     }
   });
 }
@@ -1064,15 +1071,13 @@ function closePricingModal() {
 // ОБНОВЛЕННАЯ ФУНКЦИЯ СОЗДАНИЯ (с проверкой лимитов)
 async function confirmCreateBoard() {
   const title = document.getElementById('newBoardTitle').value.trim() || "Новый проект";
+  const password = document.getElementById('newBoardPassword').value.trim() || null;
   const type = document.querySelector('input[name="boardType"]:checked').value;
   
   if (!currentUser) return;
 
-  // ПРОВЕРКА ЛИМИТОВ ОБЛАЧНЫХ ПРОЕКТОВ
   if (type === 'online') {
     const ownedOnlineCount = onlineBoards.filter(b => b.owner === currentUser.id).length;
-    
-    // Берем ключ тарифа (FREE, FREELANCER, COMPANY) и достаем лимит из config.js
     const currentPlanKey = userPlan.toUpperCase();
     const planLimits = PLANS[currentPlanKey] || PLANS.FREE; 
     
@@ -1083,9 +1088,10 @@ async function confirmCreateBoard() {
       return;
     }
   }
-  // Если проверки пройдены — создаем проект
+
   const newBoard = {
     title, 
+    password, // СОХРАНЯЕМ ПАРОЛЬ
     owner: currentUser.id, 
     members: [currentUser.id],
     users: { [currentUser.id]: { name: currentUser.name, avatar: currentUser.avatar, role: 'owner' } },
@@ -1102,16 +1108,20 @@ async function confirmCreateBoard() {
     const localBoards = getLocalBoards();
     localBoards[newBoard.id] = newBoard;
     localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
+    // Сохраняем в сессию, чтобы сразу войти без повторного ввода пароля
+    if(password) sessionStorage.setItem('blocko_auth_' + newBoard.id, password);
     window.location.href = `board.html?b=${newBoard.id}`;
   } else {
     try {
       const docRef = await db.collection("boards").add(newBoard);
+      if(password) sessionStorage.setItem('blocko_auth_' + docRef.id, password);
       window.location.href = `board.html?b=${docRef.id}`;
     } catch (e) { 
       showSystemToast('Ошибка', 'Не удалось создать проект в облаке.', 'alert-circle', 'text-red-500', 'bg-red-50');
     }
   }
 }
+
 // Импорт / Экспорт локальных досок
 let pendingBackupId = null;
 
@@ -1538,6 +1548,65 @@ function closePlanDetails() {
     modal.classList.add('hidden');
     openPricingModal(); // Возвращаемся к выбору тарифов
   }, 300);
+}
+
+// --- ЛОГИКА ДОСТУПА ПО ПАРОЛЮ ---
+let pendingBoardId = null;
+
+function tryEnterBoard(id, hasPassword) {
+  const sessionKey = 'blocko_auth_' + id;
+  
+  // Если пароля нет ИЛИ он уже был введен успешно в этой сессии
+  if (!hasPassword || sessionStorage.getItem(sessionKey)) {
+    window.location.href = `board.html?b=${id}`;
+  } else {
+    // Показываем модалку ввода пароля
+    pendingBoardId = id;
+    const modal = document.getElementById('passwordEntryModal');
+    const content = document.getElementById('passwordEntryContent');
+    document.getElementById('boardEntryPassword').value = '';
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      modal.classList.remove('opacity-0');
+      content.classList.remove('scale-95');
+      content.classList.add('scale-100');
+      document.getElementById('boardEntryPassword').focus();
+    }, 10);
+  }
+}
+
+function closePasswordPrompt() {
+  const modal = document.getElementById('passwordEntryModal');
+  const content = document.getElementById('passwordEntryContent');
+  modal.classList.add('opacity-0');
+  content.classList.remove('scale-100');
+  content.classList.add('scale-95');
+  setTimeout(() => { modal.classList.add('hidden'); pendingBoardId = null; }, 300);
+}
+
+async function submitBoardPassword() {
+  const entered = document.getElementById('boardEntryPassword').value.trim();
+  if (!entered || !pendingBoardId) return;
+
+  try {
+    let board;
+    if (pendingBoardId.startsWith('local_')) {
+      board = getLocalBoards()[pendingBoardId];
+    } else {
+      const doc = await db.collection('boards').doc(pendingBoardId).get();
+      board = doc.data();
+    }
+
+    if (board && board.password === entered) {
+      sessionStorage.setItem('blocko_auth_' + pendingBoardId, entered);
+      window.location.href = `board.html?b=${pendingBoardId}`;
+    } else {
+      showSystemToast('Ошибка доступа', 'Неверный пароль. Попробуйте еще раз.', 'shield-alert', 'text-red-500', 'bg-red-50');
+      document.getElementById('boardEntryPassword').value = '';
+    }
+  } catch (e) {
+    showSystemToast('Ошибка', 'Не удалось проверить пароль.', 'alert-triangle', 'text-red-500', 'bg-red-50');
+  }
 }
 </script>
 </body>
