@@ -1324,21 +1324,26 @@ function deleteCustomTag(tagId) {
   });
 }
 
-function checkAILimit() {
+async function checkAILimit() {
   const currentPlanKey = userPlan.toUpperCase();
-  const planLimits = PLANS[currentPlanKey] || PLANS.FREE; 
+  const baseLimit = PLANS[currentPlanKey]?.aiLimit || PLANS.FREE.aiLimit; 
   
-  if (planLimits.aiLimit === 999) return true; // Безлимит для Company (Pro)
+  if (baseLimit === 999) return true; // Безлимит для Pro
+
+  // Получаем бонусный лимит из профиля пользователя в Firestore
+  const userDoc = await db.collection('users').doc(currentUser.id).get();
+  const bonusLimit = userDoc.exists ? (userDoc.data().bonusAiLimit || 0) : 0;
   
+  const totalLimit = baseLimit + bonusLimit; // Суммируем тариф и купленные бонусы
+
   let aiUsage = JSON.parse(localStorage.getItem('blocko_ai_usage')) || { date: new Date().toDateString(), count: 0 };
   
-  // Сбрасываем счетчик, если наступил новый день
   if (aiUsage.date !== new Date().toDateString()) {
     aiUsage = { date: new Date().toDateString(), count: 0 };
   }
   
-  if (aiUsage.count >= planLimits.aiLimit) {
-    showSystemToast('Лимит AI исчерпан', `Доступно ${planLimits.aiLimit} запросов в день на вашем тарифе.`, 'lock', 'text-amber-500', 'bg-amber-50');
+  if (aiUsage.count >= totalLimit) {
+    showSystemToast('Лимит исчерпан', `Доступно ${totalLimit} запр. (Тариф: ${baseLimit} + Бонус: ${bonusLimit})`, 'lock', 'text-amber-500', 'bg-amber-50');
     return false;
   }
   
@@ -1348,7 +1353,7 @@ function checkAILimit() {
 }
   
 async function generateAIDescription() {
-  if (!checkAILimit()) return;
+  if (!(await checkAILimit())) return;
   
   // Получаем название задачи прямо из поля ввода
   const title = document.getElementById('editTitle').value.trim();
@@ -1376,7 +1381,7 @@ async function generateAIDescription() {
 }
 
 async function generateAIQuickDescription() {
-  if (!checkAILimit()) return;
+  if (!(await checkAILimit())) return;
   
   const title = document.getElementById('quickAddInput').value.trim(); 
   const textarea = document.getElementById('quickAddDesc'); 
