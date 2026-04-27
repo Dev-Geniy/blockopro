@@ -522,14 +522,12 @@ async function loginWithGoogle() {
     const result = await auth.signInWithPopup(googleProvider);
     const user = result.user;
     
-    // Проверка и создание профиля пользователя в глобальной базе (Важно для партнерки)
     const userRef = db.collection('users').doc(user.uid);
     const doc = await userRef.get();
     
     if (!doc.exists) {
       const savedRefId = localStorage.getItem('blocko_ref_id');
       
-      // Создаем профиль новичка и привязываем к рефералу
       await userRef.set({
         name: user.displayName,
         email: user.email,
@@ -539,7 +537,6 @@ async function loginWithGoogle() {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       
-      // Если он пришел по чьей-то ссылке, добавляем рефералу +1 в статистику регистраций
       if (savedRefId) {
         const affiliateRef = db.collection('affiliates').doc(savedRefId);
         await affiliateRef.set({
@@ -548,8 +545,9 @@ async function loginWithGoogle() {
       }
     }
   } catch (error) {
-    console.error("Ошибка авторизации:", error);
-    showSystemToast('Ошибка', 'Не удалось войти в систему.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    console.error("Техническая ошибка Google:", error);
+    // Теперь табличка покажет точный ответ сервера Firebase
+    showSystemToast('Сбой авторизации', error.message, 'alert-circle', 'text-red-500', 'bg-red-50');
   }
 }
 
