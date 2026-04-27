@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  
+  <title>Архив проекта - Blocko Pro</title>
+  <meta name="description" content="Безопасное хранилище удаленных задач проекта.">
+  <meta name="theme-color" content="#0f172a">
+  
+  <meta name="robots" content="noindex, nofollow">
+
+  <meta property="og:title" content="Архив проекта - Blocko Pro">
+  <meta property="og:description" content="Доступ к архиву карточек проекта.">
+  <meta property="og:type" content="website">
+
+  <!-- Фавикон -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+
+  <!-- Манифест -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="config.js"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    .glass-modal { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  </style>
+
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
+
+<header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-20 flex justify-between items-center">
+  <div class="flex items-center gap-4">
+    <a href="#" onclick="goBackToBoard()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500" title="Вернуться к доске">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </a>
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 id="boardTitle" class="text-xl font-bold tracking-tight">Загрузка...</h1>
+        <span id="roleBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-md border border-gray-200 dark:border-gray-700 text-gray-500"></span>
+        <span id="localBadge" class="hidden bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded-md"><i data-lucide="hard-drive" class="w-3 h-3 inline pb-0.5"></i> ОФЛАЙН</span>
+      </div>
+      <p class="text-xs text-amber-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1">
+        <i data-lucide="archive" class="w-3 h-3"></i> Хранилище карточек <span id="archiveCountBadge"></span>
+      </p>
+    </div>
+  </div>
+  
+  <div class="flex items-center gap-3 hidden sm:flex">
+    <div class="relative">
+      <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+      <input id="archiveSearch" oninput="renderArchive()" placeholder="Поиск в архиве..." class="pl-9 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500 transition-shadow w-64 dark:text-white">
+    </div>
+    <button id="btnBurnArchive" onclick="burnArchive()" class="hidden p-2.5 bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl transition-all shadow-sm hover:scale-105" title="Сжечь архив (Удалить всё)">
+      <i data-lucide="flame" class="w-5 h-5"></i>
+    </button>
+  </div>
+</header>
+
+<main class="p-8 max-w-7xl mx-auto w-full flex-1">
+  <div id="archiveGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm animate-pulse flex flex-col h-40">
+      <div class="flex justify-between mb-4"><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16"></div><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-20"></div></div>
+      <div class="h-5 bg-gray-200 dark:bg-gray-800 rounded w-3/4 mb-3"></div>
+      <div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-full mb-2"></div><div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-2/3"></div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm animate-pulse flex flex-col h-40">
+      <div class="flex justify-between mb-4"><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16"></div><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-20"></div></div>
+      <div class="h-5 bg-gray-200 dark:bg-gray-800 rounded w-3/4 mb-3"></div>
+      <div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-full mb-2"></div><div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-2/3"></div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm animate-pulse flex flex-col h-40 hidden md:flex">
+      <div class="flex justify-between mb-4"><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16"></div><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-20"></div></div>
+      <div class="h-5 bg-gray-200 dark:bg-gray-800 rounded w-3/4 mb-3"></div>
+      <div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-full mb-2"></div><div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-2/3"></div>
+    </div>
+  </div>
+</main>
+
+<div id="customConfirmModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95" id="confirmModalContent">
+    <div id="confirmIconBg" class="mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
+      <i id="confirmIcon" data-lucide="alert-triangle" class="w-8 h-8"></i>
+    </div>
+    <h2 id="confirmTitle" class="text-xl font-bold mb-2 text-gray-900 dark:text-white">Подтверждение</h2>
+    <p id="confirmDesc" class="text-sm text-gray-500 mb-8 leading-relaxed">Вы уверены?</p>
+    <div class="flex gap-3">
+      <button onclick="closeConfirmModal()" class="flex-1 py-3.5 text-sm font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors">Отмена</button>
+      <button id="confirmBtnAction" onclick="executeConfirm()" class="flex-1 py-3.5 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg shadow-red-500/25 active:scale-95 transition-all">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<div id="globalToast" class="fixed bottom-6 right-6 z-[100] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
+  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30">
+    <i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i>
+  </div>
+  <div>
+    <h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4>
+    <p id="toastDesc" class="text-xs text-gray-500 leading-relaxed">Описание</p>
+  </div>
+</div>
+
+<script>
+  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+  lucide.createIcons();
+
+  const BOARD_ID = new URLSearchParams(window.location.search).get('b');
+  const isLocalBoard = BOARD_ID && BOARD_ID.startsWith('local_');
+  let currentBoardData = null;
+  let currentUser = null;
+
+  const DEFAULT_BOARD_TAGS = [
+    { id: 'tag_bug', name: 'Баг', color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800' },
+    { id: 'tag_feat', name: 'Фича', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
+    { id: 'tag_urg', name: 'Срочно', color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
+    { id: 'tag_des', name: 'Дизайн', color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800' },
+    { id: 'tag_back', name: 'Бэкенд', color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' },
+    { id: 'tag_test', name: 'Тест', color: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800' }
+  ];
+
+  auth.onAuthStateChanged(user => {
+    if (user && BOARD_ID) {
+      currentUser = user;
+      loadArchive();
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
+
+  function goBackToBoard() {
+    window.location.href = BOARD_ID ? `board.html?b=${BOARD_ID}` : 'index.html';
+  }
+
+  function loadArchive() {
+    if (isLocalBoard) {
+       document.getElementById('localBadge').classList.remove('hidden');
+       const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+       if (localBoards[BOARD_ID]) {
+          currentBoardData = localBoards[BOARD_ID];
+          setupArchiveUI();
+          renderArchive();
+       } else {
+          window.location.href = 'index.html';
+       }
+    } else {
+      db.collection("boards").doc(BOARD_ID).onSnapshot(doc => {
+        if (!doc.exists) return window.location.href = 'index.html';
+        currentBoardData = doc.data();
+        setupArchiveUI();
+        renderArchive();
+      });
+    }
+  }
+
+  function setupArchiveUI() {
+      document.getElementById('boardTitle').innerText = currentBoardData.title;
+      
+      const isOwner = currentBoardData.owner === currentUser.uid || isLocalBoard;
+      const roleBadge = document.getElementById('roleBadge');
+      roleBadge.classList.remove('hidden');
+      
+      if (isOwner) {
+        roleBadge.innerText = 'Владелец';
+        roleBadge.classList.add('bg-amber-50', 'dark:bg-amber-900/20', 'text-amber-600', 'dark:text-amber-400', 'border-amber-200', 'dark:border-amber-800/50');
+      } else {
+        roleBadge.innerHTML = '<i data-lucide="eye" class="w-3 h-3 inline pb-0.5"></i> Участник';
+      }
+  }
+
+  function cleanMarkdown(text) {
+    if (!text) return 'Нет описания';
+    return text
+      .replace(/(\*\*|__)(.*?)\1/g, '$2')
+      .replace(/(\*|_)(.*?)\1/g, '$2')
+      .replace(/\[[ x]\] /g, '• ')
+      .replace(/#/g, '')
+      .trim();
+  }
+
+  function getTagInfo(tagId) {
+    const tags = currentBoardData.tags && currentBoardData.tags.length > 0 ? currentBoardData.tags : DEFAULT_BOARD_TAGS;
+    return tags.find(t => t.id === tagId);
+  }
+
+  function renderArchive() {
+    const grid = document.getElementById('archiveGrid');
+    const burnBtn = document.getElementById('btnBurnArchive');
+    const countBadge = document.getElementById('archiveCountBadge'); // Ищем наш новый бейджик
+    const searchQuery = document.getElementById('archiveSearch').value.toLowerCase();
+    let archivedCards = [];
+    const isOwner = currentBoardData.owner === currentUser.uid || isLocalBoard;
+
+    // Собираем архивные карточки и запоминаем ID их исходных колонок
+    currentBoardData.columns.forEach(col => {
+      if (col.cards) {
+        col.cards.forEach(card => {
+          if (card.archived) archivedCards.push({ ...card, colName: col.name, originColId: col.id });
+        });
+      }
+    });
+
+    // 1. ДИНАМИЧЕСКИЙ СЧЕТЧИК
+    if (countBadge) {
+      countBadge.innerText = archivedCards.length > 0 ? `(${archivedCards.length})` : '';
+    }
+
+    // Управление видимостью кнопки "Сжечь архив"
+    if (burnBtn) {
+      burnBtn.style.display = (archivedCards.length > 0 && isOwner) ? 'flex' : 'none';
+    }
+
+    // Пустое состояние
+    if (archivedCards.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-full py-24 flex flex-col items-center opacity-70">
+          <div class="p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+            <i data-lucide="archive-x" class="w-10 h-10 text-gray-400"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-1">Архив чист</h3>
+          <p class="text-sm text-gray-500">Удаленные из активной работы карточки появятся здесь.</p>
+        </div>`;
+      lucide.createIcons();
+      return;
+    }
+
+    // 2. СОРТИРОВКА: Сначала новые (LIFO)
+    archivedCards.sort((a, b) => b.id - a.id);
+
+    archivedCards = archivedCards.filter(c => 
+      c.title.toLowerCase().includes(searchQuery) || 
+      (c.description && c.description.toLowerCase().includes(searchQuery))
+    );
+
+    if (archivedCards.length === 0 && searchQuery !== '') {
+      grid.innerHTML = `
+        <div class="col-span-full py-16 text-center">
+          <p class="text-gray-500">Карточек по запросу "${searchQuery}" не найдено.</p>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = archivedCards.map(card => {
+      const cleanDesc = cleanMarkdown(card.description);
+      
+      const tagsHtml = card.tags && card.tags.length > 0 
+        ? `<div class="flex gap-1.5 mb-3 flex-wrap">` + 
+          card.tags.map(tId => { 
+            const t = getTagInfo(tId); 
+            return t ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold border ${t.color}">${t.name}</span>` : ''; 
+          }).join('') + `</div>` 
+        : '';
+
+      // 3. МИНИАТЮРА ОБЛОЖКИ (Если есть картинка)
+      const imageHtml = card.image 
+        ? `<img src="${card.image}" loading="lazy" class="w-full h-32 object-cover rounded-2xl mb-4 border border-gray-100 dark:border-gray-800" />` 
+        : '';
+
+      // 4. ИКОНКИ СТАТИСТИКИ (Чеклисты и комментарии)
+      let checklistHtml = '';
+      if (card.checklist && card.checklist.length > 0) {
+        const done = card.checklist.filter(i => i.isCompleted).length;
+        const total = card.checklist.length;
+        checklistHtml = `<div class="flex items-center gap-1 ${done === total ? 'text-green-500' : 'text-gray-400'}"><i data-lucide="check-square" class="w-3.5 h-3.5"></i> ${done}/${total}</div>`;
+      }
+
+      let commentsHtml = '';
+      if (card.comments && card.comments.length > 0) {
+        commentsHtml = `<div class="flex items-center gap-1 text-gray-400"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${card.comments.length}</div>`;
+      }
+
+      const statsHtml = (checklistHtml || commentsHtml) 
+        ? `<div class="flex gap-3 text-[11px] font-bold mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">${checklistHtml}${commentsHtml}</div>`
+        : '';
+
+      const actionsHtml = isOwner 
+        ? `<div class="flex gap-2 border-t border-gray-100 dark:border-gray-800 pt-4 mt-4">
+            <button onclick="restoreCard('${card.id}', ${card.originColId})" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Вернуть на доску
+            </button>
+            <button onclick="permanentDelete('${card.id}')" class="px-3 py-2 bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors" title="Удалить навсегда">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>`
+        : `<div class="border-t border-gray-100 dark:border-gray-800 pt-4 mt-4 text-center">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-[11px] font-bold text-gray-400">
+              <i data-lucide="lock" class="w-3 h-3"></i> Действия доступны только владельцу
+            </span>
+          </div>`;
+
+      return `
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm relative group flex flex-col hover:border-amber-400 transition-colors">
+          <div class="flex justify-between items-start mb-3">
+            ${tagsHtml}
+            <div class="text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-md uppercase tracking-wider ml-auto whitespace-nowrap" title="Исходная колонка">
+              ${card.colName}
+            </div>
+          </div>
+          
+          ${imageHtml}
+          
+          <h3 class="font-bold text-lg mb-2 text-gray-900 dark:text-white line-clamp-2">${card.title}</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 leading-relaxed flex-1">${cleanDesc}</p>
+          
+          ${statsHtml}
+          ${actionsHtml}
+        </div>
+      `;
+    }).join('');
+    
+    lucide.createIcons();
+  }
+
+  // --- МАССОВОЕ УДАЛЕНИЕ (СЖЕЧЬ АРХИВ) ---
+  function burnArchive() {
+    openConfirmModal('Сжечь архив?', 'Вы уверены? Это действие навсегда удалит все заархивированные карточки из проекта.', 'Сжечь всё', true, () => {
+      const updatedColumns = currentBoardData.columns.map(col => {
+        // Оставляем только те карточки, которые НЕ в архиве
+        col.cards = (col.cards || []).filter(c => !c.archived);
+        return col;
+      });
+      updateBoardData({ columns: updatedColumns });
+      showSystemToast('Архив очищен', 'Все архивные задачи уничтожены навсегда.', 'flame', 'text-orange-500', 'bg-orange-50');
+    });
+  }
+
+  // --- ВОССТАНОВЛЕНИЕ С ЗАЩИТОЙ ОТ "СИРОТ" ---
+  function restoreCard(cardId, originColId) {
+    openConfirmModal('Вернуть на доску?', 'Карточка будет восстановлена для дальнейшей работы.', 'Восстановить', false, () => {
+      
+      let cardFoundAndRestored = false;
+      let targetCardData = null;
+
+      // 1. Проверяем, существует ли еще исходная колонка и восстанавливаем
+      let updatedColumns = currentBoardData.columns.map(col => {
+        if (col.id === originColId) {
+          col.cards = col.cards.map(c => {
+            if (c.id == cardId) {
+              c.archived = false;
+              cardFoundAndRestored = true;
+            }
+            return c;
+          });
+        } else {
+          // Если колонка не совпадает, но карточка почему-то здесь (защита от сбоев)
+          const found = (col.cards || []).find(c => c.id == cardId);
+          if (found) { targetCardData = found; }
+        }
+        return col;
+      });
+
+      // 2. Если исходная колонка была удалена, карточка становится "Осиротевшей"
+      if (!cardFoundAndRestored && targetCardData) {
+        // Проверяем, есть ли уже колонка "Восстановленные"
+        let recoveryCol = updatedColumns.find(c => c.name === "Восстановленные");
+        
+        targetCardData.archived = false; // Снимаем статус архива
+        
+        if (recoveryCol) {
+          recoveryCol.cards.push(targetCardData);
+        } else {
+          // Создаем колонку-спасатель
+          updatedColumns.push({
+            id: Date.now(),
+            name: "Восстановленные",
+            color: "amber",
+            cards: [targetCardData]
+          });
+        }
+        
+        // Удаляем сироту из старого (неизвестного) места
+        updatedColumns = updatedColumns.map(col => {
+          if (col.name !== "Восстановленные") {
+            col.cards = col.cards.filter(c => c.id != cardId);
+          }
+          return col;
+        });
+      }
+
+      updateBoardData({ columns: updatedColumns });
+      showSystemToast('Восстановлено', 'Карточка успешно возвращена на доску.', 'refresh-cw', 'text-green-500', 'bg-green-50');
+    });
+  }
+
+  function permanentDelete(cardId) {
+    openConfirmModal('Удалить навсегда?', 'Вы уверены? Карточка будет стерта из базы без возможности восстановления.', 'Удалить', true, () => {
+      const updatedColumns = currentBoardData.columns.map(col => {
+        col.cards = col.cards.filter(c => c.id != cardId);
+        return col;
+      });
+      updateBoardData({ columns: updatedColumns });
+      showSystemToast('Удалено', 'Карточка безвозвратно удалена.', 'trash-2', 'text-red-500', 'bg-red-50');
+    });
+  }
+
+  function updateBoardData(updates) {
+    if (isLocalBoard) {
+      const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+      if (localBoards[BOARD_ID]) {
+        localBoards[BOARD_ID] = { ...localBoards[BOARD_ID], ...updates };
+        currentBoardData = localBoards[BOARD_ID];
+        localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
+        renderArchive(); 
+      }
+    } else {
+      db.collection("boards").doc(BOARD_ID).update(updates);
+    }
+  }
+
+  // --- ЛОГИКА КАСТОМНЫХ ПОДТВЕРЖДЕНИЙ ---
+  let confirmCallback = null;
+
+  function openConfirmModal(title, desc, confirmText, isDanger, callback) {
+    document.getElementById('confirmTitle').innerText = title;
+    document.getElementById('confirmDesc').innerText = desc;
+    
+    const iconBg = document.getElementById('confirmIconBg');
+    const icon = document.getElementById('confirmIcon');
+    const btn = document.getElementById('confirmBtnAction');
+    
+    if (isDanger) {
+      iconBg.className = "mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm";
+      icon.setAttribute('data-lucide', 'trash-2');
+      btn.className = "flex-1 py-3.5 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg shadow-red-500/25 active:scale-95 transition-all";
+    } else {
+      iconBg.className = "mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm";
+      icon.setAttribute('data-lucide', 'refresh-cw');
+      btn.className = "flex-1 py-3.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all";
+    }
+    btn.innerText = confirmText;
+    lucide.createIcons();
+    confirmCallback = callback;
+    
+    const modal = document.getElementById('customConfirmModal');
+    const content = document.getElementById('confirmModalContent');
+    modal.classList.remove('hidden');
+    setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+  }
+
+  function closeConfirmModal() {
+    const modal = document.getElementById('customConfirmModal');
+    const content = document.getElementById('confirmModalContent');
+    modal.classList.add('opacity-0');
+    content.classList.remove('scale-100'); content.classList.add('scale-95');
+    setTimeout(() => { modal.classList.add('hidden'); confirmCallback = null; }, 300);
+  }
+
+  function executeConfirm() {
+    if (confirmCallback) confirmCallback();
+    closeConfirmModal();
+  }
+
+  let toastTimeout;
+  function showSystemToast(title, desc, iconName, iconColor, bgColor) {
+    const toast = document.getElementById('globalToast');
+    document.getElementById('toastTitle').innerText = title;
+    document.getElementById('toastDesc').innerText = desc;
+    
+    const iconEl = document.getElementById('toastIcon');
+    iconEl.setAttribute('data-lucide', iconName);
+    iconEl.className = `w-5 h-5 ${iconColor}`;
+    document.getElementById('toastIconBg').className = `p-2.5 rounded-full flex-shrink-0 ${bgColor}`;
+    lucide.createIcons();
+
+    toast.classList.remove('translate-y-24', 'opacity-0');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 5000);
+  }
+
+  window.addEventListener('click', (e) => {
+    if (e.target.id === 'customConfirmModal') closeConfirmModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && typeof closeConfirmModal === 'function') closeConfirmModal();
+  });
+</script>
+</body>
+</html>
