@@ -762,11 +762,57 @@ function closeCreateModal() { document.getElementById('createBoardModal').classL
 let userPlan = localStorage.getItem('blocko_user_plan') || 'free'; 
 
 // --- PRODUCTION БИЛЛИНГ И ПАРТНЕРСКИЕ НАЧИСЛЕНИЯ ---
+// --- ФРОНТЕНД БИЛЛИНГ И ПАРТНЕРСКИЕ НАЧИСЛЕНИЯ (БЕЗ СЕРВЕРА) ---
 async function upgradeTo(planId) {
   if (!currentUser) {
     closePricingModal();
     return showSystemToast('Ошибка', 'Пожалуйста, войдите в систему для оплаты.', 'lock', 'text-red-500', 'bg-red-50');
   }
+
+  const btnOgText = event.currentTarget.innerHTML;
+  event.currentTarget.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>';
+  lucide.createIcons();
+
+  showSystemToast('Оформление...', `Подключение к платежной системе...`, 'credit-card', 'text-blue-500', 'bg-blue-50');
+
+  // Имитация задержки оплаты
+  setTimeout(async () => {
+    try {
+      const planPrice = planId === 'pro' ? 19 : (planId === 'freelancer' ? 6 : 0);
+      const userRef = db.collection('users').doc(currentUser.id);
+      const userDoc = await userRef.get();
+      
+      if (userDoc.exists) {
+        const referredBy = userDoc.data().referredBy;
+        // Обновляем тариф самому пользователю
+        await userRef.update({ plan: planId });
+
+        // Начисляем 20% партнеру прямо из браузера
+        if (referredBy && planPrice > 0) {
+          const commission = Number((planPrice * 0.20).toFixed(2));
+          const affiliateRef = db.collection('affiliates').doc(referredBy);
+          await affiliateRef.set({
+            earned: firebase.firestore.FieldValue.increment(commission)
+          }, { merge: true });
+        }
+      }
+
+      userPlan = planId;
+      localStorage.setItem('blocko_user_plan', planId);
+      closePricingModal();
+      showSystemToast('Оплата успешна! 🎉', `Вы перешли на тариф ${planId.toUpperCase()}`, 'shield-check', 'text-green-500', 'bg-green-50');
+      
+      renderBoardsGrid();
+      if(typeof loadAffiliateStats === 'function') loadAffiliateStats();
+    } catch (error) {
+      console.error("Ошибка биллинга:", error);
+      showSystemToast('Сбой', 'Не удалось завершить транзакцию.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    } finally {
+      if(event && event.currentTarget) event.currentTarget.innerHTML = btnOgText;
+      lucide.createIcons();
+    }
+  }, 2000);
+}
 
   const btnOgText = event.currentTarget.innerHTML;
   event.currentTarget.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>';
