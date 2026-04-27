@@ -1143,29 +1143,28 @@ async function buyStoreItem(itemId, price) {
   const affRef = db.collection('affiliates').doc(currentUser.id);
   const userRef = db.collection('users').doc(currentUser.id);
   
-  const doc = await affRef.get();
-  const balance = doc.exists ? (doc.data().earnedCredits || 0) : 0;
-
-  if (balance < price) {
-    return showSystemToast('Недостаточно баллов', `Нужно еще ${price - balance} кр.`, 'alert-circle', 'text-amber-500', 'bg-amber-50');
-  }
-
   try {
+    const affDoc = await affRef.get();
+    const balance = affDoc.exists ? (affDoc.data().earnedCredits || 0) : 0;
+
+    if (balance < price) {
+      return showSystemToast('Недостаточно баллов', `Нужно еще ${price - balance} кр.`, 'alert-circle', 'text-amber-500', 'bg-amber-50');
+    }
+
     const batch = db.batch();
 
-    // 1. Списываем баллы у партнера
+    // Списываем баллы
     batch.update(affRef, { 
       earnedCredits: firebase.firestore.FieldValue.increment(-price) 
     });
 
-    // 2. ВЫДАЧА ТОВАРА: Если купили AI запросы, добавляем их в профиль пользователя
+    // ВЫДАЧА ТОВАРА
     if (itemId === 'extra_ai') {
-      batch.update(userRef, { 
+      // Испольуем set с merge, чтобы поле создалось автоматически, если его нет
+      batch.set(userRef, { 
         bonusAiLimit: firebase.firestore.FieldValue.increment(50) 
-      });
+      }, { merge: true });
     }
-
-    // Здесь можно добавить (if itemId === 'другой_id') для остальных товаров
 
     await batch.commit();
     
@@ -1173,11 +1172,11 @@ async function buyStoreItem(itemId, price) {
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
     }
 
-    showSystemToast('Куплено! 🚀', `Товар "${itemId}" активирован мгновенно.`, 'check-circle', 'text-green-500', 'bg-green-50');
+    showSystemToast('Куплено! 🚀', `Товар "${itemId}" активирован.`, 'check-circle', 'text-green-500', 'bg-green-50');
     loadAffiliateStats(); 
   } catch (e) {
     console.error("Ошибка активации:", e);
-    showSystemToast('Ошибка', 'Сбой при выдаче товара.', 'x-circle', 'text-red-500', 'bg-red-50');
+    showSystemToast('Ошибка', 'Не удалось связаться с базой данных.', 'x-circle', 'text-red-500', 'bg-red-50');
   }
 }
 </script>
