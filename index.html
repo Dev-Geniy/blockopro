@@ -294,8 +294,10 @@
         <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
           Профессиональная экосистема для управления проектами, объединяющая AI и Real-time технологии для команд.
         </p>
-        <div class="flex gap-3">
-          <a href="https://t.me/son_of_god_evgen" class="p-2.5 bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-blue-400 rounded-xl transition-all hover:scale-110 shadow-sm border border-transparent hover:border-blue-200/50"><i data-lucide="send" class="w-5 h-5"></i></a>
+        <div class="flex gap-3 mt-2">
+          <button id="installPwaBtn" class="hidden px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all items-center gap-2 text-sm border border-gray-800 dark:border-gray-200">
+            <i data-lucide="download-cloud" class="w-4 h-4"></i> Установить приложение
+          </button>
         </div>
       </div>
 
@@ -1705,6 +1707,60 @@ async function submitBoardPassword() {
     showSystemToast('Ошибка', 'Не удалось проверить пароль.', 'alert-triangle', 'text-red-500', 'bg-red-50');
   }
 }
+
+// ==========================================
+// ЛОГИКА УСТАНОВКИ PWA (ПРИЛОЖЕНИЯ)
+// ==========================================
+let deferredPrompt;
+const installBtn = document.getElementById('installPwaBtn');
+
+// Регистрируем минимальный Service Worker (ОБЯЗАТЕЛЬНО для установки PWA)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW error:', err));
+  });
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Отменяем стандартное уродливое всплывающее окно браузера
+  e.preventDefault();
+  // Сохраняем событие, чтобы вызвать его по клику на нашу кнопку
+  deferredPrompt = e;
+  // Показываем нашу премиальную кнопку в футере
+  if (installBtn) {
+    installBtn.classList.remove('hidden');
+    installBtn.classList.add('flex');
+  }
+});
+
+if (installBtn) {
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      // Показываем системное окно установки
+      deferredPrompt.prompt();
+      // Ждем ответа пользователя
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('Пользователь установил PWA');
+      }
+      // Очищаем событие (оно одноразовое)
+      deferredPrompt = null;
+      // Прячем кнопку
+      installBtn.classList.add('hidden');
+      installBtn.classList.remove('flex');
+    }
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  // Вызывается, когда приложение успешно установилось
+  if (installBtn) {
+    installBtn.classList.add('hidden');
+    installBtn.classList.remove('flex');
+  }
+  deferredPrompt = null;
+  showSystemToast('Готово! 🎉', 'Blocko Pro успешно установлено на ваше устройство.', 'smartphone', 'text-green-500', 'bg-green-50');
+});
 </script>
 </body>
 </html>
