@@ -1556,29 +1556,49 @@ function closePlanDetails() {
   }, 300);
 }
 
-// --- ЛОГИКА ДОСТУПА ПО ПАРОЛЮ ---
+// --- ОБНОВЛЕННАЯ ЛОГИКА ДОСТУПА ПО ПАРОЛЮ ---
 let pendingBoardId = null;
 
 function tryEnterBoard(id, hasPassword) {
   const sessionKey = 'blocko_auth_' + id;
+  const isLocal = id.startsWith('local_');
   
-  // Если пароля нет ИЛИ он уже был введен успешно в этой сессии
-  if (!hasPassword || sessionStorage.getItem(sessionKey)) {
-    window.location.href = `board.html?b=${id}`;
-  } else {
-    // Показываем модалку ввода пароля
-    pendingBoardId = id;
-    const modal = document.getElementById('passwordEntryModal');
-    const content = document.getElementById('passwordEntryContent');
-    document.getElementById('boardEntryPassword').value = '';
-    modal.classList.remove('hidden');
-    setTimeout(() => {
-      modal.classList.remove('opacity-0');
-      content.classList.remove('scale-95');
-      content.classList.add('scale-100');
-      document.getElementById('boardEntryPassword').focus();
-    }, 10);
+  // 1. Проверяем, является ли пользователь владельцем (только для онлайн досок)
+  let isOwner = false;
+  if (!isLocal) {
+    const board = onlineBoards.find(b => b.id === id);
+    if (board && board.owner === currentUser.id) isOwner = true;
   }
+
+  // 2. УСЛОВИЕ: Владелец ОНЛАЙН доски заходит без пароля всегда [cite: 141, 143]
+  if (!isLocal && isOwner) {
+    window.location.href = `board.html?b=${id}`;
+    return;
+  }
+
+  // 3. УСЛОВИЕ: Если пароля нет вообще - входим сразу [cite: 165]
+  if (!hasPassword) {
+    window.location.href = `board.html?b=${id}`;
+    return;
+  }
+
+  // 4. ТРЕБОВАНИЕ: "Каждый раз" — сбрасываем старую сессию перед входом [cite: 153]
+  // Это заставит вводить пароль снова, даже если пользователь только что вышел из этой доски
+  sessionStorage.removeItem(sessionKey);
+
+  // 5. Показываем окно ввода
+  pendingBoardId = id;
+  const modal = document.getElementById('passwordEntryModal');
+  const content = document.getElementById('passwordEntryContent');
+  document.getElementById('boardEntryPassword').value = '';
+  
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    modal.classList.remove('opacity-0');
+    content.classList.remove('scale-95');
+    content.classList.add('scale-100');
+    document.getElementById('boardEntryPassword').focus();
+  }, 10);
 }
 
 function closePasswordPrompt() {
