@@ -1148,14 +1148,18 @@ async function buyStoreItem(itemId, price) {
     return showSystemToast('Недостаточно баллов', `Нужно еще ${price - balance} кр. Приглашайте друзей!`, 'alert-circle', 'text-amber-500', 'bg-amber-50');
   }
 
-  // Списываем баллы
   try {
     await affRef.update({ 
       earnedCredits: firebase.firestore.FieldValue.increment(-price) 
     });
     
-    showSystemToast('Успешная покупка!', `Услуга "${itemId}" активирована.`, 'check-circle', 'text-green-500', 'bg-green-50');
-    loadAffiliateStats(); // Сразу обновляем баланс на экране
+    // Праздничный эффект
+    if (typeof confetti === 'function') {
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
+    }
+
+    showSystemToast('Успешная покупка! 🎉', `Услуга "${itemId}" будет активирована в ближайшее время.`, 'check-circle', 'text-green-500', 'bg-green-50');
+    loadAffiliateStats(); 
   } catch (e) {
     console.error("Ошибка покупки:", e);
     showSystemToast('Ошибка', 'Не удалось провести списание.', 'x-circle', 'text-red-500', 'bg-red-50');
