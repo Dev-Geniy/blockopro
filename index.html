@@ -433,13 +433,16 @@
       <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-6 rounded-3xl text-center">
         <i data-lucide="users" class="w-6 h-6 text-blue-500 mx-auto mb-2"></i>
         <div class="text-3xl font-black text-gray-900 dark:text-white mb-1" id="statSignups">0</div>
-        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Регистраций</div>
+        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Друзей пришло</div>
       </div>
-      <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-6 rounded-3xl text-center">
-        <i data-lucide="credit-card" class="w-6 h-6 text-emerald-500 mx-auto mb-2"></i>
-        <div class="text-3xl font-black text-gray-900 dark:text-white mb-1" id="statEarned">$0</div>
-        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Заработано</div>
+      
+      <div class="bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-200 dark:border-indigo-500/30 p-6 rounded-3xl text-center relative overflow-hidden group">
+        <i data-lucide="gem" class="w-6 h-6 text-indigo-500 mx-auto mb-2 group-hover:scale-125 transition-transform"></i>
+        <div class="text-3xl font-black text-indigo-600 dark:text-indigo-400 mb-1" id="statEarned">0 кр.</div>
+        <div class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Мой баланс</div>
+        <button onclick="closeAffiliateModal(); openPricingModal();" class="mt-3 text-[10px] bg-indigo-600 text-white px-3 py-1.5 rounded-full font-bold hover:bg-indigo-500 transition-colors">Потратить на Premium</button>
       </div>
+
       <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-6 rounded-3xl text-center flex flex-col justify-center">
         <div class="flex justify-between items-end mb-2">
           <span class="text-xs font-bold text-gray-500">Цель: Pro Статус</span>
@@ -448,7 +451,7 @@
         <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
           <div id="affiliateProgressBar" class="bg-indigo-500 h-full transition-all duration-1000" style="width: 0%"></div>
         </div>
-        <div class="text-[10px] text-gray-400" id="affiliateRewardText">Осталось пригласить пользователей</div>
+        <div class="text-[10px] text-gray-400" id="affiliateRewardText">Пригласите 10 друзей для Pro</div>
       </div>
     </div>
 
@@ -584,34 +587,33 @@ async function loadAffiliateStats() {
   if (!currentUser) return;
   try {
     const doc = await db.collection('affiliates').doc(currentUser.id).get();
-    const data = doc.exists ? doc.data() : { signups: 0, earned: 0 };
+    // По умолчанию ставим 0, если данных в базе еще нет
+    const data = doc.exists ? doc.data() : { signups: 0, earnedCredits: 0 };
     
     const signups = data.signups || 0;
-    const earned = data.earned || 0;
+    const credits = data.earnedCredits || 0;
     
+    // Обновляем текст в твоих новых блоках
     document.getElementById('statSignups').innerText = signups;
-    document.getElementById('statEarned').innerText = '$' + earned;
+    document.getElementById('statEarned').innerText = credits + ' кр.';
     
-    // Считаем прогресс до Pro-статуса
+    // Считаем прогресс до цели (10 человек)
     const progress = Math.min((signups / 10) * 100, 100);
     document.getElementById('affiliateProgressText').innerText = `${signups}/10`;
     document.getElementById('affiliateProgressBar').style.width = `${progress}%`;
     
     const rewardText = document.getElementById('affiliateRewardText');
     if (signups >= 10) {
-       rewardText.innerText = 'Вы выполнили цель! Ваш аккаунт улучшен до Pro 🎉';
+       rewardText.innerText = 'Цель достигнута! Доступен Pro статус 🎉';
        rewardText.classList.replace('text-gray-400', 'text-emerald-500');
        rewardText.classList.add('font-bold');
     } else {
-       rewardText.innerText = `Осталось пригласить: ${10 - signups} чел.`;
-       rewardText.classList.replace('text-emerald-500', 'text-gray-400');
-       rewardText.classList.remove('font-bold');
+       rewardText.innerText = `Пригласите еще ${10 - signups} чел. для бонуса`;
     }
   } catch (e) {
-    console.error("Ошибка загрузки статистики аффилейта:", e);
+    console.error("Ошибка обновления UI партнерки:", e);
   }
 }
-// ----------------- конец логики партнерки -----------------
   
 function logout() { auth.signOut(); }
 
@@ -764,52 +766,51 @@ let userPlan = localStorage.getItem('blocko_user_plan') || 'free';
 async function upgradeTo(planId) {
   if (!currentUser) {
     closePricingModal();
-    return showSystemToast('Ошибка', 'Пожалуйста, войдите в систему для оплаты.', 'lock', 'text-red-500', 'bg-red-50');
+    return showSystemToast('Ошибка', 'Войдите в систему.', 'lock', 'text-red-500', 'bg-red-50');
   }
 
-  const btnOgText = event.currentTarget.innerHTML;
-  event.currentTarget.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>';
-  lucide.createIcons();
+  const plan = Object.values(PLANS).find(p => p.id === planId);
+  const price = plan.priceCredits;
 
-  showSystemToast('Оформление...', `Подключение к платежной системе...`, 'credit-card', 'text-blue-500', 'bg-blue-50');
+  // 1. Получаем данные аффилейта (баланс)
+  const affRef = db.collection('affiliates').doc(currentUser.id);
+  const affDoc = await affRef.get();
+  const currentBalance = affDoc.exists ? (affDoc.data().earnedCredits || 0) : 0;
 
-  // Имитация задержки оплаты
-  setTimeout(async () => {
-    try {
-      const planPrice = planId === 'pro' ? 19 : (planId === 'freelancer' ? 6 : 0);
-      const userRef = db.collection('users').doc(currentUser.id);
-      const userDoc = await userRef.get();
-      
-      if (userDoc.exists) {
-        const referredBy = userDoc.data().referredBy;
-        // Обновляем тариф самому пользователю
-        await userRef.update({ plan: planId });
+  if (currentBalance < price) {
+    return showSystemToast(
+      'Недостаточно средств', 
+      `Нужно ${price} кр., у вас ${currentBalance} кр. Приглашайте друзей!`, 
+      'alert-circle', 'text-amber-500', 'bg-amber-50'
+    );
+  }
 
-        // Начисляем 20% партнеру прямо из браузера
-        if (referredBy && planPrice > 0) {
-          const commission = Number((planPrice * 0.20).toFixed(2));
-          const affiliateRef = db.collection('affiliates').doc(referredBy);
-          await affiliateRef.set({
-            earned: firebase.firestore.FieldValue.increment(commission)
-          }, { merge: true });
-        }
-      }
+  // 2. Списание баллов и обновление тарифа (Атомарно)
+  try {
+    const batch = db.batch();
+    
+    // Снимаем кредиты
+    batch.set(affRef, { 
+      earnedCredits: firebase.firestore.FieldValue.increment(-price) 
+    }, { merge: true });
 
-      userPlan = planId;
-      localStorage.setItem('blocko_user_plan', planId);
-      closePricingModal();
-      showSystemToast('Оплата успешна! 🎉', `Вы перешли на тариф ${planId.toUpperCase()}`, 'shield-check', 'text-green-500', 'bg-green-50');
-      
-      renderBoardsGrid();
-      if(typeof loadAffiliateStats === 'function') loadAffiliateStats();
-    } catch (error) {
-      console.error("Ошибка биллинга:", error);
-      showSystemToast('Сбой', 'Не удалось завершить транзакцию.', 'alert-circle', 'text-red-500', 'bg-red-50');
-    } finally {
-      if(event && event.currentTarget) event.currentTarget.innerHTML = btnOgText;
-      lucide.createIcons();
-    }
-  }, 2000);
+    // Обновляем план пользователя
+    const userRef = db.collection('users').doc(currentUser.id);
+    batch.update(userRef, { plan: planId });
+
+    await batch.commit();
+
+    userPlan = planId;
+    localStorage.setItem('blocko_user_plan', planId);
+    closePricingModal();
+    showSystemToast('Поздравляем! 🎉', `Вы успешно активировали ${planId.toUpperCase()}`, 'shield-check', 'text-green-500', 'bg-green-50');
+    renderBoardsGrid();
+    loadAffiliateStats(); // Обновить цифры в модалке партнерки
+
+  } catch (error) {
+    console.error("Ошибка активации:", error);
+    showSystemToast('Сбой', 'Не удалось провести оплату.', 'alert-circle', 'text-red-500', 'bg-red-50');
+  }
 }
 
 // Открытие модалки тарифов
