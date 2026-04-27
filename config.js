@@ -43,6 +43,12 @@ const ADDONS = {
   CUSTOM_THEME: { id: 'addon_theme', name: 'Premium обои', price: 100 }
 };
 
+// Разовые услуги Blocko Pro
+const BLOCKO_STORE = [
+  { id: 'extra_ai', name: '+50 запросов AI', price: 250, icon: 'sparkles' },
+  { id: 'custom_bg', name: 'Premium обои (1 шт)', price: 150, icon: 'image' },
+  { id: 'vip_badge', name: 'Статус Амбассадора', price: 1000, icon: 'award' }
+];
 // ==========================================
 // 5. ДИЗАЙН-СИСТЕМА
 // ==========================================
