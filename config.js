@@ -29,12 +29,18 @@ const IMGBB_KEY = "22de10db6eb1f3ec3fca012dcc566961";
 const AI_ENDPOINT = "https://text.pollinations.ai/";
 
 // ==========================================
-// 4. БИЗНЕС-ЛОГИКА И ТАРИФЫ (Roadmap 2026)
+// 4. БИЗНЕС-ЛОГИКА И ТАРИФЫ (Курс: $1 = 100 credits)
 // ==========================================
 const PLANS = {
-  FREE: { id: 'free', boardsLimit: 1, aiLimit: 3 },
-  FREELANCER: { id: 'freelancer', boardsLimit: 10, aiLimit: 15 },
-  COMPANY: { id: 'pro', boardsLimit: 999, aiLimit: 999 }
+  FREE: { id: 'free', boardsLimit: 1, aiLimit: 3, priceCredits: 0 },
+  FREELANCER: { id: 'freelancer', boardsLimit: 10, aiLimit: 15, priceCredits: 600 },
+  COMPANY: { id: 'pro', boardsLimit: 999, aiLimit: 999, priceCredits: 1900 }
+};
+
+// Дополнительные платные услуги
+const ADDONS = {
+  AI_PACK: { id: 'addon_ai', name: '+50 AI запросов', price: 200 },
+  CUSTOM_THEME: { id: 'addon_theme', name: 'Premium обои', price: 100 }
 };
 
 // ==========================================
