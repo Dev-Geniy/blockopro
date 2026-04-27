@@ -31,7 +31,6 @@ const AI_ENDPOINT = "https://text.pollinations.ai/";
 // ==========================================
 // 4. БИЗНЕС-ЛОГИКА И ЭКОНОМИКА (1$ = 1$ бонусный)
 // ==========================================
-
 const PLANS = {
   FREE: { id: 'free', boardsLimit: 1, aiLimit: 3, price: 0 },
   FREELANCER: { id: 'freelancer', boardsLimit: 10, aiLimit: 15, price: 6 },
@@ -70,7 +69,7 @@ const BLOCKO_STORE = [
     price: 20, 
     desc: 'Ссылка-подарок на 20$ бонусных', 
     icon: 'gift', 
-    canPayWithBonus: false // Только реальные $
+    canPayWithBonus: false 
   },
   { 
     id: 'gift_100', 
@@ -98,12 +97,6 @@ const USER_STATUSES = {
   AMBASSADOR: { id: 'ambassador', label: 'Амбассадор', minRefs: 50, minPaid: 10, color: 'rainbow', badge: 'crown' }
 };
 
-// Разовые услуги Blocko Pro
-const BLOCKO_STORE = [
-  { id: 'extra_ai', name: '+50 запросов AI', price: 250, icon: 'sparkles' },
-  { id: 'custom_bg', name: 'Premium обои (1 шт)', price: 150, icon: 'image' },
-  { id: 'vip_badge', name: 'Статус Амбассадора', price: 1000, icon: 'award' }
-];
 // ==========================================
 // 5. ДИЗАЙН-СИСТЕМА
 // ==========================================
