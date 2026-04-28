@@ -2216,31 +2216,41 @@ function savePoll() {
   closePollConstructor();
 }
 
+// Оптимизированная логика голосования: предотвращает дублирование голосов и баги обновления массива
 function votePoll(colId, cardId, optionIndex) {
-  if (!currentUser) return;
-  const col = columns.find(c => c.id == colId);
-  const poll = col.cards.find(c => c.id == cardId);
-  if (!poll || poll.type !== 'poll') return;
-
+  if (!currentUser || !currentUser.id) return;
+  
+  let voted = false;
   const uid = currentUser.id;
 
-  // Ищем, голосовал ли уже пользователь за любой другой вариант
-  const prevVoteIndex = poll.options.findIndex(opt => opt.votes.includes(uid));
-
-  // Если нажал на тот же вариант — забираем голос
-  if (prevVoteIndex === optionIndex) {
-    poll.options[optionIndex].votes = poll.options[optionIndex].votes.filter(id => id !== uid);
-  } else {
-    // Если голосовал за другой — удаляем голос оттуда
-    if (prevVoteIndex !== -1) {
-      poll.options[prevVoteIndex].votes = poll.options[prevVoteIndex].votes.filter(id => id !== uid);
+  columns = columns.map(col => {
+    if (col.id == colId) {
+      const updatedCards = col.cards.map(card => {
+        if (card.id == cardId && card.type === 'poll') {
+          // Чистим все старые голоса пользователя в этом опросе
+          card.options = card.options.map((opt, idx) => {
+            const cleanVotes = (opt.votes || []).filter(v => v !== uid);
+            // Если это выбранный индекс, и пользователь там раньше не был — добавляем
+            if (idx === optionIndex) {
+              const wasAlreadyVoted = opt.votes && opt.votes.includes(uid);
+              if (!wasAlreadyVoted) {
+                cleanVotes.push(uid);
+                voted = true;
+              }
+            }
+            return { ...opt, votes: cleanVotes };
+          });
+        }
+        return card;
+      });
+      return { ...col, cards: updatedCards };
     }
-    // Добавляем голос в новый вариант
-    poll.options[optionIndex].votes.push(uid);
-    fireConfetti(); // Маленькая радость при голосовании
-  }
+    return col;
+  });
 
+  if (voted) fireConfetti();
   persist();
+  render(); // Обновляем прогресс-бары в реальном времени
 }
 
 // Прямое удаление опроса (минуя модалку редактирования)
@@ -2285,14 +2295,21 @@ function toggleAudioPlayer(btn, audioSrc) {
   lucide.createIcons();
 }
 
-// Прямое удаление контента (опрос или заметка)
-function deleteCardDirectly(colId, cardId, typeLabel = 'опрос') {
-  openConfirmModal(`Удалить ${typeLabel}?`, 'Это действие нельзя отменить.', 'Удалить', true, () => {
-    columns = columns.map(col => { 
-      if(col.id == colId) col.cards = col.cards.filter(c => c.id != cardId); 
-      return col; 
-    }); 
-    persist(); 
+// Исправленная функция: теперь корректно обрабатывает типы данных (число/строка) и принудительно перерисовывает UI
+function deleteCardDirectly(colId, cardId, typeLabel = 'контент') {
+  openConfirmModal(`Удалить ${typeLabel}?`, 'Это действие нельзя отменить, данные будут стерты из облака.', 'Удалить навсегда', true, () => {
+    columns = columns.map(col => {
+      // Используем нестрогое сравнение == так как ID могут приходить как string из DOM
+      if (col.id == colId) {
+        const filteredCards = (col.cards || []).filter(c => c.id != cardId);
+        return { ...col, cards: filteredCards };
+      }
+      return col;
+    });
+    
+    persist();
+    render(); // Принудительный рендер для мгновенного визуального обновления
+    showSystemToast('Удалено', 'Объект успешно удален из проекта.', 'trash-2', 'text-red-500', 'bg-red-50');
   });
 }
 
