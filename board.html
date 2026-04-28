@@ -1524,13 +1524,13 @@ function render() {
       const hasDesc = c.description ? `<i data-lucide="align-left" class="w-3.5 h-3.5 text-gray-400"></i>` : '';
 
       return `
-        <div data-id="${c.id}" onclick="openViewModal(${col.id}, ${c.id})" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all group relative select-none">
+        <div data-id="${c.id}" onclick="openViewModal(${col.id}, ${c.id})" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none">
           ${isViewer ? '' : `<button onclick="openEditModal(${col.id}, ${c.id}); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>`}
           ${c.image ? `<img src="${c.image}" loading="lazy" class="mb-3 rounded-lg w-full h-32 object-cover border dark:border-gray-700/50 pointer-events-none" />` : ''}
           ${tagsHtml}
-          <div class="font-bold text-sm leading-snug pr-8 mb-3 text-gray-900 dark:text-white">${displayTitle}</div>
+          <div class="font-bold text-sm leading-tight pr-8 mb-3 text-gray-900 dark:text-white">${displayTitle}</div>
           ${checklistHtml}
-          <div class="flex justify-between items-end mt-3">
+          <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50">
             <div class="flex gap-2 items-center text-gray-400">${dueDateHtml}${hasDesc}${commentsCount}</div>
             ${authorAvatar}
           </div>
