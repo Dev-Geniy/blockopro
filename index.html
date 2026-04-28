@@ -996,12 +996,11 @@ grid.innerHTML = filtered.map(data => {
     const isLocal = data.id && data.id.startsWith('local_');
     const isOwner = data.owner === currentUser.id;
     const hasPassword = !!data.password; 
-    // Получаем данные владельца (включая badgeConfig)
-    const ownerData = data.users && data.users[data.owner] ? data.users[data.owner] : { name: 'User' };
-    // Генерируем аватар через общую функцию
-    const ownerAvatarHtml = renderUserAvatar(ownerData, "w-10 h-10");
+    
+    // ИСПРАВЛЕНО: Вернули правильную переменную ownerInfo
+    const ownerInfo = data.users && data.users[data.owner] ? data.users[data.owner] : { name: 'Владелец', avatar: generateAvatarById(data.owner || 'U') };
+    const ownerAvatarHtml = renderUserAvatar(ownerInfo, "w-9 h-9");
   
-    // --- ДИНАМИЧЕСКИЕ КНОПКИ ДЕЙСТВИЙ (ОБНОВЛЕНО ДЛЯ БЭКАПОВ) ---
     let actionButtons = '';
     if (isLocal) {
       actionButtons = `
@@ -1045,7 +1044,7 @@ grid.innerHTML = filtered.map(data => {
 
       <h3 class="text-2xl font-extrabold mb-4 text-gray-900 dark:text-white line-clamp-1 group-hover:text-blue-600 transition-colors tracking-tight relative z-10">${data.title || 'Без названия'}</h3>
       <div class="flex items-center gap-3 mb-8 bg-gray-50/50 dark:bg-gray-800/30 p-3 rounded-2xl border border-gray-100 dark:border-gray-700/50 relative z-10 group-hover:bg-white dark:group-hover:bg-gray-800 transition-colors">
-         <img src="${ownerInfo.avatar}" class="w-9 h-9 rounded-full border-2 border-white dark:border-gray-700 shadow-sm">
+         ${ownerAvatarHtml}
          <div class="flex flex-col">
            <span class="text-[9px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none mb-1">Владелец</span>
            <span class="text-sm font-bold text-gray-700 dark:text-gray-200 leading-tight">${ownerInfo.name}</span>
@@ -1054,8 +1053,11 @@ grid.innerHTML = filtered.map(data => {
       <div class="flex items-center justify-between mt-auto pt-6 border-t border-gray-100 dark:border-gray-800/50 relative z-10">
         <div class="flex gap-2">${actionButtons}</div>
         <div class="flex -space-x-3 hover:space-x-1 transition-all duration-300">
-           ${isLocal ? `<img src="${currentUser.avatar}" class="w-9 h-9 rounded-full border-2 border-white dark:border-gray-900 shadow-sm" />` : 
-             (data.members || []).slice(0,4).map(uid => `<img src="${generateAvatarById(uid)}" class="w-9 h-9 rounded-full border-2 border-white dark:border-gray-900 shadow-sm hover:z-10 transition-transform hover:scale-110" />`).join('')
+           ${isLocal ? renderUserAvatar(currentUser, "w-9 h-9") : 
+             (data.members || []).slice(0,4).map(uid => {
+               const uInfo = data.users && data.users[uid] ? data.users[uid] : { name: 'User', avatar: generateAvatarById(uid) };
+               return renderUserAvatar(uInfo, "w-9 h-9 hover:z-10 transition-transform hover:scale-110");
+             }).join('')
            }
         </div>
       </div>
