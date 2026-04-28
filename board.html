@@ -1151,18 +1151,84 @@ function toggleModal(modalId, show) {
 }
 
 function openViewModal(colId, cardId) {
-  const col = columns.find(c => c.id === colId); viewingCard = col.cards.find(c => c.id === cardId); currentColumn = colId;
-  document.getElementById('viewTitle').innerText = viewingCard.title;
-  document.getElementById('viewDescription').innerHTML = viewingCard.description ? marked.parse(viewingCard.description) : '<span class="text-gray-400 italic">Описание отсутствует</span>';
-  const author = viewingCard.author || { name: 'Аноним', avatar: '' };
-  document.getElementById('viewAuthorName').innerText = author.name; document.getElementById('viewAuthorAvatar').src = author.avatar;
-  document.getElementById('viewTags').innerHTML = (viewingCard.tags || []).map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<span class="px-3 py-1 rounded border text-xs font-bold ${t.color}">${t.name}</span>` : ''; }).join('');
-  const imgEl = document.getElementById('viewImage'); 
-  if(viewingCard.image) { imgEl.src = viewingCard.image; imgEl.classList.remove('hidden'); } else imgEl.classList.add('hidden');
-  renderChecklistView(); 
-  if(!isLocalBoard) renderCommentsView();
-  toggleModal('viewCardModal', true);
+  const col = columns.find(c => c.id == colId);
+  const card = col.cards.find(c => c.id == cardId);
+  if (!card) return;
+
+  activeCard = { colId, cardId };
+  
+  // 1. Заголовок и описание
+  document.getElementById('viewModalTitle').innerText = card.title;
+  document.getElementById('viewModalDesc').innerHTML = card.description 
+    ? marked.parse(card.description) 
+    : '<span class="text-gray-400 italic">Описание отсутствует</span>';
+
+  // 2. Специфический контент (Опросы или Аудио)
+  const specialArea = document.getElementById('viewModalSpecialContent') || (()=>{
+    const div = document.createElement('div');
+    div.id = 'viewModalSpecialContent';
+    document.getElementById('viewModalDesc').after(div);
+    return div;
+  })();
+  
+  specialArea.innerHTML = '';
+  if (card.type === 'poll') {
+    specialArea.innerHTML = `<div class="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-2xl border border-purple-100 dark:border-purple-800">
+      <h4 class="text-xs font-black uppercase text-purple-500 mb-3">Результаты опроса</h4>
+      <div id="modalPollResults"></div>
+      <button onclick="openPollStatsModal('${colId}', '${cardId}')" class="mt-2 text-[10px] font-bold text-purple-600 underline">Детальная статистика участников</button>
+    </div>`;
+    renderPollInModal(card, colId);
+  } else if (card.type === 'audio') {
+    specialArea.innerHTML = `<div class="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800 flex items-center gap-4">
+       <button onclick="toggleAudioPlayback('${card.id}', '${card.audioData}')" class="w-12 h-12 bg-emerald-500 text-white rounded-full flex items-center justify-center"><i data-lucide="play" class="fill-current"></i></button>
+       <span class="text-sm font-bold text-emerald-700 dark:text-emerald-400">Голосовая заметка</span>
+    </div>`;
+  }
+
+  // 3. Кнопки управления в футере модалки
+  const actionArea = document.getElementById('viewModalActions');
+  actionArea.innerHTML = `
+    <div class="flex gap-2 w-full">
+      <button onclick="archiveCardFromModal()" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-amber-50 hover:text-amber-600 transition-colors">
+        <i data-lucide="archive" class="w-4 h-4"></i> В архив
+      </button>
+      <button onclick="deleteCardFromModal()" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-red-50 hover:text-red-600 transition-colors">
+        <i data-lucide="trash-2" class="w-4 h-4"></i> Удалить
+      </button>
+      <button onclick="openEditModal(${colId}, ${cardId})" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20">
+        <i data-lucide="pencil" class="w-4 h-4"></i> Изменить
+      </button>
+    </div>
+  `;
+
+  // 4. Комментарии и вложения (уже должны работать для всех объектов)
+  renderComments();
+  renderAttachments();
+  
+  // Показ модалки
+  const modal = document.getElementById('viewModal');
+  const content = document.getElementById('viewModalContent');
+  modal.classList.remove('hidden');
+  setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.add('scale-100'); }, 10);
+  lucide.createIcons();
 }
+
+// Вспомогательная функция для рендера опроса в модалке
+function renderPollInModal(card, colId) {
+  const container = document.getElementById('modalPollResults');
+  const totalVotes = card.options.reduce((sum, o) => sum + o.votes.length, 0);
+  container.innerHTML = card.options.map((opt, i) => {
+    const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
+    return `<div class="mb-2">
+      <div class="flex justify-between text-[10px] font-bold mb-1"><span>${opt.text}</span><span>${percent}%</span></div>
+      <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div class="bg-purple-500 h-full" style="width: ${percent}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+  
 function closeViewModal() { toggleModal('viewCardModal', false); }
 
 function renderCommentsView() {
@@ -1216,16 +1282,58 @@ function openEditModal(colId, cardId = null) {
   pendingImageFile = null;
   activeChecklist = editingCard && editingCard.checklist ? [...editingCard.checklist] : [];
   
+  // Базовые поля
   document.getElementById('editTitle').value = editingCard?.title || ''; 
   document.getElementById('editDescription').value = editingCard?.description || '';
   document.getElementById('editDueDate').value = editingCard?.dueDate || '';
   document.getElementById('uploadStatus').innerText = ''; 
+  
   const preview = document.getElementById('editImagePreview');
+  const descContainer = document.getElementById('editDescription').parentElement;
+  const imageContainer = document.getElementById('editImagePreview').parentElement.parentElement; // Контейнер дропзоны
+  const checklistContainer = document.querySelector('.checklist-edit-area')?.parentElement || null;
+  
+  // Определяем тип и меняем заголовок модалки
+  const modalHeader = document.querySelector('#editCardModal h3');
+  
+  if (editingCard?.type === 'poll') {
+    if(modalHeader) modalHeader.innerText = 'Настройки опроса';
+    descContainer.classList.add('hidden');
+    imageContainer.classList.add('hidden');
+    if(checklistContainer) checklistContainer.classList.add('hidden');
+  } else if (editingCard?.type === 'audio') {
+    if(modalHeader) modalHeader.innerText = 'Настройки аудио';
+    descContainer.classList.add('hidden');
+    imageContainer.classList.add('hidden');
+    if(checklistContainer) checklistContainer.classList.add('hidden');
+  } else {
+    if(modalHeader) modalHeader.innerText = editingCard ? 'Редактировать задачу' : 'Новая задача';
+    descContainer.classList.remove('hidden');
+    imageContainer.classList.remove('hidden');
+    if(checklistContainer) checklistContainer.classList.remove('hidden');
+  }
 
-  if (editingCard?.image) { preview.src = editingCard.image; preview.classList.remove('hidden'); document.getElementById('dropzoneText').classList.add('opacity-0'); } 
-  else { preview.classList.add('hidden'); document.getElementById('dropzoneText').classList.remove('opacity-0'); }
-  renderTagsPicker(); renderChecklistEdit(); toggleModal('editCardModal', true);
+  // Обработка превью картинки (только для обычных задач)
+  if (editingCard?.image && editingCard.type !== 'poll' && editingCard.type !== 'audio') { 
+    preview.src = editingCard.image; 
+    preview.classList.remove('hidden'); 
+    document.getElementById('dropzoneText')?.classList.add('opacity-0'); 
+  } else { 
+    preview.classList.add('hidden'); 
+    document.getElementById('dropzoneText')?.classList.remove('opacity-0'); 
+  }
+
+  renderTagsPicker(); 
+  renderChecklistEdit(); 
+  toggleModal('editCardModal', true);
+  
+  // Если открыли из View Modal, закрываем его
+  const viewModal = document.getElementById('viewModal');
+  if(!viewModal.classList.contains('hidden')) {
+    closeViewModal();
+  }
 }
+  
 function closeEditModal() { toggleModal('editCardModal', false); }
 
 const dropzone = document.getElementById('dropzoneLabel');
@@ -1472,11 +1580,12 @@ function render() {
         footerLeft = `<div class="flex gap-2 items-center">${dueDateHtml}${hasDesc}${commentsCount}</div>`;
       }
 
-      // --- 4. СБОРКА УНИВЕРСАЛЬНОЙ КАРТОЧКИ ---
-      const onClickAction = c.type === 'poll' ? `openPollStatsModal('${col.id}', '${c.id}')` : `openViewModal('${col.id}', '${c.id}')`;
+// --- 4. СБОРКА УНИВЕРСАЛЬНОЙ КАРТОЧКИ ---
+      // Теперь любая карточка открывает единое окно просмотра
+      const onClickAction = `openViewModal('${col.id}', '${c.id}')`;
 
       return `
-        <div data-id="${c.id}" onclick="${onClickAction}" class="card-item ${overdueClass} bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:border-${theme.color}-400 dark:hover:border-${theme.color}-500 p-4 rounded-2xl shadow-sm ${isViewer ? 'cursor-pointer' : 'cursor-grab'} select-none relative group transition-colors">
+         <div data-id="${c.id}" onclick="${onClickAction}" class="card-item ${overdueClass} bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:border-${theme.color}-400 dark:hover:border-${theme.color}-500 p-4 rounded-2xl shadow-sm ${isViewer ? 'cursor-pointer' : 'cursor-grab'} select-none relative group transition-colors">
           ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}'); event.stopPropagation();" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
           
           <div class="flex items-center gap-2 mb-3">
@@ -2188,6 +2297,37 @@ function updateAudioIconUI(cardId, state) {
       : '<i data-lucide="pause" class="w-4 h-4 fill-current"></i>';
     lucide.createIcons();
   }
+}
+
+function archiveCardFromModal() {
+  if (!activeCard) return;
+  const { colId, cardId } = activeCard;
+  openConfirmModal('В архив?', 'Карточка будет скрыта, но доступна в архиве.', 'Архивировать', false, () => {
+    columns = columns.map(col => {
+      if (col.id == colId) {
+        col.cards = col.cards.map(c => {
+          if (c.id == cardId) c.archived = true;
+          return c;
+        });
+      }
+      return col;
+    });
+    persist();
+    closeViewModal();
+  });
+}
+
+function deleteCardFromModal() {
+  if (!activeCard) return;
+  const { colId, cardId } = activeCard;
+  openConfirmModal('Удалить навсегда?', 'Это действие невозможно отменить.', 'Удалить', true, () => {
+    columns = columns.map(col => {
+      if (col.id == colId) col.cards = col.cards.filter(c => c.id != cardId);
+      return col;
+    });
+    persist();
+    closeViewModal();
+  });
 }
 </script>
 </body>
