@@ -1403,27 +1403,63 @@ function renderTagsPicker() { document.getElementById('editTagsContainer').inner
 function toggleTag(tagId) { activeTags.includes(tagId) ? activeTags = activeTags.filter(t => t !== tagId) : activeTags.push(tagId); renderTagsPicker(); }
 
 async function saveCard() {
+  const titleInput = document.getElementById('editTitle');
+  const descInput = document.getElementById('editDescription');
+  const dateInput = document.getElementById('editDueDate');
+  const statusEl = document.getElementById('uploadStatus');
+
   let imageUrl = editingCard?.image || null;
+
   if (pendingImageFile) { 
-    document.getElementById('uploadStatus').innerText = 'Загрузка обложки...'; 
+    statusEl.innerText = 'Загрузка обложки...'; 
     try {
-      const fd = new FormData(); fd.append('image', pendingImageFile); 
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method:'POST', body: fd }); 
+      const fd = new FormData(); 
+      fd.append('image', pendingImageFile); 
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd }); 
       const data = await res.json(); 
-      imageUrl = data.data.url; 
-    } catch(e) { document.getElementById('uploadStatus').innerText = 'Ошибка загрузки!'; return; }
+      if (data.success) {
+        imageUrl = data.data.url; 
+      } else {
+        throw new Error("ImgBB Error");
+      }
+    } catch(e) { 
+      statusEl.innerText = 'Ошибка API ImgBB!'; 
+      showSystemToast('Ошибка', 'Не удалось загрузить изображение.', 'image-off', 'text-red-500', 'bg-red-50');
+      return; 
+    }
   }
   
-const cardObj = { 
+  const cardObj = { 
     id: editingCard ? editingCard.id : Date.now(), 
-    title: document.getElementById('editTitle').value || 'Без названия', 
-    description: document.getElementById('editDescription').value, 
-    tags: activeTags, image: imageUrl, comments: editingCard?.comments || [], 
-    author: editingCard?.author || currentUser, dueDate: document.getElementById('editDueDate').value, checklist: activeChecklist 
+    title: titleInput.value.trim() || 'Без названия', 
+    description: descInput.value, 
+    tags: activeTags, 
+    image: imageUrl, 
+    comments: editingCard?.comments || [], 
+    author: editingCard?.author || { id: currentUser.id, name: currentUser.name, avatar: currentUser.avatar }, 
+    dueDate: dateInput.value, 
+    checklist: activeChecklist,
+    archived: editingCard?.archived || false,
+    updatedAt: new Date().toISOString()
   };
   
-  columns = columns.map(col => { if(col.id === currentColumn) { if(editingCard) col.cards = col.cards.map(c => c.id === editingCard.id ? cardObj : c); else col.cards.push(cardObj); } return col; });
-  persist(); closeEditModal();
+  // Корректное обновление состояния колонок с глубоким поиском
+  columns = columns.map(col => { 
+    if (col.id === currentColumn) { 
+      let updatedCards = col.cards || [];
+      if (editingCard) {
+        updatedCards = updatedCards.map(c => c.id === editingCard.id ? cardObj : c);
+      } else {
+        updatedCards.push(cardObj);
+      }
+      return { ...col, cards: updatedCards };
+    } 
+    return col; 
+  });
+
+  persist(); 
+  closeEditModal();
+  showSystemToast('Сохранено', 'Задача успешно обновлена.', 'check-circle', 'text-emerald-500', 'bg-emerald-50');
 }
   
 function deleteCard() { 
