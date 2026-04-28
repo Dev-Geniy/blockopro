@@ -1180,90 +1180,18 @@ function toggleModal(modalId, show) {
 }
 
 function openViewModal(colId, cardId) {
-  const col = columns.find(c => c.id === colId);
-  const card = col.cards.find(c => c.id === cardId);
-  currentOpenCard = { colId, cardId };
-
-  const modal = document.getElementById('viewModal');
-  const content = document.getElementById('viewModalContent');
-  
-  // Рендер специфического контента для модалки
-  let specialContent = '';
-  
-  if (card.type === 'poll') {
-    const totalVotes = card.options.reduce((sum, o) => sum + o.votes.length, 0);
-    const optionsHtml = card.options.map((opt, i) => {
-      const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
-      const myVote = opt.votes.includes(currentUser.id);
-      return `
-        <div onclick="votePoll('${colId}', '${cardId}', ${i}); setTimeout(()=>openViewModal(${colId}, ${cardId}), 100);" 
-             class="relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 cursor-pointer mb-3 transition-all active:scale-95 shadow-sm">
-          <div class="absolute left-0 top-0 bottom-0 ${myVote ? 'bg-purple-500' : 'bg-purple-100 dark:bg-purple-900/30'} ${myVote ? 'opacity-100' : 'opacity-20'} transition-all duration-700" style="width: ${percent}%"></div>
-          <div class="relative z-10 flex justify-between items-center font-bold ${myVote ? 'text-white' : 'text-gray-800 dark:text-gray-200'}">
-            <span class="flex items-center gap-2">${opt.text} ${myVote ? '<i data-lucide="check-circle-2" class="w-4 h-4"></i>' : ''}</span>
-            <span>${percent}%</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-    specialContent = `<div class="mb-6">${optionsHtml}</div>`;
-  } else if (card.type === 'audio') {
-    specialContent = `
-      <div class="bg-emerald-50/50 dark:bg-emerald-900/10 rounded-[2rem] p-8 mb-6 border border-emerald-100 dark:border-emerald-800/30 flex flex-col items-center gap-4">
-        <button onclick="toggleCustomAudio(this, 'modal-${card.id}')" class="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl shadow-emerald-500/40 active:scale-90 transition-transform">
-           <i data-lucide="play" class="w-10 h-10 fill-current ml-1" id="icon-play-modal-${card.id}"></i>
-           <i data-lucide="pause" class="w-10 h-10 fill-current hidden" id="icon-pause-modal-${card.id}"></i>
-        </button>
-        <div class="w-full max-w-md">
-           <div class="w-full h-2 bg-emerald-200 dark:bg-emerald-900 rounded-full overflow-hidden cursor-pointer" onclick="seekAudio(event, 'modal-${card.id}')">
-              <div id="progress-modal-${card.id}" class="bg-emerald-500 h-full w-0 transition-all duration-100"></div>
-           </div>
-           <div class="flex justify-between mt-2 text-xs font-black text-emerald-600/60 uppercase tracking-widest">
-              <span id="time-curr-modal-${card.id}">0:00</span>
-              <span id="time-dur-modal-${card.id}">--:--</span>
-           </div>
-        </div>
-        <audio id="audio-raw-modal-${card.id}" src="${card.audioData}" ontimeupdate="updateAudioUI('modal-${card.id}')" onloadedmetadata="initAudioDuration('modal-${card.id}')" onended="resetAudioUI('modal-${card.id}')" class="hidden"></audio>
-      </div>
-    `;
-  } else if (card.image) {
-    specialContent = `<img src="${card.image}" class="w-full h-auto rounded-3xl mb-6 shadow-lg border dark:border-gray-700" />`;
-  }
-
-  // Основная верстка модалки
-  content.innerHTML = `
-    <div class="flex items-center gap-3 mb-6">
-       <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-2xl text-gray-500"><i data-lucide="${card.type === 'poll' ? 'bar-chart-3' : (card.type === 'audio' ? 'mic' : 'layers')}" class="w-6 h-6"></i></div>
-       <div>
-          <h2 class="text-2xl font-black text-gray-900 dark:text-white leading-tight">${card.title}</h2>
-          <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Project: ${boardData.name} • ${new Date(card.createdAt).toLocaleDateString()}</p>
-       </div>
-    </div>
-
-    ${specialContent}
-
-    ${card.description ? `<div class="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 mb-8"><p class="text-gray-600 dark:text-gray-300 leading-relaxed">${card.description}</p></div>` : ''}
-
-    <div class="mb-8">
-      <div class="flex items-center gap-2 mb-4">
-         <i data-lucide="message-square" class="w-4 h-4 text-blue-500"></i>
-         <h3 class="font-black uppercase tracking-widest text-xs text-gray-400">Discussion (${card.comments?.length || 0})</h3>
-      </div>
-      <div id="modalComments" class="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2 custom-scroll">
-         ${renderComments(card.comments || [])}
-      </div>
-      <div class="flex gap-3 bg-white dark:bg-gray-900 p-2 rounded-2xl border-2 border-gray-100 dark:border-gray-700 focus-within:border-blue-400 transition-all">
-         <input id="commentInput" type="text" placeholder="Write a message..." class="flex-1 bg-transparent border-none outline-none px-3 text-sm dark:text-white font-medium" onkeypress="if(event.key==='Enter') addComment()">
-         <button onclick="addComment()" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-xl transition-all active:scale-90"><i data-lucide="send" class="w-4 h-4"></i></button>
-      </div>
-    </div>
-  `;
-
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-  lucide.createIcons();
+  const col = columns.find(c => c.id === colId); viewingCard = col.cards.find(c => c.id === cardId); currentColumn = colId;
+  document.getElementById('viewTitle').innerText = viewingCard.title;
+  document.getElementById('viewDescription').innerHTML = viewingCard.description ? marked.parse(viewingCard.description) : '<span class="text-gray-400 italic">Описание отсутствует</span>';
+  const author = viewingCard.author || { name: 'Аноним', avatar: '' };
+  document.getElementById('viewAuthorName').innerText = author.name; document.getElementById('viewAuthorAvatar').src = author.avatar;
+  document.getElementById('viewTags').innerHTML = (viewingCard.tags || []).map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<span class="px-3 py-1 rounded border text-xs font-bold ${t.color}">${t.name}</span>` : ''; }).join('');
+  const imgEl = document.getElementById('viewImage'); 
+  if(viewingCard.image) { imgEl.src = viewingCard.image; imgEl.classList.remove('hidden'); } else imgEl.classList.add('hidden');
+  renderChecklistView(); 
+  if(!isLocalBoard) renderCommentsView();
+  toggleModal('viewCardModal', true);
 }
-  
 function closeViewModal() { toggleModal('viewCardModal', false); }
 
 function renderCommentsView() {
@@ -1486,18 +1414,22 @@ function render() {
       const displayTitle = highlightText(c.title, searchQuery);
       const authorAvatar = c.author ? `<img src="${c.author.avatar}" class="w-5 h-5 rounded-full border border-white dark:border-gray-800 shadow-sm" title="${c.author.name}" />` : '';
       
-      // === РЕНДЕР ОПРОСА (MODAL READY) ===
+      // === РЕНДЕР ОПРОСА ===
       if (c.type === 'poll') {
         const totalVotes = c.options.reduce((sum, o) => sum + o.votes.length, 0);
+        
         const optionsHtml = c.options.map((opt, i) => {
           const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
           const myVote = opt.votes.includes(currentUser.id);
+          const barColor = myVote ? 'bg-purple-500' : 'bg-purple-200 dark:bg-purple-900/50';
+          const textColor = myVote ? 'text-white' : 'text-gray-700 dark:text-gray-300';
+          
           return `
             <div onclick="votePoll('${col.id}', '${c.id}', ${i}); event.stopPropagation();" 
-                 class="relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-3.5 cursor-pointer mb-2 transition-all active:scale-[0.98]">
-              <div class="absolute left-0 top-0 bottom-0 ${myVote ? 'bg-purple-500' : 'bg-purple-100 dark:bg-purple-900/30'} ${myVote ? 'opacity-100' : 'opacity-20'} transition-all duration-700" style="width: ${percent}%"></div>
-              <div class="relative z-10 flex justify-between items-center text-xs font-bold ${myVote ? 'text-white' : 'text-gray-700 dark:text-gray-300'}">
-                <span>${opt.text}</span>
+                 class="relative overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2.5 cursor-pointer hover:border-purple-400 transition-colors group/opt mb-2 shadow-sm">
+              <div class="absolute left-0 top-0 bottom-0 ${barColor} opacity-20 transition-all duration-500" style="width: ${percent}%"></div>
+              <div class="relative z-10 flex justify-between items-center text-xs font-bold ${textColor}">
+                <span class="flex items-center gap-1.5">${opt.text} ${myVote ? '<i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-purple-500"></i>' : ''}</span>
                 <span>${percent}%</span>
               </div>
             </div>
@@ -1505,47 +1437,48 @@ function render() {
         }).join('');
 
         return `
-          <div data-id="${c.id}" onclick="openViewModal(${col.id}, ${c.id})" class="card-item bg-white dark:bg-gray-900 border border-purple-100 dark:border-purple-900/30 p-5 rounded-[2rem] shadow-sm cursor-pointer select-none relative group transition-all hover:shadow-xl hover:-translate-y-1 hover:border-purple-400">
-            ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}'); event.stopPropagation();" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 z-20"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`}
-            <div class="flex items-center gap-2 mb-4">
-              <div class="p-2 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl"><i data-lucide="bar-chart-3" class="w-4 h-4"></i></div>
-              <span class="text-[10px] font-black uppercase tracking-widest text-purple-500/80">Active Poll</span>
+          <div data-id="${c.id}" onclick="openPollStatsModal('${col.id}', '${c.id}')" class="card-item bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 p-4 rounded-2xl shadow-sm ${isViewer ? 'cursor-pointer' : 'cursor-grab'} select-none relative group transition-colors cursor-pointer">
+            ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}'); event.stopPropagation();" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
+            <div class="flex items-center gap-2 mb-3">
+              <div class="p-1.5 bg-gray-100 dark:bg-gray-800 group-hover:bg-purple-50 dark:group-hover:bg-purple-900/30 text-gray-400 group-hover:text-purple-500 transition-colors rounded-lg"><i data-lucide="bar-chart-3" class="w-4 h-4"></i></div>
+              <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-purple-500 transition-colors">Опрос</span>
             </div>
-            <div class="font-bold text-base leading-tight mb-4 text-gray-900 dark:text-white pr-8">${displayTitle}</div>
-            <div class="space-y-1 mb-4 pointer-events-none opacity-80">${optionsHtml}</div>
-            <div class="flex justify-between items-center pt-4 border-t border-gray-50 dark:border-gray-800/50">
-              <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5"><i data-lucide="message-square" class="w-3.5 h-3.5 text-purple-500"></i> ${c.comments?.length || 0}</span>
-              ${authorAvatar}
+            <div class="font-bold text-sm leading-snug mb-4 text-gray-900 dark:text-white pr-8">${displayTitle}</div>
+            <div class="space-y-1 mb-4">
+              ${optionsHtml}
+            </div>
+            <div class="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest pt-3 border-t border-gray-100 dark:border-gray-800">
+              <span><i data-lucide="users" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> ${totalVotes} ответов</span>
+              <span>${c.isAnonymous ? 'Анонимно' : 'Публично'}</span>
             </div>
           </div>
         `;
       }
 
-      // === РЕНДЕР ГОЛОСОВОЙ ЗАМЕТКИ (MODAL READY) ===
+      // === РЕНДЕР ГОЛОСОВОЙ ЗАМЕТКИ ===
       if (c.type === 'audio') {
         return `
-          <div data-id="${c.id}" onclick="openViewModal(${col.id}, ${c.id})" class="card-item bg-white dark:bg-gray-900 border border-emerald-100 dark:border-emerald-900/30 p-5 rounded-[2rem] shadow-sm cursor-pointer select-none relative group transition-all hover:shadow-xl hover:-translate-y-1 hover:border-emerald-400">
-            ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}'); event.stopPropagation();" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 z-20"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`}
-            <div class="flex items-center gap-2 mb-4">
-              <div class="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl"><i data-lucide="mic" class="w-4 h-4"></i></div>
-              <span class="text-[10px] font-black uppercase tracking-widest text-emerald-500/80">Voice Memo</span>
+          <div data-id="${c.id}" class="card-item bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-900/50 p-4 rounded-2xl shadow-sm ${isViewer ? '' : 'cursor-grab'} select-none relative group transition-all hover:shadow-md">
+            ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}'); event.stopPropagation();" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
+            <div class="flex items-center gap-2 mb-3">
+              <div class="p-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-lg"><i data-lucide="mic" class="w-4 h-4"></i></div>
+              <span class="text-[10px] font-black uppercase tracking-widest text-emerald-500">Аудио ТЗ</span>
             </div>
-            <div class="font-bold text-base leading-tight mb-4 text-gray-900 dark:text-white pr-8">${displayTitle}</div>
-            <div class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-3 border border-gray-100 dark:border-gray-700/50">
-               <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-sm"><i data-lucide="play" class="w-4 h-4 fill-current ml-0.5"></i></div>
-               <div class="flex-1 h-1 bg-emerald-200/30 dark:bg-emerald-900/40 rounded-full"></div>
-            </div>
-            <div class="flex justify-between items-center pt-4 mt-4 border-t border-gray-50 dark:border-gray-800/50">
-              <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5"><i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-500"></i> ${c.comments?.length || 0}</span>
-              ${authorAvatar}
+            <div class="font-bold text-sm leading-snug mb-4 text-gray-900 dark:text-white pr-8">${displayTitle}</div>
+            <audio controls src="${c.audioData}" class="w-full h-10 mb-2 outline-none rounded-xl"></audio>
+            <div class="flex justify-between items-center mt-3">
+              <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest pt-2 border-t border-gray-100 dark:border-gray-800 w-full flex justify-between items-center">
+                  <span><i data-lucide="clock" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> Запись</span>
+                  ${authorAvatar}
+              </div>
             </div>
           </div>
         `;
       }
 
-      // === ОБЫЧНАЯ КАРТОЧКА (UPGRADED UI) ===
+      // === ОБЫЧНАЯ КАРТОЧКА ===
       const isOverdue = c.dueDate && c.dueDate < todayStr;
-      const overdueClass = isOverdue ? 'deadline-overdue border-red-500/50' : 'border-blue-100 dark:border-blue-900/30';
+      const overdueClass = isOverdue ? 'deadline-overdue' : '';
 
       let checklistHtml = '';
       if (c.checklist && c.checklist.length > 0) {
@@ -1553,55 +1486,42 @@ function render() {
         const done = c.checklist.filter(i => i.isCompleted).length; 
         const percent = Math.round((done / total) * 100);
         checklistHtml = `
-          <div class="mt-4 mb-2">
-            <div class="flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">
-              <span class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3 text-blue-500"></i> Tasks ${done}/${total}</span>
-              <span class="${done === total ? 'text-green-500' : 'text-blue-500'}">${percent}%</span>
+          <div class="mt-3 mb-1">
+            <div class="flex justify-between items-center text-[10px] font-bold text-gray-400 mb-1.5">
+              <span class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> ${done}/${total}</span>
+              <span>${percent}%</span>
             </div>
-            <div class="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden border dark:border-gray-700/50">
-              <div class="${done === total ? 'bg-green-500' : 'bg-blue-600'} h-full transition-all duration-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" style="width: ${percent}%"></div>
+            <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div class="${done === total ? 'bg-green-500' : 'bg-blue-500'} h-full transition-all" style="width: ${percent}%"></div>
             </div>
           </div>`;
       }
 
       let dueDateHtml = '';
       if (c.dueDate) {
-        const bgColors = isOverdue ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 border-red-100' : 'bg-blue-50/50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border-blue-100/50';
+        const bgColors = isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400';
         const formattedDate = new Date(c.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-        dueDateHtml = `<div class="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg border ${bgColors}"><i data-lucide="calendar" class="w-3 h-3"></i> ${formattedDate}</div>`;
+        dueDateHtml = `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${bgColors}"><i data-lucide="clock" class="w-3 h-3"></i> ${formattedDate}</div>`;
       }
 
-      const tagsHtml = c.tags?.length ? `<div class="flex gap-1.5 mb-3 flex-wrap">${c.tags.map(tId => { 
+      const tagsHtml = c.tags?.length ? `<div class="flex gap-1 mb-2">${c.tags.map(tId => { 
         const t = getBoardTags().find(tag => tag.id === tId); 
-        return t ? `<div class="h-1.5 w-8 rounded-full ${t.color.split(' ')[0]} shadow-sm"></div>` : ''; 
+        return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; 
       }).join('')}</div>` : '';
 
-      const commentsCount = c.comments?.length ? `<div class="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-lg border border-gray-100 dark:border-gray-700"><i data-lucide="message-square" class="w-3.5 h-3.5 text-blue-500"></i> ${c.comments.length}</div>` : '';
-      const hasDesc = c.description ? `<div class="p-1 text-gray-400"><i data-lucide="align-left" class="w-3.5 h-3.5"></i></div>` : '';
+      const commentsCount = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
+      const hasDesc = c.description ? `<i data-lucide="align-left" class="w-3.5 h-3.5 text-gray-400"></i>` : '';
 
       return `
-        <div data-id="${c.id}" onclick="openViewModal(${col.id}, ${c.id})" class="card-item ${overdueClass} bg-white dark:bg-gray-900 border p-5 rounded-[2rem] ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 group relative select-none">
-          ${isViewer ? '' : `<button onclick="openEditModal(${col.id}, ${c.id}); event.stopPropagation();" class="absolute top-4 right-4 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-gray-50 dark:bg-gray-800 p-2 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm z-10 transition-all"><i data-lucide="pencil" class="w-4 h-4"></i></button>`}
-          
-          ${c.image ? `<div class="relative mb-4 overflow-hidden rounded-[1.5rem] border border-gray-100 dark:border-gray-800 shadow-inner"><img src="${c.image}" loading="lazy" class="w-full h-36 object-cover transform group-hover:scale-105 transition-transform duration-700 pointer-events-none" /></div>` : ''}
-          
+        <div data-id="${c.id}" onclick="openViewModal(${col.id}, ${c.id})" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all group relative select-none">
+          ${isViewer ? '' : `<button onclick="openEditModal(${col.id}, ${c.id}); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>`}
+          ${c.image ? `<img src="${c.image}" loading="lazy" class="mb-3 rounded-lg w-full h-32 object-cover border dark:border-gray-700/50 pointer-events-none" />` : ''}
           ${tagsHtml}
-          
-          <div class="font-bold text-base leading-tight pr-8 mb-4 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${displayTitle}</div>
-          
+          <div class="font-bold text-sm leading-snug pr-8 mb-3 text-gray-900 dark:text-white">${displayTitle}</div>
           ${checklistHtml}
-          
-          <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-50 dark:border-gray-800/50">
-            <div class="flex gap-2 items-center flex-wrap">
-               ${dueDateHtml}
-               <div class="flex items-center gap-1">
-                 ${hasDesc}
-                 ${commentsCount}
-               </div>
-            </div>
-            <div class="flex-shrink-0">
-               ${authorAvatar}
-            </div>
+          <div class="flex justify-between items-end mt-3">
+            <div class="flex gap-2 items-center text-gray-400">${dueDateHtml}${hasDesc}${commentsCount}</div>
+            ${authorAvatar}
           </div>
         </div>
       `;
@@ -2327,79 +2247,6 @@ function saveVoiceMemo() {
   columns[colIndex].cards.push(audioCard);
   persist();
   closeVoiceMemoModal();
-}
-
-// ЗАМЕТКИ
-// --- ЛОГИКА КАСТОМНОГО ПЛЕЕРА ГОЛОСОВЫХ ЗАМЕТОК ---
-function toggleCustomAudio(btn, cardId) {
-  const audio = document.getElementById(`audio-raw-${cardId}`);
-  const playIcon = document.getElementById(`icon-play-${cardId}`);
-  const pauseIcon = document.getElementById(`icon-pause-${cardId}`);
-  
-  // Останавливаем другие играющие плееры для чистоты звука
-  document.querySelectorAll('audio').forEach(a => {
-    if (a !== audio) {
-      a.pause();
-      const otherId = a.id.replace('audio-raw-', '');
-      document.getElementById(`icon-play-${otherId}`)?.classList.remove('hidden');
-      document.getElementById(`icon-pause-${otherId}`)?.classList.add('hidden');
-    }
-  });
-
-  if (audio.paused) {
-    audio.play();
-    playIcon.classList.add('hidden');
-    pauseIcon.classList.remove('hidden');
-  } else {
-    audio.pause();
-    playIcon.classList.remove('hidden');
-    pauseIcon.classList.add('hidden');
-  }
-  lucide.createIcons();
-}
-
-function updateAudioUI(cardId) {
-  const audio = document.getElementById(`audio-raw-${cardId}`);
-  const progress = document.getElementById(`progress-${cardId}`);
-  const currTime = document.getElementById(`time-curr-${cardId}`);
-  
-  if (!audio || !progress) return;
-  
-  const percent = (audio.currentTime / audio.duration) * 100;
-  progress.style.width = `${percent}%`;
-  
-  currTime.innerText = formatAudioTime(audio.currentTime);
-}
-
-function initAudioDuration(cardId) {
-  const audio = document.getElementById(`audio-raw-${cardId}`);
-  const durTime = document.getElementById(`time-dur-${cardId}`);
-  if (audio && durTime) durTime.innerText = formatAudioTime(audio.duration);
-}
-
-function resetAudioUI(cardId) {
-  const playIcon = document.getElementById(`icon-play-${cardId}`);
-  const pauseIcon = document.getElementById(`icon-pause-${cardId}`);
-  playIcon.classList.remove('hidden');
-  pauseIcon.classList.add('hidden');
-  document.getElementById(`progress-${cardId}`).style.width = '0%';
-  lucide.createIcons();
-}
-
-function seekAudio(e, cardId) {
-  const audio = document.getElementById(`audio-raw-${cardId}`);
-  const rect = e.currentTarget.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const width = rect.width;
-  const seekTime = (x / width) * audio.duration;
-  audio.currentTime = seekTime;
-}
-
-function formatAudioTime(seconds) {
-  if (isNaN(seconds)) return "0:00";
-  const min = Math.floor(seconds / 60);
-  const sec = Math.floor(seconds % 60);
-  return `${min}:${sec < 10 ? '0' : ''}${sec}`;
 }
 </script>
 </body>
