@@ -2665,6 +2665,35 @@ function stopRecording() {
   }
 }
 
+// Новая функция сохранения аудио-заметки
+function saveVoiceMemo() {
+  if (!audioBase64) {
+    return showSystemToast('Ошибка', 'Сначала запишите аудио-сообщение.', 'mic-off', 'text-red-500', 'bg-red-50');
+  }
+
+  const title = document.getElementById('voiceMemoTitle').value.trim() || 'Голосовая заметка';
+
+  const audioCard = {
+    id: 'audio_' + Date.now(),
+    title: title,
+    type: 'audio',
+    audioData: audioBase64, // Наш записанный Base64
+    author: currentUser,
+    archived: false,
+    createdAt: new Date().toISOString(),
+    comments: []
+  };
+
+  const colIndex = columns.findIndex(c => c.id === activeColForMore);
+  if (colIndex !== -1) {
+    columns[colIndex].cards.push(audioCard);
+    persist(); // Отправляем данные в облако или LocalStorage
+    render(); // Принудительно обновляем доску
+    closeVoiceMemoModal();
+    showSystemToast('Добавлено', 'Голосовая заметка успешно сохранена.', 'mic', 'text-emerald-500', 'bg-emerald-50');
+  }
+}
+
 // --- ЛОГИКА ТАБЛИЦ (EXCEL STYLE) ---
 let activeTableData = null; // { colId, cardId, rows, cols, data[][] }
 
