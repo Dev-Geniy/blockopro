@@ -1402,14 +1402,16 @@ function handleImageSelection(file) {
 function renderTagsPicker() { document.getElementById('editTagsContainer').innerHTML = getBoardTags().map(t => `<button onclick="toggleTag('${t.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTags.includes(t.id) ? 'border-transparent shadow-sm ' + t.color : 'border-gray-200 dark:border-gray-700 text-gray-500'}">${t.name}</button>`).join(''); }
 function toggleTag(tagId) { activeTags.includes(tagId) ? activeTags = activeTags.filter(t => t !== tagId) : activeTags.push(tagId); renderTagsPicker(); }
 
+// ПОЛНОСТЬЮ ПЕРЕРАБОТАННАЯ ЛОГИКА КАРТОЧЕК (FIX: Дублирование, Удаление, Архив)
 async function saveCard() {
-  const titleInput = document.getElementById('editTitle');
-  const descInput = document.getElementById('editDescription');
-  const dateInput = document.getElementById('editDueDate');
   const statusEl = document.getElementById('uploadStatus');
+  const titleVal = document.getElementById('editTitle').value.trim();
+  const descVal = document.getElementById('editDescription').value;
+  const dateVal = document.getElementById('editDueDate').value;
 
-  let imageUrl = editingCard?.image || null;
+  let imageUrl = editingCard ? editingCard.image : null;
 
+  // 1. Обработка изображения через ImgBB
   if (pendingImageFile) { 
     statusEl.innerText = 'Загрузка обложки...'; 
     try {
@@ -1420,36 +1422,39 @@ async function saveCard() {
       if (data.success) {
         imageUrl = data.data.url; 
       } else {
-        throw new Error("ImgBB Error");
+        throw new Error("API Error");
       }
     } catch(e) { 
-      statusEl.innerText = 'Ошибка API ImgBB!'; 
-      showSystemToast('Ошибка', 'Не удалось загрузить изображение.', 'image-off', 'text-red-500', 'bg-red-50');
+      statusEl.innerText = 'Ошибка загрузки изображения!'; 
+      showSystemToast('Ошибка обложки', 'Не удалось сохранить картинку.', 'image-off', 'text-red-500', 'bg-red-50');
       return; 
     }
   }
   
+  // 2. Формируем объект карточки (сохраняем ID если редактируем)
   const cardObj = { 
     id: editingCard ? editingCard.id : Date.now(), 
-    title: titleInput.value.trim() || 'Без названия', 
-    description: descInput.value, 
-    tags: activeTags, 
+    title: titleVal || 'Без названия', 
+    description: descVal || "", 
+    tags: activeTags || [], 
     image: imageUrl, 
-    comments: editingCard?.comments || [], 
-    author: editingCard?.author || { id: currentUser.id, name: currentUser.name, avatar: currentUser.avatar }, 
-    dueDate: dateInput.value, 
-    checklist: activeChecklist,
-    archived: editingCard?.archived || false,
+    comments: editingCard ? (editingCard.comments || []) : [], 
+    author: editingCard ? (editingCard.author || currentUser) : currentUser, 
+    dueDate: dateVal || "", 
+    checklist: activeChecklist || [],
+    archived: editingCard ? (editingCard.archived || false) : false,
     updatedAt: new Date().toISOString()
   };
   
-  // Корректное обновление состояния колонок с глубоким поиском
+  // 3. Обновляем массив колонок (FIX: нестрогое сравнение и глубокая замена)
   columns = columns.map(col => { 
-    if (col.id === currentColumn) { 
+    if (col.id == currentColumn) { 
       let updatedCards = col.cards || [];
+      // Если мы редактируем существующую
       if (editingCard) {
-        updatedCards = updatedCards.map(c => c.id === editingCard.id ? cardObj : c);
+        updatedCards = updatedCards.map(c => c.id == editingCard.id ? cardObj : c);
       } else {
+        // Если создаем новую
         updatedCards.push(cardObj);
       }
       return { ...col, cards: updatedCards };
@@ -1459,20 +1464,46 @@ async function saveCard() {
 
   persist(); 
   closeEditModal();
-  showSystemToast('Сохранено', 'Задача успешно обновлена.', 'check-circle', 'text-emerald-500', 'bg-emerald-50');
+  showSystemToast('Сохранено', 'Задача успешно обновлена в облаке.', 'check-circle', 'text-emerald-500', 'bg-emerald-50');
 }
   
 function deleteCard() { 
-  openConfirmModal('Удалить навсегда?', 'Карточка будет удалена без возможности восстановления.', 'Удалить', true, () => {
-    columns = columns.map(col => { if(col.id === currentColumn) col.cards = col.cards.filter(c => c.id !== editingCard.id); return col; }); 
-    persist(); closeEditModal(); 
+  if (!editingCard) return;
+  openConfirmModal('Удалить навсегда?', 'Карточка будет удалена без возможности восстановления.', 'Удалить задачу', true, () => {
+    // FIX: Используем == для обработки разных типов ID (string/number)
+    columns = columns.map(col => { 
+      if (col.id == currentColumn) {
+        const filtered = (col.cards || []).filter(c => c.id != editingCard.id);
+        return { ...col, cards: filtered };
+      }
+      return col; 
+    }); 
+    
+    persist(); 
+    closeEditModal();
+    showSystemToast('Удалено', 'Карточка стерта из базы.', 'trash-2', 'text-red-500', 'bg-red-50');
   });
 }
   
 function archiveCard() {
-  openConfirmModal('В архив?', 'Задача исчезнет с доски, но будет сохранена в Архиве проекта.', 'В архив', false, () => {
-    columns = columns.map(col => { if(col.id === currentColumn) { col.cards = col.cards.map(c => c.id === editingCard.id ? {...c, archived: true} : c); } return col; });
-    persist(); closeEditModal(); 
+  if (!editingCard) return;
+  openConfirmModal('Отправить в архив?', 'Задача исчезнет с доски, но останется в разделе "Архив".', 'В архив', false, () => {
+    columns = columns.map(col => { 
+      if (col.id == currentColumn) { 
+        const updatedCards = (col.cards || []).map(c => {
+          if (c.id == editingCard.id) {
+            return { ...c, archived: true };
+          }
+          return c;
+        });
+        return { ...col, cards: updatedCards };
+      } 
+      return col; 
+    });
+    
+    persist(); 
+    closeEditModal(); 
+    showSystemToast('Архивировано', 'Задача перемещена в хранилище.', 'archive', 'text-amber-500', 'bg-amber-50');
   });
 }
 
