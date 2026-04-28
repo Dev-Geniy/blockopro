@@ -339,11 +339,11 @@
       <div class="h-px bg-gray-100 dark:bg-gray-800 my-1"></div>
       <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-1 flex items-center gap-1.5"><i data-lucide="clock" class="w-3 h-3"></i> В разработке</span>
 
-      <button onclick="showSystemToast('В разработке', 'Встроенные таблицы и базы данных.', 'table', 'text-gray-400', 'bg-gray-100 dark:bg-gray-800')" class="w-full p-3 flex items-start gap-3 bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-gray-200 dark:border-gray-700/50 opacity-60 hover:opacity-100 transition-opacity text-left grayscale hover:grayscale-0">
-        <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 text-gray-500 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"><i data-lucide="sheet" class="w-4 h-4"></i></div>
+      <button onclick="prepareTableCreation()" class="w-full p-3.5 flex items-center gap-4 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl hover:scale-[1.02] transition-transform font-bold border border-blue-100 dark:border-blue-800 text-left shadow-sm">
+        <div class="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-md shadow-blue-500/30 flex-shrink-0"><i data-lucide="table" class="w-5 h-5"></i></div>
         <div>
-          <div class="font-bold text-gray-600 dark:text-gray-300 text-sm">Таблица (Beta)</div>
-          <div class="text-[9px] text-gray-500 leading-tight mt-1">Мини-базы данных прямо внутри колонки.</div>
+          <div class="text-sm">Таблица</div>
+          <div class="text-[10px] text-blue-500/80 font-medium mt-0.5 leading-tight">Полноценная Excel-таблица с данными</div>
         </div>
       </button>
 
@@ -507,6 +507,53 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="tableConstructorModal" class="hidden fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform" id="tableConstructorContent">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="p-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl"><i data-lucide="table" class="w-5 h-5"></i></div>
+      <h3 class="text-xl font-black dark:text-white">Новая таблица</h3>
+    </div>
+    <div class="space-y-4">
+      <input type="text" id="tableTitle" placeholder="Название таблицы..." class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:border-blue-500 font-bold dark:text-white">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Колонок</label>
+          <input type="number" id="tableCols" value="4" min="1" max="10" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white">
+        </div>
+        <div>
+          <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Строк</label>
+          <input type="number" id="tableRows" value="5" min="1" max="20" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white">
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-8">
+      <button onclick="closeTableConstructor()" class="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl transition-colors">Отмена</button>
+      <button onclick="saveNewTable()" class="flex-1 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/30 active:scale-95 transition-all">Создать</button>
+    </div>
+  </div>
+</div>
+
+<div id="tableFullEditor" class="hidden fixed inset-0 z-[500] bg-[#F8F9FD] dark:bg-[#0B0F1A] flex flex-col opacity-0 transition-opacity duration-300">
+  <div class="px-8 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl">
+    <div class="flex items-center gap-4">
+      <div class="p-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-500/20"><i data-lucide="table" class="w-5 h-5"></i></div>
+      <h2 id="fullTableTitle" class="text-xl font-black dark:text-white">Редактор таблицы</h2>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="closeTableEditor()" class="px-6 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all">Отмена</button>
+      <button onclick="commitTableToDb()" class="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl shadow-xl shadow-blue-500/25 active:scale-95 transition-all">Сохранить изменения</button>
+    </div>
+  </div>
+  <div class="flex-1 overflow-auto p-8 flex justify-center">
+    <div class="bg-white dark:bg-gray-800 shadow-2xl rounded-[2rem] border border-gray-200 dark:border-gray-700 overflow-hidden h-fit w-fit min-w-[60%]">
+      <table id="excelTable" class="w-full border-collapse">
+        <thead id="excelThead" class="bg-gray-50 dark:bg-gray-900/50 border-b-2 border-gray-200 dark:border-gray-700"></thead>
+        <tbody id="excelTbody" class="dark:text-white"></tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -1493,17 +1540,43 @@ function render() {
     const cardsHtml = filteredCards.map(c => {
       const displayTitle = highlightText(c.title, searchQuery);
       const authorAvatar = c.author ? `<img src="${c.author.avatar}" class="w-5 h-5 rounded-full border border-white dark:border-gray-800 shadow-sm" title="${c.author.name}" />` : '';
-      
+      const commentsCountText = c.comments && c.comments.length > 0 
+          ? `<span class="flex items-center gap-1"><i data-lucide="message-square" class="w-3 h-3"></i> ${c.comments.length}</span>` 
+          : '';
+
+      // === РЕНДЕР ТАБЛИЦЫ (EXCEL STYLE) ===
+      if (c.type === 'table') {
+        return `
+          <div data-id="${c.id}" onclick="openTableEditor('${col.id}', '${c.id}')" class="card-item bg-white dark:bg-gray-900 border border-blue-100 dark:border-blue-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
+            ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}', 'таблицу'); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
+            <div class="flex items-center gap-2 mb-2">
+              <i data-lucide="table" class="w-3 h-3 text-blue-500"></i>
+              <span class="text-[9px] font-black uppercase tracking-widest text-blue-500">Таблица</span>
+            </div>
+            <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6">${displayTitle}</div>
+            <div class="flex items-center gap-1.5 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl mb-2 border border-blue-100/50 dark:border-blue-800/30">
+               <i data-lucide="layout" class="w-4 h-4 text-blue-400"></i>
+               <span class="text-[10px] font-bold text-gray-500">${c.cols} x ${c.rows} ячеек</span>
+            </div>
+            <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+              <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <span>Excel</span>
+                ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
+              </div>
+              ${authorAvatar}
+            </div>
+          </div>
+        `;
+      }
+
       // === РЕНДЕР ОПРОСА (УНИФИЦИРОВАННЫЙ СТИЛЬ) ===
       if (c.type === 'poll') {
         const totalVotes = c.options.reduce((sum, o) => sum + o.votes.length, 0);
-        
         const optionsHtml = c.options.map((opt, i) => {
           const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
           const myVote = opt.votes.includes(currentUser.id);
           const barColor = myVote ? 'bg-purple-500' : 'bg-purple-200 dark:bg-purple-900/50';
           const textColor = myVote ? 'text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300';
-          
           return `
             <div onclick="votePoll('${col.id}', '${c.id}', ${i}); event.stopPropagation();" 
                  class="relative overflow-hidden rounded-xl bg-purple-50/30 dark:bg-purple-900/10 border border-purple-100/50 dark:border-purple-800/30 p-2.5 cursor-pointer group/opt mb-2 transition-all active:scale-[0.98]">
@@ -1512,48 +1585,40 @@ function render() {
                 <span class="flex items-center gap-1.5 truncate pr-2">${opt.text} ${myVote ? '<i data-lucide="check-circle-2" class="w-3 h-3 text-purple-500"></i>' : ''}</span>
                 <span class="flex-shrink-0">${percent}%</span>
               </div>
-            </div>
-          `;
+            </div>`;
         }).join('');
 
         return `
-          <div data-id="${c.id}" onclick="openPollStatsModal('${col.id}', '${c.id}')" class="card-item bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none">
+          <div data-id="${c.id}" onclick="openViewModal(${col.id}, '${c.id}')" class="card-item bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none">
             ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}', 'опрос'); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
             <div class="flex items-center gap-2 mb-2">
               <i data-lucide="bar-chart-3" class="w-3 h-3 text-purple-500"></i>
               <span class="text-[9px] font-black uppercase tracking-widest text-purple-500">Опрос</span>
             </div>
             <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6">${displayTitle}</div>
-            <div class="space-y-1 mb-2">
-              ${optionsHtml}
-            </div>
+            <div class="space-y-1 mb-2">${optionsHtml}</div>
             <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50">
               <div class="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                 <span><i data-lucide="users" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> ${totalVotes}</span>
                 <span class="opacity-50">|</span>
+                ${commentsCountText ? `${commentsCountText} <span class="opacity-50">|</span> ` : ''}
                 <span>${c.isAnonymous ? 'Анон' : 'Публ'}</span>
               </div>
               ${authorAvatar}
             </div>
-          </div>
-        `;
+          </div>`;
       }
 
-      // === РЕНДЕР ГОЛОСОВОЙ ЗАМЕТКИ (КОМПАКТНЫЙ ПЛЕЕР + КОММЕНТАРИИ) ===
+      // === РЕНДЕР ГОЛОСОВОЙ ЗАМЕТКИ ===
       if (c.type === 'audio') {
-        const commentsCount = c.comments && c.comments.length > 0 
-          ? `<span class="flex items-center gap-1"><i data-lucide="message-square" class="w-3 h-3"></i> ${c.comments.length}</span>` 
-          : '';
-          
         return `
-          <div data-id="${c.id}" onclick="openAudioModal('${col.id}', '${c.id}')" class="card-item bg-white dark:bg-gray-800 border border-emerald-100 dark:border-emerald-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
+          <div data-id="${c.id}" onclick="openViewModal(${col.id}, '${c.id}')" class="card-item bg-white dark:bg-gray-800 border border-emerald-100 dark:border-emerald-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
             ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}', 'заметку'); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
             <div class="flex items-center gap-2 mb-2">
               <i data-lucide="mic" class="w-3 h-3 text-emerald-500"></i>
               <span class="text-[9px] font-black uppercase tracking-widest text-emerald-500">Аудио ТЗ</span>
             </div>
             <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6">${displayTitle}</div>
-            
             <div class="flex items-center gap-3 bg-emerald-50/50 dark:bg-emerald-900/20 p-2 rounded-xl mb-2 border border-emerald-100/50 dark:border-emerald-800/30">
               <button onclick="toggleAudioPlayer(this, '${c.audioData}'); event.stopPropagation();" class="w-8 h-8 flex-shrink-0 bg-emerald-500 text-white rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm">
                 <i data-lucide="play" class="w-4 h-4 fill-current ml-0.5 btn-icon"></i>
@@ -1562,67 +1627,50 @@ function render() {
                 <div class="audio-progress bg-emerald-500 h-full w-0 transition-all duration-100"></div>
               </div>
             </div>
-
             <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
               <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                 <span>Аудио</span>
-                ${commentsCount ? `<span class="opacity-30">|</span> ${commentsCount}` : ''}
+                ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
               </div>
               ${authorAvatar}
             </div>
-          </div>
-        `;
+          </div>`;
       }
 
       // === ОБЫЧНАЯ КАРТОЧКА ===
       const isOverdue = c.dueDate && c.dueDate < todayStr;
       const overdueClass = isOverdue ? 'deadline-overdue' : '';
-
       let checklistHtml = '';
       if (c.checklist && c.checklist.length > 0) {
-        const total = c.checklist.length; 
-        const done = c.checklist.filter(i => i.isCompleted).length; 
-        const percent = Math.round((done / total) * 100);
+        const done = c.checklist.filter(i => i.isCompleted).length;
+        const percent = Math.round((done / c.checklist.length) * 100);
         checklistHtml = `
           <div class="mt-3 mb-1">
             <div class="flex justify-between items-center text-[10px] font-bold text-gray-400 mb-1.5">
-              <span class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> ${done}/${total}</span>
+              <span class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> ${done}/${c.checklist.length}</span>
               <span>${percent}%</span>
             </div>
             <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div class="${done === total ? 'bg-green-500' : 'bg-blue-500'} h-full transition-all" style="width: ${percent}%"></div>
+              <div class="${done === c.checklist.length ? 'bg-green-500' : 'bg-blue-500'} h-full transition-all" style="width: ${percent}%"></div>
             </div>
           </div>`;
       }
-
-      let dueDateHtml = '';
-      if (c.dueDate) {
-        const bgColors = isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400';
-        const formattedDate = new Date(c.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-        dueDateHtml = `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${bgColors}"><i data-lucide="clock" class="w-3 h-3"></i> ${formattedDate}</div>`;
-      }
-
-      const tagsHtml = c.tags?.length ? `<div class="flex gap-1 mb-2">${c.tags.map(tId => { 
-        const t = getBoardTags().find(tag => tag.id === tId); 
-        return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; 
-      }).join('')}</div>` : '';
-
-      const commentsCount = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
-      const hasDesc = c.description ? `<i data-lucide="align-left" class="w-3.5 h-3.5 text-gray-400"></i>` : '';
+      let dueDateHtml = c.dueDate ? `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}"><i data-lucide="clock" class="w-3 h-3"></i> ${new Date(c.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</div>` : '';
+      const tagsHtml = c.tags?.length ? `<div class="flex gap-1 mb-2">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; }).join('')}</div>` : '';
+      const normalComments = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
 
       return `
-        <div data-id="${c.id}" onclick="openViewModal(${col.id}, ${c.id})" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none">
-          ${isViewer ? '' : `<button onclick="openEditModal(${col.id}, ${c.id}); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>`}
+        <div data-id="${c.id}" onclick="openViewModal(${col.id}, '${c.id}')" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none">
+          ${isViewer ? '' : `<button onclick="openEditModal(${col.id}, '${c.id}'); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>`}
           ${c.image ? `<img src="${c.image}" loading="lazy" class="mb-3 rounded-lg w-full h-32 object-cover border dark:border-gray-700/50 pointer-events-none" />` : ''}
           ${tagsHtml}
           <div class="font-bold text-sm leading-tight pr-8 mb-3 text-gray-900 dark:text-white">${displayTitle}</div>
           ${checklistHtml}
           <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50">
-            <div class="flex gap-2 items-center text-gray-400">${dueDateHtml}${hasDesc}${commentsCount}</div>
+            <div class="flex gap-2 items-center text-gray-400">${dueDateHtml}${c.description ? '<i data-lucide="align-left" class="w-3.5 h-3.5 text-gray-400"></i>' : ''}${normalComments}</div>
             ${authorAvatar}
           </div>
-        </div>
-      `;
+        </div>`;
     }).join('');
     
     const emptyStateHtml = filteredCards.length === 0 
@@ -2460,25 +2508,120 @@ function stopRecording() {
   }
 }
 
-function saveVoiceMemo() {
-  if (!audioBase64) return;
-  
-  const title = document.getElementById('voiceMemoTitle').value.trim() || 'Голосовая заметка';
+// --- ЛОГИКА ТАБЛИЦ (EXCEL STYLE) ---
+let activeTableData = null; // { colId, cardId, rows, cols, data[][] }
 
-  const audioCard = {
-    id: 'audio_' + Date.now(),
+function prepareTableCreation() {
+  closeMoreAddModal();
+  const modal = document.getElementById('tableConstructorModal');
+  const content = document.getElementById('tableConstructorContent');
+  modal.classList.remove('hidden');
+  setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+  document.getElementById('tableTitle').focus();
+}
+
+function closeTableConstructor() {
+  const modal = document.getElementById('tableConstructorModal');
+  const content = document.getElementById('tableConstructorContent');
+  modal.classList.add('opacity-0');
+  content.classList.add('scale-95');
+  setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function saveNewTable() {
+  const title = document.getElementById('tableTitle').value.trim() || 'Новая таблица';
+  const cols = parseInt(document.getElementById('tableCols').value) || 4;
+  const rows = parseInt(document.getElementById('tableRows').value) || 5;
+
+  const emptyData = Array(rows).fill(null).map(() => Array(cols).fill(""));
+
+  const tableCard = {
+    id: 'table_' + Date.now(),
     title: title,
-    type: 'audio',
-    audioData: audioBase64,
+    type: 'table',
+    cols: cols,
+    rows: rows,
+    tableData: emptyData,
     author: currentUser,
     archived: false,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    comments: []
   };
 
   const colIndex = columns.findIndex(c => c.id === activeColForMore);
-  columns[colIndex].cards.push(audioCard);
+  columns[colIndex].cards.push(tableCard);
   persist();
-  closeVoiceMemoModal();
+  closeTableConstructor();
+}
+
+function openTableEditor(colId, cardId) {
+  const col = columns.find(c => c.id == colId);
+  const card = col.cards.find(c => c.id == cardId);
+  activeTableData = JSON.parse(JSON.stringify(card)); // Клонируем для работы без автосохранения
+  activeTableData.colId = colId;
+  activeTableData.cardId = cardId;
+
+  document.getElementById('fullTableTitle').innerText = activeTableData.title;
+  renderExcelTable();
+
+  const editor = document.getElementById('tableFullEditor');
+  editor.classList.remove('hidden');
+  setTimeout(() => editor.classList.remove('opacity-0'), 10);
+}
+
+function renderExcelTable() {
+  const thead = document.getElementById('excelThead');
+  const tbody = document.getElementById('excelTbody');
+  
+  // Хедер
+  let headHtml = '<tr><th class="p-3 border-r dark:border-gray-700 bg-gray-100 dark:bg-gray-900 w-10 text-[10px] font-black text-gray-400">#</th>';
+  for (let c = 0; c < activeTableData.cols; c++) {
+    headHtml += `<th class="p-3 border-r dark:border-gray-700 text-left text-[10px] font-black uppercase text-gray-500 tracking-widest">Колонка ${c + 1}</th>`;
+  }
+  thead.innerHTML = headHtml + '</tr>';
+
+  // Тело
+  let bodyHtml = '';
+  for (let r = 0; r < activeTableData.rows; r++) {
+    bodyHtml += `<tr class="border-b dark:border-gray-700 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">`;
+    bodyHtml += `<td class="p-3 border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 text-center text-[10px] font-bold text-gray-400">${r + 1}</td>`;
+    for (let c = 0; c < activeTableData.cols; c++) {
+      const val = activeTableData.tableData[r][c] || "";
+      bodyHtml += `<td class="p-0 border-r dark:border-gray-700">
+        <input type="text" value="${val}" oninput="updateTableCell(${r}, ${c}, this.value)" 
+               class="w-full h-full p-3 bg-transparent outline-none text-sm dark:text-white focus:bg-white dark:focus:bg-gray-700 transition-all border-2 border-transparent focus:border-blue-500" />
+      </td>`;
+    }
+    bodyHtml += `</tr>`;
+  }
+  tbody.innerHTML = bodyHtml;
+}
+
+function updateTableCell(r, c, val) {
+  activeTableData.tableData[r][c] = val;
+}
+
+function closeTableEditor() {
+  const editor = document.getElementById('tableFullEditor');
+  editor.classList.add('opacity-0');
+  setTimeout(() => { editor.classList.add('hidden'); activeTableData = null; }, 300);
+}
+
+function commitTableToDb() {
+  columns = columns.map(col => {
+    if (col.id == activeTableData.colId) {
+      col.cards = col.cards.map(c => {
+        if (c.id == activeTableData.cardId) {
+          return { ...c, tableData: activeTableData.tableData };
+        }
+        return c;
+      });
+    }
+    return col;
+  });
+  persist();
+  showSystemToast('Таблица сохранена', 'Данные успешно синхронизированы.', 'check-circle', 'text-blue-500', 'bg-blue-50');
+  closeTableEditor();
 }
 </script>
 </body>
