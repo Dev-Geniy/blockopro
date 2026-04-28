@@ -1346,7 +1346,15 @@ function render() {
         ${cardsHtml}
         ${emptyStateHtml}
       </div>
-      ${isViewer ? '' : `<div class="p-3 pt-0"><button onclick="openEditModal(${col.id})" class="w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors"><i data-lucide="plus" class="w-4 h-4"></i> Добавить карточку</button></div>`}
+      ${isViewer ? '' : `
+      <div class="p-3 pt-0 flex gap-2">
+        <button onclick="openEditModal(${col.id})" class="flex-[4] py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors">
+          <i data-lucide="plus" class="w-4 h-4"></i> Карточка
+        </button>
+        <button onclick="openMoreAddModal(${col.id})" class="flex-1 py-2.5 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-white/50 dark:hover:bg-black/20 rounded-xl transition-colors">
+          <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+        </button>
+      </div>`}
     `;
     board.appendChild(wrap);
     
@@ -1384,7 +1392,6 @@ function render() {
   });
   
   // 4. SortableJS для самих колонок
-  // 4. SortableJS для самих колонок
   sortableInstances.push(new Sortable(board, { 
     animation: 200, 
     handle: '.col-handle', 
@@ -1400,8 +1407,8 @@ function render() {
   }));
 
   lucide.createIcons();
-  
-  // Автоматическая проверка дедлайнов при каждом рендере
+
+  // 5. Автоматическая проверка дедлайнов при каждом рендере
   if (typeof checkDeadlines === 'function') {
     checkDeadlines(columns);
   }
