@@ -1190,18 +1190,49 @@ function toggleModal(modalId, show) {
 }
 
 function openViewModal(colId, cardId) {
-  const col = columns.find(c => c.id === colId); viewingCard = col.cards.find(c => c.id === cardId); currentColumn = colId;
+  const col = columns.find(c => c.id == colId); viewingCard = col.cards.find(c => c.id == cardId); currentColumn = colId;
   document.getElementById('viewTitle').innerText = viewingCard.title;
-  document.getElementById('viewDescription').innerHTML = viewingCard.description ? marked.parse(viewingCard.description) : '<span class="text-gray-400 italic">Описание отсутствует</span>';
+  
+  const descCont = document.getElementById('viewDescContainer');
+  const audioCont = document.getElementById('viewAudioContainer');
+  
+  if (viewingCard.type === 'audio') {
+     descCont.classList.add('hidden');
+     audioCont.classList.remove('hidden');
+     audioCont.innerHTML = `
+        <div class="relative w-full h-14 flex items-center overflow-hidden bg-emerald-50 dark:bg-emerald-900/20 rounded-xl px-2 border border-emerald-100 dark:border-emerald-800">
+            <audio id="audio_view_${viewingCard.id}" src="${viewingCard.audioData}" ontimeupdate="updateAudioProgress('view_${viewingCard.id}')" onended="resetAudio('view_${viewingCard.id}')"></audio>
+            <button id="playBtn_view_${viewingCard.id}" onclick="toggleAudioPlay('view_${viewingCard.id}')" class="absolute left-1/2 -translate-x-1/2 w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-md transition-all duration-300 z-10 hover:scale-105 active:scale-95">
+                <i data-lucide="play" id="playIcon_view_${viewingCard.id}" class="w-5 h-5 ml-1"></i>
+            </button>
+            <div id="audioProgressContainer_view_${viewingCard.id}" class="opacity-0 translate-x-4 transition-all duration-300 flex-1 ml-12 mr-2 flex items-center gap-2 cursor-pointer h-full" onclick="seekAudio(event, 'view_${viewingCard.id}')">
+                 <span id="audioTime_view_${viewingCard.id}" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 w-8 text-right">0:00</span>
+                 <div class="flex-1 h-2 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden relative">
+                     <div id="audioProgressBar_view_${viewingCard.id}" class="absolute left-0 top-0 bottom-0 bg-emerald-500 w-0 transition-all duration-75 pointer-events-none"></div>
+                 </div>
+                 <span id="audioDuration_view_${viewingCard.id}" class="text-[10px] font-bold text-emerald-400 w-8">0:00</span>
+            </div>
+        </div>
+     `;
+  } else {
+     audioCont.classList.add('hidden');
+     audioCont.innerHTML = '';
+     descCont.classList.remove('hidden');
+     document.getElementById('viewDescription').innerHTML = viewingCard.description ? marked.parse(viewingCard.description) : '<span class="text-gray-400 italic">Описание отсутствует</span>';
+  }
+
   const author = viewingCard.author || { name: 'Аноним', avatar: '' };
-  document.getElementById('viewAuthorName').innerText = author.name; document.getElementById('viewAuthorAvatar').src = author.avatar;
+  document.getElementById('viewAuthorName').innerText = author.name; 
+  document.getElementById('viewAuthorAvatarContainer').innerHTML = getAvatarHTML(author, 'w-6 h-6');
   document.getElementById('viewTags').innerHTML = (viewingCard.tags || []).map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<span class="px-3 py-1 rounded border text-xs font-bold ${t.color}">${t.name}</span>` : ''; }).join('');
   const imgEl = document.getElementById('viewImage'); 
   if(viewingCard.image) { imgEl.src = viewingCard.image; imgEl.classList.remove('hidden'); } else imgEl.classList.add('hidden');
   renderChecklistView(); 
   if(!isLocalBoard) renderCommentsView();
+  lucide.createIcons();
   toggleModal('viewCardModal', true);
 }
+  
 function closeViewModal() { toggleModal('viewCardModal', false); }
 
 function renderCommentsView() {
@@ -1468,14 +1499,28 @@ function render() {
       // === РЕНДЕР ГОЛОСОВОЙ ЗАМЕТКИ ===
       if (c.type === 'audio') {
         return `
-          <div data-id="${c.id}" class="card-item bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-900/50 p-4 rounded-2xl shadow-sm ${isViewer ? '' : 'cursor-grab'} select-none relative group transition-all hover:shadow-md">
+          <div data-id="${c.id}" onclick="openViewModal(${col.id}, '${c.id}')" class="card-item bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-900/50 p-4 rounded-2xl shadow-sm ${isViewer ? 'cursor-pointer' : 'cursor-grab'} select-none relative group transition-all hover:shadow-md hover:border-emerald-400 dark:hover:border-emerald-500 cursor-pointer">
             ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}'); event.stopPropagation();" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
             <div class="flex items-center gap-2 mb-3">
               <div class="p-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-lg"><i data-lucide="mic" class="w-4 h-4"></i></div>
               <span class="text-[10px] font-black uppercase tracking-widest text-emerald-500">Аудио ТЗ</span>
             </div>
             <div class="font-bold text-sm leading-snug mb-4 text-gray-900 dark:text-white pr-8">${displayTitle}</div>
-            <audio controls src="${c.audioData}" class="w-full h-10 mb-2 outline-none rounded-xl"></audio>
+            
+            <div class="relative w-full h-12 flex items-center overflow-hidden bg-emerald-50 dark:bg-emerald-900/20 rounded-xl mb-2 px-2" onclick="event.stopPropagation()">
+                <audio id="audio_${c.id}" src="${c.audioData}" ontimeupdate="updateAudioProgress('${c.id}')" onended="resetAudio('${c.id}')"></audio>
+                <button id="playBtn_${c.id}" onclick="toggleAudioPlay('${c.id}')" class="absolute left-1/2 -translate-x-1/2 w-9 h-9 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-md transition-all duration-300 z-10 hover:scale-105 active:scale-95">
+                    <i data-lucide="play" id="playIcon_${c.id}" class="w-4 h-4 ml-0.5"></i>
+                </button>
+                <div id="audioProgressContainer_${c.id}" class="opacity-0 translate-x-4 transition-all duration-300 flex-1 ml-10 mr-1 flex items-center gap-2 cursor-pointer h-full" onclick="seekAudio(event, '${c.id}')">
+                     <span id="audioTime_${c.id}" class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 w-6 text-right">0:00</span>
+                     <div class="flex-1 h-1.5 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden relative">
+                         <div id="audioProgressBar_${c.id}" class="absolute left-0 top-0 bottom-0 bg-emerald-500 w-0 transition-all duration-75 pointer-events-none"></div>
+                     </div>
+                     <span id="audioDuration_${c.id}" class="text-[9px] font-bold text-emerald-400 w-6">0:00</span>
+                </div>
+            </div>
+
             <div class="flex justify-between items-center mt-3">
               <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest pt-2 border-t border-gray-100 dark:border-gray-800 w-full flex justify-between items-center">
                   <span><i data-lucide="clock" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> Запись</span>
@@ -2257,6 +2302,113 @@ function saveVoiceMemo() {
   columns[colIndex].cards.push(audioCard);
   persist();
   closeVoiceMemoModal();
+}
+
+function toggleAudioPlay(id) {
+    const audio = document.getElementById('audio_' + id);
+    const btn = document.getElementById('playBtn_' + id);
+    const icon = document.getElementById('playIcon_' + id);
+    const container = document.getElementById('audioProgressContainer_' + id);
+    
+    document.querySelectorAll('audio').forEach(a => {
+        if (a.id !== 'audio_' + id) {
+            a.pause();
+            const otherId = a.id.replace('audio_', '');
+            resetAudioUI(otherId);
+        }
+    });
+
+    if (audio.paused) {
+        audio.play();
+        icon.setAttribute('data-lucide', 'pause');
+        icon.classList.remove('ml-0.5', 'ml-1');
+        lucide.createIcons();
+        
+        btn.classList.remove('left-1/2', '-translate-x-1/2');
+        btn.classList.add('left-1', 'translate-x-0');
+        container.classList.remove('opacity-0', 'translate-x-4');
+        container.classList.add('opacity-100', 'translate-x-0');
+
+        if (!audio.duration || isNaN(audio.duration)) {
+            audio.addEventListener('loadedmetadata', () => {
+                 document.getElementById('audioDuration_' + id).innerText = formatAudioTime(audio.duration);
+            }, {once:true});
+        } else {
+            document.getElementById('audioDuration_' + id).innerText = formatAudioTime(audio.duration);
+        }
+    } else {
+        audio.pause();
+        icon.setAttribute('data-lucide', 'play');
+        if(btn.classList.contains('w-9')) icon.classList.add('ml-0.5'); else icon.classList.add('ml-1');
+        lucide.createIcons();
+    }
+}
+
+function updateAudioProgress(id) {
+    const audio = document.getElementById('audio_' + id);
+    if (!audio) return;
+    const progress = (audio.currentTime / audio.duration) * 100;
+    const bar = document.getElementById('audioProgressBar_' + id);
+    const timeDisplay = document.getElementById('audioTime_' + id);
+    if(bar) bar.style.width = (progress || 0) + '%';
+    if(timeDisplay) timeDisplay.innerText = formatAudioTime(audio.currentTime);
+}
+
+function resetAudio(id) {
+    const audio = document.getElementById('audio_' + id);
+    if(audio) audio.currentTime = 0;
+    resetAudioUI(id);
+}
+
+function resetAudioUI(id) {
+    const btn = document.getElementById('playBtn_' + id);
+    const icon = document.getElementById('playIcon_' + id);
+    const container = document.getElementById('audioProgressContainer_' + id);
+    if (btn && icon && container) {
+        icon.setAttribute('data-lucide', 'play');
+        if(btn.classList.contains('w-9')) icon.classList.add('ml-0.5'); else icon.classList.add('ml-1');
+        lucide.createIcons();
+        btn.classList.add('left-1/2', '-translate-x-1/2');
+        btn.classList.remove('left-1', 'translate-x-0');
+        container.classList.add('opacity-0', 'translate-x-4');
+        container.classList.remove('opacity-100', 'translate-x-0');
+    }
+    const bar = document.getElementById('audioProgressBar_' + id);
+    const timeDisplay = document.getElementById('audioTime_' + id);
+    if(bar) bar.style.width = '0%';
+    if(timeDisplay) timeDisplay.innerText = '0:00';
+}
+
+function seekAudio(e, id) {
+    const audio = document.getElementById('audio_' + id);
+    const container = e.currentTarget.querySelector('.relative'); 
+    if(!container || !audio.duration) return;
+    const rect = container.getBoundingClientRect();
+    const clickX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const percent = clickX / rect.width;
+    audio.currentTime = percent * audio.duration;
+    updateAudioProgress(id);
+}
+
+function formatAudioTime(seconds) {
+    if(isNaN(seconds)) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return m + ':' + (s < 10 ? '0' + s : s);
+}
+
+function deleteCardFromView() { 
+  openConfirmModal('Удалить навсегда?', 'Карточка будет удалена без возможности восстановления.', 'Удалить', true, () => {
+    columns = columns.map(col => { if(col.id === currentColumn) col.cards = col.cards.filter(c => c.id !== viewingCard.id); return col; }); 
+    persist(); closeViewModal(); render();
+  });
+}
+  
+function archiveCardFromView() {
+  openConfirmModal('В архив?', 'Задача исчезнет с доски, но будет сохранена в Архиве проекта.', 'В архив', false, () => {
+    columns = columns.map(col => { if(col.id === currentColumn) { col.cards = col.cards.map(c => c.id === viewingCard.id ? {...c, archived: true} : c); } return col; });
+    persist(); closeViewModal(); render();
+  });
 }
 </script>
 </body>
