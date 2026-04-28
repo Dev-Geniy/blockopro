@@ -538,21 +538,21 @@
 </div>
 
 <div id="tableFullEditor" class="hidden fixed inset-0 z-[500] bg-[#F8F9FD] dark:bg-[#0B0F1A] flex flex-col opacity-0 transition-opacity duration-300">
-  <div class="px-8 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl">
+  <div class="px-8 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl z-20">
     <div class="flex items-center gap-4">
       <div class="p-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-500/20"><i data-lucide="table" class="w-5 h-5"></i></div>
       <h2 id="fullTableTitle" class="text-xl font-black dark:text-white">Редактор таблицы</h2>
     </div>
     <div class="flex gap-3">
-      <button onclick="closeTableEditor()" class="px-6 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all">Отмена</button>
+      <button onclick="closeTableEditor()" class="px-6 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-700">Отмена</button>
       <button onclick="commitTableToDb()" class="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl shadow-xl shadow-blue-500/25 active:scale-95 transition-all">Сохранить изменения</button>
     </div>
   </div>
-  <div class="flex-1 overflow-auto p-8 flex justify-center">
-    <div class="bg-white dark:bg-gray-800 shadow-2xl rounded-[2rem] border border-gray-200 dark:border-gray-700 overflow-hidden h-fit w-fit min-w-[60%]">
-      <table id="excelTable" class="w-full border-collapse">
-        <thead id="excelThead" class="bg-gray-50 dark:bg-gray-900/50 border-b-2 border-gray-200 dark:border-gray-700"></thead>
-        <tbody id="excelTbody" class="dark:text-white"></tbody>
+  <div id="tableScrollArea" class="flex-1 overflow-auto p-4 sm:p-8 flex justify-start items-start cursor-grab active:cursor-grabbing relative">
+    <div class="bg-white dark:bg-gray-800 shadow-2xl rounded-xl border border-gray-200 dark:border-gray-700 h-fit w-fit min-w-full sm:min-w-[60%]">
+      <table id="excelTable" class="w-full border-collapse table-fixed">
+        <thead id="excelThead" class="bg-gray-50 dark:bg-gray-900/80 border-b-2 border-gray-200 dark:border-gray-700 sticky top-0 z-30 shadow-sm backdrop-blur-md"></thead>
+        <tbody id="excelTbody" class="dark:text-white relative z-10"></tbody>
       </table>
     </div>
   </div>
@@ -1796,12 +1796,41 @@ function resetBoardBackground() {
   else { db.collection("boards").doc(BOARD_ID).update({ background: firebase.firestore.FieldValue.delete() }); }
 }
 
-const mainScroll = document.getElementById('mainScroll'); let isDown=false, startX, scrollLeft;
-mainScroll.addEventListener('mousedown', e => { if(e.target.closest('.card-item') || e.target.closest('button')) return; isDown=true; mainScroll.style.cursor='grabbing'; startX=e.pageX-mainScroll.offsetLeft; scrollLeft=mainScroll.scrollLeft; });
-mainScroll.addEventListener('mouseleave', () => { isDown=false; mainScroll.style.cursor='grab'; });
-mainScroll.addEventListener('mouseup', () => { isDown=false; mainScroll.style.cursor='grab'; });
-mainScroll.addEventListener('mousemove', e => { if(!isDown) return; e.preventDefault(); mainScroll.scrollLeft=scrollLeft-(e.pageX-mainScroll.offsetLeft-startX); });
+function initDragToScroll(el) {
+  if (!el) return;
+  let isDown = false, startX, startY, scrollLeft, scrollTop;
+  
+  el.addEventListener('mousedown', e => {
+    // Игнорируем перетаскивание при взаимодействии с контентом
+    if(e.target.closest('.card-item') || e.target.closest('button') || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.classList.contains('resize-x') || e.target.classList.contains('resize-y')) return;
+    
+    isDown = true;
+    el.style.cursor = 'grabbing';
+    startX = e.pageX - el.offsetLeft;
+    startY = e.pageY - el.offsetTop;
+    scrollLeft = el.scrollLeft;
+    scrollTop = el.scrollTop;
+  });
+  
+  el.addEventListener('mouseleave', () => { isDown = false; el.style.cursor = 'grab'; });
+  el.addEventListener('mouseup', () => { isDown = false; el.style.cursor = 'grab'; });
+  
+  el.addEventListener('mousemove', e => {
+    if(!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    const y = e.pageY - el.offsetTop;
+    el.scrollLeft = scrollLeft - (x - startX);
+    el.scrollTop = scrollTop - (y - startY);
+  });
+}
 
+const mainScroll = document.getElementById('mainScroll');
+initDragToScroll(mainScroll);
+
+const tableScroll = document.getElementById('tableScrollArea');
+initDragToScroll(tableScroll);
+  
 function getBoardTags() { return boardData.tags && boardData.tags.length > 0 ? boardData.tags : DEFAULT_BOARD_TAGS; }
 function renderSettingsTags() {
   const list = document.getElementById('settingsTagsList'); const form = document.getElementById('newTagForm');
@@ -2577,42 +2606,37 @@ function renderExcelTable() {
   const thead = document.getElementById('excelThead');
   const tbody = document.getElementById('excelTbody');
   
-  // Инициализация для старых таблиц (обратная совместимость)
   if (!activeTableData.colHeaders) activeTableData.colHeaders = Array(activeTableData.cols).fill("");
   if (!activeTableData.rowHeaders) activeTableData.rowHeaders = Array(activeTableData.rows).fill("");
   if (!activeTableData.colWidths) activeTableData.colWidths = Array(activeTableData.cols).fill(180);
   if (!activeTableData.rowHeights) activeTableData.rowHeights = Array(activeTableData.rows).fill(45);
 
-  // Шапка (Изменение ширины)
-  let headHtml = '<tr><th class="p-0 border-r border-b dark:border-gray-700 bg-gray-100 dark:bg-gray-900 w-16 align-middle shadow-sm z-20"><i data-lucide="corner-down-right" class="w-4 h-4 mx-auto text-gray-400"></i></th>';
+  let headHtml = '<tr><th class="p-0 border-r border-b dark:border-gray-700 bg-gray-100 dark:bg-gray-900 w-16 align-middle sticky left-0 z-40 shadow-[1px_1px_0_rgba(0,0,0,0.1)]"><i data-lucide="corner-down-right" class="w-4 h-4 mx-auto text-gray-400"></i></th>';
   for (let c = 0; c < activeTableData.cols; c++) {
     const title = activeTableData.colHeaders[c] || `Столбец ${c + 1}`;
-    headHtml += `<th class="p-0 border-r border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900/80 align-top shadow-sm z-10">
+    headHtml += `<th class="p-0 border-r border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900/80 align-top shadow-sm z-30">
       <div style="width: ${activeTableData.colWidths[c]}px; min-width: 80px;" class="resize-x overflow-hidden" onmouseup="activeTableData.colWidths[${c}] = this.offsetWidth">
-        <input type="text" value="${title}" oninput="activeTableData.colHeaders[${c}] = this.value" placeholder="Столбец ${c + 1}" class="w-full h-10 px-3 bg-transparent outline-none text-[11px] font-black text-gray-500 tracking-wider text-center focus:text-blue-500 focus:bg-white dark:focus:bg-gray-800 transition-colors" />
+        <input type="text" value="${title}" onmousedown="event.stopPropagation()" oninput="activeTableData.colHeaders[${c}] = this.value" placeholder="Столбец ${c + 1}" class="w-full h-10 px-3 bg-transparent outline-none text-[11px] font-black text-gray-500 tracking-wider text-center focus:text-blue-500 focus:bg-white dark:focus:bg-gray-800 transition-colors" />
       </div>
     </th>`;
   }
   thead.innerHTML = headHtml + '</tr>';
 
-  // Тело (Изменение высоты и ввод данных)
   let bodyHtml = '';
   for (let r = 0; r < activeTableData.rows; r++) {
     const rowTitle = activeTableData.rowHeaders[r] || `${r + 1}`;
     bodyHtml += `<tr class="border-b dark:border-gray-700 hover:bg-blue-50/20 dark:hover:bg-blue-900/10 transition-colors">`;
     
-    // Номер/Название строки
-    bodyHtml += `<td class="p-0 border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 align-top shadow-sm z-10">
+    bodyHtml += `<td class="p-0 border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-900/90 align-top shadow-[1px_0_0_rgba(0,0,0,0.1)] z-20 sticky left-0">
       <div style="height: ${activeTableData.rowHeights[r]}px; min-height: 40px;" class="resize-y overflow-hidden flex items-center justify-center w-16" onmouseup="activeTableData.rowHeights[${r}] = this.offsetHeight">
-         <input type="text" value="${rowTitle}" oninput="activeTableData.rowHeaders[${r}] = this.value" placeholder="${r + 1}" class="w-full h-full text-center bg-transparent outline-none text-[11px] font-bold text-gray-400 focus:text-blue-500 focus:bg-white dark:focus:bg-gray-800 transition-colors" />
+         <input type="text" value="${rowTitle}" onmousedown="event.stopPropagation()" oninput="activeTableData.rowHeaders[${r}] = this.value" placeholder="${r + 1}" class="w-full h-full text-center bg-transparent outline-none text-[11px] font-bold text-gray-400 focus:text-blue-500 focus:bg-white dark:focus:bg-gray-800 transition-colors" />
       </div>
     </td>`;
     
-    // Ячейки
     for (let c = 0; c < activeTableData.cols; c++) {
       const val = activeTableData.tableData[r][c] || "";
       bodyHtml += `<td class="p-0 border-r dark:border-gray-700 align-top relative h-full">
-        <textarea oninput="updateTableCell(${r}, ${c}, this.value)" class="absolute inset-0 w-full h-full p-2.5 bg-transparent outline-none text-sm dark:text-white focus:bg-white dark:focus:bg-gray-800 transition-all border-2 border-transparent focus:border-blue-500 resize-none hide-scroll leading-relaxed">${val}</textarea>
+        <textarea onmousedown="event.stopPropagation()" oninput="updateTableCell(${r}, ${c}, this.value)" class="absolute inset-0 w-full h-full p-2.5 bg-transparent outline-none text-sm dark:text-white focus:bg-white dark:focus:bg-gray-800 transition-all border-2 border-transparent focus:border-blue-500 resize-none hide-scroll leading-relaxed">${val}</textarea>
       </td>`;
     }
     bodyHtml += `</tr>`;
@@ -2620,7 +2644,7 @@ function renderExcelTable() {
   tbody.innerHTML = bodyHtml;
   lucide.createIcons();
 }
-
+  
 function updateTableCell(r, c, val) {
   activeTableData.tableData[r][c] = val;
 }
