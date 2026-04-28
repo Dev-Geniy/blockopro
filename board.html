@@ -328,7 +328,7 @@
         </div>
       </button>
 
-      <button onclick="prepareVoiceMemoCreation()" class="w-full p-3.5 flex items-center gap-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl hover:scale-[1.02] transition-transform font-bold border border-emerald-100 dark:border-emerald-800 text-left shadow-sm">
+      <button onclick="startInlineAudioCreation()" class="w-full p-3.5 flex items-center gap-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl hover:scale-[1.02] transition-transform font-bold border border-emerald-100 dark:border-emerald-800 text-left shadow-sm">
         <div class="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center shadow-md shadow-emerald-500/30 flex-shrink-0"><i data-lucide="mic" class="w-5 h-5"></i></div>
         <div>
           <div class="text-sm">Голосовая заметка</div>
@@ -379,36 +379,7 @@
   </div>
 </div>
 
-<div id="voiceMemoModal" class="hidden fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform" id="voiceMemoContent">
-    <div class="flex items-center gap-3 mb-6">
-      <div class="p-2.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl"><i data-lucide="mic" class="w-5 h-5"></i></div>
-      <h3 class="text-xl font-black dark:text-white">Аудио-задача</h3>
-    </div>
-    <div class="space-y-6">
-      <input type="text" id="voiceMemoTitle" placeholder="Короткое название (Опционально)" class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-bold dark:text-white">
-      
-      <div class="flex flex-col items-center justify-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700">
-        <button id="recordBtn" onclick="startRecording()" class="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 rounded-full flex items-center justify-center hover:scale-110 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 transition-all shadow-lg shadow-emerald-500/20">
-            <i data-lucide="mic" class="w-10 h-10"></i>
-        </button>
-        <button id="stopRecordBtn" onclick="stopRecording()" class="hidden w-24 h-24 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center hover:scale-110 hover:bg-red-200 dark:hover:bg-red-800/50 transition-all shadow-lg shadow-red-500/20 animate-pulse">
-            <i data-lucide="square" class="w-8 h-8 fill-current"></i>
-        </button>
-        <p id="recordStatus" class="mt-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Нажмите для записи</p>
-      </div>
-
-      <div id="audioPreviewContainer" class="hidden w-full bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-800">
-         <audio id="audioPreview" controls class="w-full h-10 outline-none"></audio>
-      </div>
-    </div>
-    <div class="flex gap-3 mt-8">
-      <button onclick="closeVoiceMemoModal()" class="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold rounded-2xl transition-colors">Отмена</button>
-      <button id="saveAudioBtn" onclick="saveVoiceMemo()" disabled class="flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/30 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">Добавить на доску</button>
-    </div>
-  </div>
-</div>
-  
+<!-- Мождалка опросов -->
 <div id="pollConstructorModal" class="hidden fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
   <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform" id="pollConstructorContent">
     <div class="flex items-center gap-3 mb-6">
@@ -1372,17 +1343,13 @@ function render() {
   const board = document.getElementById('board');
   if (!board) return;
 
-  // 1. Очистка старых инстансов SortableJS для предотвращения утечек памяти
-  sortableInstances.forEach(inst => {
-    if (typeof inst.destroy === 'function') inst.destroy();
-  });
+  sortableInstances.forEach(inst => { if (typeof inst.destroy === 'function') inst.destroy(); });
   sortableInstances = [];
 
   const searchQuery = document.getElementById('boardSearch')?.value.toLowerCase() || "";
   const filterTag = document.getElementById('tagFilter')?.value || "all";
   const todayStr = new Date().toISOString().split('T')[0];
   
-  // Определяем права доступа
   const myRole = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role : 'editor';
   const isViewer = myRole === 'viewer' && !isLocalBoard;
 
@@ -1413,89 +1380,14 @@ function render() {
     const cardsHtml = filteredCards.map(c => {
       const displayTitle = highlightText(c.title, searchQuery);
       const authorAvatar = c.author ? `<img src="${c.author.avatar}" class="w-5 h-5 rounded-full border border-white dark:border-gray-800 shadow-sm" title="${c.author.name}" />` : '';
-      
-      // === РЕНДЕР ОПРОСА ===
-      if (c.type === 'poll') {
-        const totalVotes = c.options.reduce((sum, o) => sum + o.votes.length, 0);
-        
-        const optionsHtml = c.options.map((opt, i) => {
-          const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
-          const myVote = opt.votes.includes(currentUser.id);
-          const barColor = myVote ? 'bg-purple-500' : 'bg-purple-200 dark:bg-purple-900/50';
-          const textColor = myVote ? 'text-white' : 'text-gray-700 dark:text-gray-300';
-          
-          return `
-            <div onclick="votePoll('${col.id}', '${c.id}', ${i}); event.stopPropagation();" 
-                 class="relative overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2.5 cursor-pointer hover:border-purple-400 transition-colors group/opt mb-2 shadow-sm">
-              <div class="absolute left-0 top-0 bottom-0 ${barColor} opacity-20 transition-all duration-500" style="width: ${percent}%"></div>
-              <div class="relative z-10 flex justify-between items-center text-xs font-bold ${textColor}">
-                <span class="flex items-center gap-1.5">${opt.text} ${myVote ? '<i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-purple-500"></i>' : ''}</span>
-                <span>${percent}%</span>
-              </div>
-            </div>
-          `;
-        }).join('');
-
-        return `
-          <div data-id="${c.id}" onclick="openPollStatsModal('${col.id}', '${c.id}')" class="card-item bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 p-4 rounded-2xl shadow-sm ${isViewer ? 'cursor-pointer' : 'cursor-grab'} select-none relative group transition-colors cursor-pointer">
-            ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}'); event.stopPropagation();" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
-            <div class="flex items-center gap-2 mb-3">
-              <div class="p-1.5 bg-gray-100 dark:bg-gray-800 group-hover:bg-purple-50 dark:group-hover:bg-purple-900/30 text-gray-400 group-hover:text-purple-500 transition-colors rounded-lg"><i data-lucide="bar-chart-3" class="w-4 h-4"></i></div>
-              <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-purple-500 transition-colors">Опрос</span>
-            </div>
-            <div class="font-bold text-sm leading-snug mb-4 text-gray-900 dark:text-white pr-8">${displayTitle}</div>
-            <div class="space-y-1 mb-4">
-              ${optionsHtml}
-            </div>
-            <div class="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest pt-3 border-t border-gray-100 dark:border-gray-800">
-              <span><i data-lucide="users" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> ${totalVotes} ответов</span>
-              <span>${c.isAnonymous ? 'Анонимно' : 'Публично'}</span>
-            </div>
-          </div>
-        `;
-      }
-
-      // === РЕНДЕР ГОЛОСОВОЙ ЗАМЕТКИ ===
-      if (c.type === 'audio') {
-        return `
-          <div data-id="${c.id}" class="card-item bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-900/50 p-4 rounded-2xl shadow-sm ${isViewer ? '' : 'cursor-grab'} select-none relative group transition-all hover:shadow-md">
-            ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}'); event.stopPropagation();" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
-            <div class="flex items-center gap-2 mb-3">
-              <div class="p-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-lg"><i data-lucide="mic" class="w-4 h-4"></i></div>
-              <span class="text-[10px] font-black uppercase tracking-widest text-emerald-500">Аудио ТЗ</span>
-            </div>
-            <div class="font-bold text-sm leading-snug mb-4 text-gray-900 dark:text-white pr-8">${displayTitle}</div>
-            <audio controls src="${c.audioData}" class="w-full h-10 mb-2 outline-none rounded-xl"></audio>
-            <div class="flex justify-between items-center mt-3">
-              <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest pt-2 border-t border-gray-100 dark:border-gray-800 w-full flex justify-between items-center">
-                  <span><i data-lucide="clock" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> Запись</span>
-                  ${authorAvatar}
-              </div>
-            </div>
-          </div>
-        `;
-      }
-
-      // === ОБЫЧНАЯ КАРТОЧКА ===
       const isOverdue = c.dueDate && c.dueDate < todayStr;
       const overdueClass = isOverdue ? 'deadline-overdue' : '';
 
-      let checklistHtml = '';
-      if (c.checklist && c.checklist.length > 0) {
-        const total = c.checklist.length; 
-        const done = c.checklist.filter(i => i.isCompleted).length; 
-        const percent = Math.round((done / total) * 100);
-        checklistHtml = `
-          <div class="mt-3 mb-1">
-            <div class="flex justify-between items-center text-[10px] font-bold text-gray-400 mb-1.5">
-              <span class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> ${done}/${total}</span>
-              <span>${percent}%</span>
-            </div>
-            <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div class="${done === total ? 'bg-green-500' : 'bg-blue-500'} h-full transition-all" style="width: ${percent}%"></div>
-            </div>
-          </div>`;
-      }
+      // --- 1. ГЛОБАЛЬНЫЕ ЭЛЕМЕНТЫ КАРТОЧКИ (ТЕГИ, ДЕДЛАЙН) ---
+      const tagsHtml = c.tags?.length ? `<div class="flex gap-1 mb-3">${c.tags.map(tId => { 
+        const t = getBoardTags().find(tag => tag.id === tId); 
+        return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; 
+      }).join('')}</div>` : '';
 
       let dueDateHtml = '';
       if (c.dueDate) {
@@ -1504,23 +1396,103 @@ function render() {
         dueDateHtml = `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${bgColors}"><i data-lucide="clock" class="w-3 h-3"></i> ${formattedDate}</div>`;
       }
 
-      const tagsHtml = c.tags?.length ? `<div class="flex gap-1 mb-2">${c.tags.map(tId => { 
-        const t = getBoardTags().find(tag => tag.id === tId); 
-        return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; 
-      }).join('')}</div>` : '';
+      // --- 2. НАСТРОЙКА ТЕМЫ (ЦВЕТ И ИКОНКА) ---
+      let theme = { color: 'blue', icon: 'check-circle', label: 'Задача' };
+      if (c.type === 'poll') theme = { color: 'purple', icon: 'bar-chart-3', label: 'Опрос' };
+      if (c.type === 'audio' || c.type === 'audio_recording') theme = { color: 'emerald', icon: 'mic', label: 'Аудио' };
 
-      const commentsCount = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
-      const hasDesc = c.description ? `<i data-lucide="align-left" class="w-3.5 h-3.5 text-gray-400"></i>` : '';
+      // --- 3. ГЕНЕРАЦИЯ СПЕЦИФИЧНОГО КОНТЕНТА ---
+      let specificContent = '';
+      let footerLeft = '';
+
+      if (c.type === 'poll') {
+        const totalVotes = c.options.reduce((sum, o) => sum + o.votes.length, 0);
+        specificContent = c.options.map((opt, i) => {
+          const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
+          const myVote = opt.votes.includes(currentUser.id);
+          const barColor = myVote ? 'bg-purple-500' : 'bg-purple-200 dark:bg-purple-900/50';
+          const textColor = myVote ? 'text-white' : 'text-gray-700 dark:text-gray-300';
+          return `
+            <div onclick="votePoll('${col.id}', '${c.id}', ${i}); event.stopPropagation();" 
+                 class="relative overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2.5 cursor-pointer hover:border-purple-400 transition-colors mb-2 shadow-sm">
+              <div class="absolute left-0 top-0 bottom-0 ${barColor} opacity-20 transition-all duration-500" style="width: ${percent}%"></div>
+              <div class="relative z-10 flex justify-between items-center text-xs font-bold ${textColor}">
+                <span class="flex items-center gap-1.5">${opt.text} ${myVote ? '<i data-lucide="check-circle-2" class="w-3 h-3 text-purple-500"></i>' : ''}</span>
+                <span>${percent}%</span>
+              </div>
+            </div>`;
+        }).join('');
+        footerLeft = `<span><i data-lucide="users" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> ${totalVotes}</span>`;
+      } 
+      
+      else if (c.type === 'audio_recording') {
+        specificContent = `
+          <div class="flex flex-col items-center justify-center py-4 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl border border-dashed border-emerald-200 dark:border-emerald-800/50">
+            <button onclick="startInlineRecording('${col.id}', '${c.id}'); event.stopPropagation();" id="rec_btn_${c.id}" class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center hover:scale-110 transition-transform">
+              <i data-lucide="mic" class="w-6 h-6"></i>
+            </button>
+            <button onclick="stopInlineRecording('${col.id}', '${c.id}'); event.stopPropagation();" id="stop_btn_${c.id}" class="hidden w-14 h-14 bg-red-500 text-white rounded-full flex items-center justify-center animate-pulse hover:scale-110 transition-transform">
+              <i data-lucide="square" class="w-5 h-5 fill-current"></i>
+            </button>
+            <div id="rec_status_${c.id}" class="mt-3 text-[10px] font-black uppercase tracking-widest text-emerald-500">Записать аудио</div>
+          </div>
+        `;
+      }
+
+      else if (c.type === 'audio') {
+        specificContent = `
+          <div class="flex items-center gap-4 bg-gray-50 dark:bg-gray-800/80 p-3 rounded-2xl border border-gray-200 dark:border-gray-700">
+            <button onclick="toggleAudioPlayback('${c.id}', '${c.audioData}'); event.stopPropagation();" id="audio_btn_${c.id}" class="w-10 h-10 flex-shrink-0 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-md shadow-emerald-500/30 hover:scale-105 transition-transform active:scale-95">
+              <i data-lucide="play" class="w-4 h-4 fill-current ml-0.5"></i>
+            </button>
+            <div class="flex-1">
+              <div class="h-1.5 w-full bg-emerald-100 dark:bg-emerald-900/50 rounded-full overflow-hidden">
+                <div class="h-full bg-emerald-500 w-full opacity-50"></div>
+              </div>
+              <div class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1.5">Голосовое сообщение</div>
+            </div>
+          </div>
+        `;
+      }
+
+      else {
+        // Стандартная карточка (Checklist)
+        if (c.checklist && c.checklist.length > 0) {
+          const total = c.checklist.length; const done = c.checklist.filter(i => i.isCompleted).length; const percent = Math.round((done / total) * 100);
+          specificContent = `
+            <div class="mt-2 mb-1">
+              <div class="flex justify-between items-center text-[10px] font-bold text-gray-400 mb-1.5">
+                <span class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> ${done}/${total}</span><span>${percent}%</span>
+              </div>
+              <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden"><div class="${done === total ? 'bg-green-500' : 'bg-blue-500'} h-full transition-all" style="width: ${percent}%"></div></div>
+            </div>`;
+        }
+        const commentsCount = c.comments?.length ? `<span class="flex items-center gap-1"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</span>` : '';
+        const hasDesc = c.description ? `<i data-lucide="align-left" class="w-3.5 h-3.5"></i>` : '';
+        footerLeft = `<div class="flex gap-2 items-center">${dueDateHtml}${hasDesc}${commentsCount}</div>`;
+      }
+
+      // --- 4. СБОРКА УНИВЕРСАЛЬНОЙ КАРТОЧКИ ---
+      const onClickAction = c.type === 'poll' ? `openPollStatsModal('${col.id}', '${c.id}')` : `openViewModal('${col.id}', '${c.id}')`;
 
       return `
-        <div data-id="${c.id}" onclick="openViewModal(${col.id}, ${c.id})" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all group relative select-none">
-          ${isViewer ? '' : `<button onclick="openEditModal(${col.id}, ${c.id}); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>`}
+        <div data-id="${c.id}" onclick="${onClickAction}" class="card-item ${overdueClass} bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:border-${theme.color}-400 dark:hover:border-${theme.color}-500 p-4 rounded-2xl shadow-sm ${isViewer ? 'cursor-pointer' : 'cursor-grab'} select-none relative group transition-colors">
+          ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}'); event.stopPropagation();" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
+          
+          <div class="flex items-center gap-2 mb-3">
+            <div class="p-1.5 bg-gray-100 dark:bg-gray-800 group-hover:bg-${theme.color}-50 dark:group-hover:bg-${theme.color}-900/30 text-gray-400 group-hover:text-${theme.color}-500 transition-colors rounded-lg"><i data-lucide="${theme.icon}" class="w-4 h-4"></i></div>
+            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-${theme.color}-500 transition-colors">${theme.label}</span>
+          </div>
+          
           ${c.image ? `<img src="${c.image}" loading="lazy" class="mb-3 rounded-lg w-full h-32 object-cover border dark:border-gray-700/50 pointer-events-none" />` : ''}
           ${tagsHtml}
-          <div class="font-bold text-sm leading-snug pr-8 mb-3 text-gray-900 dark:text-white">${displayTitle}</div>
-          ${checklistHtml}
-          <div class="flex justify-between items-end mt-3">
-            <div class="flex gap-2 items-center text-gray-400">${dueDateHtml}${hasDesc}${commentsCount}</div>
+          
+          <div class="font-bold text-sm leading-snug mb-3 text-gray-900 dark:text-white pr-6">${displayTitle}</div>
+          
+          <div class="mb-3">${specificContent}</div>
+          
+          <div class="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest pt-3 border-t border-gray-100 dark:border-gray-800">
+            ${footerLeft}
             ${authorAvatar}
           </div>
         </div>
@@ -1528,59 +1500,35 @@ function render() {
     }).join('');
     
     const emptyStateHtml = filteredCards.length === 0 
-      ? `<div class="h-24 border-2 border-dashed border-gray-300 dark:border-gray-700/50 rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-xs font-bold gap-2 select-none opacity-50"><i data-lucide="download-cloud" class="w-5 h-5"></i> Перетащите сюда</div>` 
-      : '';
+      ? `<div class="h-24 border-2 border-dashed border-gray-300 dark:border-gray-700/50 rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-xs font-bold gap-2 select-none opacity-50"><i data-lucide="download-cloud" class="w-5 h-5"></i> Пусто</div>` : '';
       
     wrap.innerHTML = `
       <div class="p-4 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center col-handle ${isViewer ? '' : 'cursor-grab'} select-none">
-        <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-full shadow-sm" style="background-color: ${colorStyle.hex}"></div>
-          <h2 class="font-bold text-sm text-gray-900 dark:text-white">${col.name}</h2>
-          <span class="text-xs font-bold px-2 py-0.5 rounded-full border bg-white/50 dark:bg-black/20 text-gray-600 dark:text-gray-400 border-gray-200/50 dark:border-gray-700/50">${filteredCards.length}</span>
-        </div>
-        ${isViewer ? '' : `<button onclick="openColModal(${col.id})" class="text-gray-400 hover:text-blue-500 p-1 rounded transition-colors"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>`}
+        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full shadow-sm" style="background-color: ${colorStyle.hex}"></div><h2 class="font-bold text-sm text-gray-900 dark:text-white">${col.name}</h2><span class="text-xs font-bold px-2 py-0.5 rounded-full border bg-white/50 dark:bg-black/20 text-gray-600 dark:text-gray-400 border-gray-200/50 dark:border-gray-700/50">${filteredCards.length}</span></div>
+        ${isViewer ? '' : `<button onclick="openColModal('${col.id}')" class="text-gray-400 hover:text-blue-500 p-1 rounded transition-colors"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>`}
       </div>
-      <div id="cards-${col.id}" ${isViewer ? '' : `ondblclick="quickAddCard(${col.id})"`} class="p-3 flex-1 overflow-y-auto hide-scroll space-y-3 min-h-[50px] ${isViewer ? '' : 'cursor-pointer'}">
+      <div id="cards-${col.id}" ${isViewer ? '' : `ondblclick="quickAddCard('${col.id}')"`} class="p-3 flex-1 overflow-y-auto hide-scroll space-y-3 min-h-[50px] ${isViewer ? '' : 'cursor-pointer'}">
         ${cardsHtml}
         ${emptyStateHtml}
       </div>
       ${isViewer ? '' : `
       <div class="p-3 pt-0 flex gap-2">
-        <button onclick="openEditModal(${col.id})" class="flex-[4] py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors border border-transparent dark:border-gray-700/50 border-dashed">
-          <i data-lucide="plus" class="w-4 h-4"></i> Карточка
-        </button>
-        <button onclick="openMoreAddModal(${col.id})" class="flex-1 py-2.5 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-white/50 dark:hover:bg-black/20 rounded-xl transition-colors border border-transparent dark:border-gray-700/50">
-          <i data-lucide="more-horizontal" class="w-5 h-5"></i>
-        </button>
+        <button onclick="openEditModal('${col.id}')" class="flex-[4] py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors border border-transparent dark:border-gray-700/50 border-dashed"><i data-lucide="plus" class="w-4 h-4"></i> Карточка</button>
+        <button onclick="openMoreAddModal('${col.id}')" class="flex-1 py-2.5 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-white/50 dark:hover:bg-black/20 rounded-xl transition-colors border border-transparent dark:border-gray-700/50"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>
       </div>`}
     `;
     board.appendChild(wrap);
     
-    // 3. Инициализация SortableJS для каждой колонки
     const colEl = document.getElementById(`cards-${col.id}`);
     sortableInstances.push(new Sortable(colEl, { 
-      group: 'shared', 
-      animation: 150, 
-      delay: 100, 
-      delayOnTouchOnly: true, 
-      ghostClass: 'sortable-ghost', 
-      dragClass: 'sortable-drag', 
-      forceFallback: true, 
-      fallbackTolerance: 5, 
-      disabled: isViewer,
+      group: 'shared', animation: 150, delay: 100, delayOnTouchOnly: true, ghostClass: 'sortable-ghost', dragClass: 'sortable-drag', forceFallback: true, fallbackTolerance: 5, disabled: isViewer,
       onEnd: function (evt) { 
         let mCard; 
-        const fromColId = Number(evt.from.id.replace('cards-',''));
-        const toColId = Number(evt.to.id.replace('cards-',''));
-        const fromCol = columns.find(c => c.id === fromColId);
-        const toCol = columns.find(c => c.id === toColId);
-        
+        const fromColId = evt.from.id.replace('cards-',''); const toColId = evt.to.id.replace('cards-','');
+        const fromCol = columns.find(c => c.id === fromColId); const toCol = columns.find(c => c.id === toColId);
         if(!fromCol || !toCol) return;
-        
         fromCol.cards = fromCol.cards.filter(card => { 
-          if(card.id === Number(evt.item.dataset.id) || card.id === evt.item.dataset.id){
-            mCard = card; return false; 
-          } return true; 
+          if(card.id == evt.item.dataset.id){ mCard = card; return false; } return true; 
         }); 
         if(mCard) toCol.cards.splice(evt.newIndex, 0, mCard); 
         persist(); 
@@ -1588,27 +1536,14 @@ function render() {
     }));
   });
   
-  // 4. SortableJS для самих колонок
-  sortableInstances.push(new Sortable(board, { 
-    animation: 200, 
-    handle: '.col-handle', 
-    ghostClass: 'sortable-ghost', 
-    dragClass: 'sortable-drag', 
-    forceFallback: true, 
-    disabled: isViewer,
+  sortableInstances.push(new Sortable(board, { animation: 200, handle: '.col-handle', ghostClass: 'sortable-ghost', dragClass: 'sortable-drag', forceFallback: true, disabled: isViewer,
     onEnd: function (evt) { 
-      const movedCol = columns.splice(evt.oldIndex, 1)[0];
-      columns.splice(evt.newIndex, 0, movedCol); 
-      persist(); 
+      const movedCol = columns.splice(evt.oldIndex, 1)[0]; columns.splice(evt.newIndex, 0, movedCol); persist(); 
     } 
   }));
 
   lucide.createIcons();
-
-  // 5. Автоматическая проверка дедлайнов при каждом рендере
-  if (typeof checkDeadlines === 'function') {
-    checkDeadlines(columns);
-  }
+  if (typeof checkDeadlines === 'function') checkDeadlines(columns);
 }
 
 let quickAddTargetColId = null;
@@ -2138,115 +2073,121 @@ function closePollStatsModal() {
   setTimeout(() => modal.classList.add('hidden'), 300);
 }
 
-// --- ЛОГИКА ГОЛОСОВЫХ ЗАМЕТОК ---
-let mediaRecorder;
-let audioChunks = [];
-let audioBase64 = null;
-let isRecording = false;
-
-function prepareVoiceMemoCreation() {
+// --- INLINE АУДИО ЗАМЕТКИ И ПЛЕЕР ---
+function startInlineAudioCreation() {
   closeMoreAddModal();
-  const modal = document.getElementById('voiceMemoModal');
-  const content = document.getElementById('voiceMemoContent');
-  modal.classList.remove('hidden');
-  setTimeout(() => {
-    modal.classList.remove('opacity-0');
-    content.classList.remove('scale-95');
-  }, 10);
-
-  // Сброс состояния
-  audioChunks = [];
-  audioBase64 = null;
-  document.getElementById('voiceMemoTitle').value = '';
-  document.getElementById('audioPreviewContainer').classList.add('hidden');
-  document.getElementById('recordBtn').classList.remove('hidden');
-  document.getElementById('stopRecordBtn').classList.add('hidden');
-  document.getElementById('saveAudioBtn').disabled = true;
-  document.getElementById('recordStatus').innerText = 'Нажмите для записи';
-  document.getElementById('recordStatus').classList.remove('text-red-500', 'animate-pulse');
+  const colIndex = columns.findIndex(c => c.id === activeColForMore);
+  if (colIndex === -1) return;
   
-  lucide.createIcons();
-}
-
-function closeVoiceMemoModal() {
-  if(isRecording) stopRecording();
-  const modal = document.getElementById('voiceMemoModal');
-  const content = document.getElementById('voiceMemoContent');
-  modal.classList.add('opacity-0');
-  content.classList.add('scale-95');
-  setTimeout(() => modal.classList.add('hidden'), 300);
-}
-
-async function startRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
-
-    mediaRecorder.ondataavailable = e => {
-      if (e.data.size > 0) audioChunks.push(e.data);
-    };
-
-    mediaRecorder.onstop = async () => {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      reader.onloadend = () => {
-        audioBase64 = reader.result;
-        const audioPreview = document.getElementById('audioPreview');
-        audioPreview.src = audioBase64;
-        document.getElementById('audioPreviewContainer').classList.remove('hidden');
-        document.getElementById('saveAudioBtn').disabled = false;
-      };
-      // Отключаем микрофон
-      stream.getTracks().forEach(track => track.stop());
-    };
-
-    mediaRecorder.start();
-    isRecording = true;
-    
-    // UI обновления
-    document.getElementById('recordBtn').classList.add('hidden');
-    document.getElementById('stopRecordBtn').classList.remove('hidden');
-    document.getElementById('recordStatus').innerText = 'Идет запись...';
-    document.getElementById('recordStatus').classList.add('text-red-500', 'animate-pulse');
-  } catch (err) {
-    showSystemToast('Ошибка', 'Нет доступа к микрофону.', 'mic-off', 'text-red-500', 'bg-red-50');
-  }
-}
-
-function stopRecording() {
-  if (mediaRecorder && isRecording) {
-    mediaRecorder.stop();
-    isRecording = false;
-    
-    // UI обновления
-    document.getElementById('stopRecordBtn').classList.add('hidden');
-    document.getElementById('recordBtn').classList.remove('hidden');
-    document.getElementById('recordStatus').innerText = 'Запись завершена';
-    document.getElementById('recordStatus').classList.remove('text-red-500', 'animate-pulse');
-  }
-}
-
-function saveVoiceMemo() {
-  if (!audioBase64) return;
-  
-  const title = document.getElementById('voiceMemoTitle').value.trim() || 'Голосовая заметка';
-
-  const audioCard = {
+  // Добавляем карточку-пустышку для записи
+  columns[colIndex].cards.push({
     id: 'audio_' + Date.now(),
-    title: title,
-    type: 'audio',
-    audioData: audioBase64,
+    type: 'audio_recording',
+    title: 'Голосовая заметка',
     author: currentUser,
     archived: false,
     createdAt: new Date().toISOString()
-  };
-
-  const colIndex = columns.findIndex(c => c.id === activeColForMore);
-  columns[colIndex].cards.push(audioCard);
+  });
   persist();
-  closeVoiceMemoModal();
+  render();
+}
+
+let inlineRecorder = null;
+let inlineChunks = [];
+
+async function startInlineRecording(colId, cardId) {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    inlineRecorder = new MediaRecorder(stream);
+    inlineChunks = [];
+    
+    inlineRecorder.ondataavailable = e => { if (e.data.size > 0) inlineChunks.push(e.data); };
+    inlineRecorder.onstop = () => {
+      const blob = new Blob(inlineChunks, { type: 'audio/webm' });
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => {
+        const base64 = reader.result;
+        // Находим карточку и меняем ее тип на готовое аудио
+        const col = columns.find(c => c.id == colId);
+        if (col) {
+          const card = col.cards.find(c => c.id == cardId);
+          if (card) {
+            card.type = 'audio';
+            card.audioData = base64;
+            persist();
+            render();
+          }
+        }
+      };
+      stream.getTracks().forEach(t => t.stop());
+    };
+    inlineRecorder.start();
+    
+    // UI Update
+    document.getElementById(`rec_btn_${cardId}`).classList.add('hidden');
+    document.getElementById(`stop_btn_${cardId}`).classList.remove('hidden');
+    const statusEl = document.getElementById(`rec_status_${cardId}`);
+    statusEl.innerText = "Идет запись...";
+    statusEl.classList.remove('text-emerald-500');
+    statusEl.classList.add('text-red-500', 'animate-pulse');
+  } catch(err) {
+    showSystemToast('Ошибка', 'Нет доступа к микрофону', 'mic-off', 'text-red-500', 'bg-red-50');
+  }
+}
+
+function stopInlineRecording(colId, cardId) {
+  if (inlineRecorder && inlineRecorder.state !== 'inactive') {
+    inlineRecorder.stop();
+    const statusEl = document.getElementById(`rec_status_${cardId}`);
+    statusEl.innerText = "Сохранение...";
+    statusEl.classList.remove('animate-pulse');
+  }
+}
+
+// --- КАСТОМНЫЙ АУДИО ПЛЕЕР ---
+let globalAudioNode = new Audio();
+let globalAudioCardId = null;
+
+function toggleAudioPlayback(cardId, audioBase64) {
+  // Кликнули по той же карточке, что играет сейчас
+  if (globalAudioCardId === cardId) {
+    if (!globalAudioNode.paused) {
+      globalAudioNode.pause();
+      updateAudioIconUI(cardId, 'play');
+    } else {
+      globalAudioNode.play();
+      updateAudioIconUI(cardId, 'pause');
+    }
+    return;
+  }
+  
+  // Если играло что-то другое - останавливаем и сбрасываем иконку
+  if (globalAudioCardId) {
+    globalAudioNode.pause();
+    updateAudioIconUI(globalAudioCardId, 'play');
+  }
+  
+  // Включаем новое
+  globalAudioNode.src = audioBase64;
+  globalAudioNode.play();
+  globalAudioCardId = cardId;
+  updateAudioIconUI(cardId, 'pause');
+  
+  globalAudioNode.onended = () => {
+    updateAudioIconUI(cardId, 'play');
+    globalAudioCardId = null;
+  };
+}
+
+function updateAudioIconUI(cardId, state) {
+  const btn = document.getElementById(`audio_btn_${cardId}`);
+  if (btn) {
+    btn.innerHTML = state === 'play' 
+      ? '<i data-lucide="play" class="w-4 h-4 fill-current ml-0.5"></i>' 
+      : '<i data-lucide="pause" class="w-4 h-4 fill-current"></i>';
+    lucide.createIcons();
+  }
 }
 </script>
 </body>
