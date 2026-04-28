@@ -54,7 +54,7 @@
   <div class="relative border-l-2 border-gray-200 dark:border-gray-800 ml-4 pl-8 space-y-12">
 
     <section class="update-card relative">
-      <div class="absolute -left-[45px] top-6 bg-blue-500/10 text-blue-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter transform -rotate-90">NEW</div>
+      <div class="absolute -left-[45px] top-16 bg-blue-500/10 text-blue-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter transform -rotate-90 shadow-sm border border-blue-200/50 dark:border-blue-900/50 z-10">NEW</div>
       <div class="flex flex-col gap-4 bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm">
         <div class="flex justify-between items-start">
           <span class="text-xs font-bold text-gray-400">Сегодня</span>
@@ -122,8 +122,9 @@
         <div class="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-800/50">
           <h4 class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase mb-2 tracking-wider">Возможности:</h4>
           <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
-            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span>Личный кабинет со статистикой регистраций и прозрачным счетчиком заработка.</span></li>
-            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span>Геймификация: Зал Славы с разблокировкой статусов Friend, Partner, Ambassador.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Личный кабинет:</b> Статистика регистраций и прозрачный счетчик заработка.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Геймификация:</b> Зал Славы с разблокировкой статусов Friend, Partner, Ambassador.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Recurring:</b> Стабильные автоматические начисления комиссии от рефералов.</span></li>
           </ul>
         </div>
       </div>
@@ -137,6 +138,14 @@
         </div>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white">Глобальные тарифы и централизация AI</h3>
         <p class="text-sm text-gray-500 leading-relaxed">Проведен масштабный рефакторинг ядра. Все лимиты проектов и настройки нейросетей вынесены в единый конфигурационный файл для мгновенного управления.</p>
+        <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50">
+          <h4 class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-2 tracking-wider">Что стало лучше:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Унификация:</b> Выделение лимитов (AI, проекты) в единый `config.js`.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Стабильность:</b> Повышена отказоустойчивость платформы за счет обновления ядра.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Масштабирование:</b> Подготовка архитектуры к развертыванию новых подписок.</span></li>
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -148,6 +157,14 @@
         </div>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white">Персональный дашборд «Мои задачи»</h3>
         <p class="text-sm text-gray-500 leading-relaxed">Больше не нужно прыгать по разным проектам в поисках своих задач. Мы создали единый центр, который собирает все карточки, где вы отмечены тегом, из онлайн и офлайн досок.</p>
+        <div class="p-4 bg-sky-50 dark:bg-sky-900/20 rounded-2xl border border-sky-100 dark:border-sky-800/50">
+          <h4 class="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase mb-2 tracking-wider">Возможности:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Агрегация:</b> Сбор задач из Cloud и локальных (Offline) проектов в одном месте.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Умная сортировка:</b> Задачи с горящим дедлайном всегда отображаются сверху.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Быстрый переход:</b> Открытие нужного проекта и карточки в один клик.</span></li>
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -159,6 +176,14 @@
         </div>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white">Командный чат и «Сгорающие файлы»</h3>
         <p class="text-sm text-gray-500 leading-relaxed">В каждый проект добавлен боковой модуль чата реального времени. А для передачи конфиденциальных данных мы внедрили технологию файлов "Сжечь после прочтения".</p>
+        <div class="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-2xl border border-rose-100 dark:border-rose-800/50">
+          <h4 class="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase mb-2 tracking-wider">Возможности:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Real-time общение:</b> Передача сообщений и изображений прямо внутри колонки.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Контроль данных:</b> Ограничения по времени (1 или 7 дней) для хранения файлов.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Сжечь после прочтения:</b> Файлы уничтожаются навсегда после первого скачивания.</span></li>
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -170,6 +195,14 @@
         </div>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white">Умный AI-Ассистент</h3>
         <p class="text-sm text-gray-500 leading-relaxed">Автоматическая генерация планов задач и чек-листов на основе одного заголовка с помощью интеграции OpenAI через Pollinations API.</p>
+        <div class="p-4 bg-fuchsia-50 dark:bg-fuchsia-900/20 rounded-2xl border border-fuchsia-100 dark:border-fuchsia-800/50">
+          <h4 class="text-xs font-bold text-fuchsia-600 dark:text-fuchsia-400 uppercase mb-2 tracking-wider">Возможности:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Smart AI:</b> Бесшовная интеграция с OpenAI для декомпозиции сложных задач.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Markdown-генерация:</b> Мгновенное создание описаний на основе заголовка.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Авто-чеклисты:</b> Нейросеть сама составляет пошаговый план работ.</span></li>
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -181,6 +214,14 @@
         </div>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white">Локальные проекты без интернета</h3>
         <p class="text-sm text-gray-500 leading-relaxed">Внедрена система «Device Only». Физический экспорт (бэкап) проектов в .json файл и загрузка на других устройствах.</p>
+        <div class="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800/50">
+          <h4 class="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase mb-2 tracking-wider">Возможности:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Приватность:</b> Создание проектов без привязки к серверу (сохранение в браузере).</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Безопасность:</b> Локальное шифрование данных прямо на устройстве.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Мобильность:</b> Выгрузка проекта в JSON-бэкап для переноса.</span></li>
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -192,6 +233,14 @@
         </div>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white">Командный доступ и система ролей</h3>
         <p class="text-sm text-gray-500 leading-relaxed">Вход по секретному ID проекта или через прямую инвайт-ссылку. Роли: Владелец, Редактор и Читатель.</p>
+        <div class="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-800/50">
+          <h4 class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase mb-2 tracking-wider">Возможности:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Быстрый старт:</b> Добавление коллег по короткой ссылке в один клик.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Защита:</b> Установка пароля на вход в проект.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Управление:</b> Назначение ролей (Владелец, Редактор, безопасный Читатель).</span></li>
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -203,6 +252,14 @@
         </div>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white">Запуск Канбан-движка</h3>
         <p class="text-sm text-gray-500 leading-relaxed">Ядро рабочей области с Drag & Drop на базе Sortable.js. Чек-листы с прогресс-баром, дедлайны, кастомные теги.</p>
+        <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50">
+          <h4 class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-2 tracking-wider">Возможности:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Эргономика:</b> Высокопроизводительный Drag & Drop колонок и карточек.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Инструменты:</b> Настройка цветных меток, дедлайнов и вложенных чек-листов.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Навигация:</b> Смарт-поиск по всем задачам и фильтрация по тегам.</span></li>
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -214,6 +271,14 @@
         </div>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white">Рождение Blocko Pro</h3>
         <p class="text-sm text-gray-500 leading-relaxed">Закладка фундамента проекта. Интеграция с Firebase Firestore для хранения данных. Безопасный вход через Google.</p>
+        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
+          <h4 class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-2 tracking-wider">Основы заложены:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Надежность:</b> Firebase Firestore для мгновенной синхронизации.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Авторизация:</b> Простая и надежная аутентификация через Google.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Дизайн:</b> Современный UI с поддержкой темной темы.</span></li>
+          </ul>
+        </div>
       </div>
     </section>
   </div>
@@ -224,7 +289,6 @@
     </div>
   </div>
 </main>
-
 <script>
   if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
   lucide.createIcons();
