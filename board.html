@@ -544,10 +544,7 @@
       <h2 id="fullTableTitle" class="text-xl font-black dark:text-white">Редактор таблицы</h2>
     </div>
     <div class="flex gap-3">
-      <button onclick="exportToGoogleSheets()" class="px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-sm font-bold rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-800 transition-all shadow-sm border border-emerald-100 dark:border-emerald-800/50 flex items-center gap-2">
-        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Выгрузить в Sheets
-      </button>
-      <button onclick="closeTableEditor()" class="px-6 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-700">Отмена</button>
+      <button onclick="closeTableEditor()" class="px-6 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all">Отмена</button>
       <button onclick="commitTableToDb()" class="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl shadow-xl shadow-blue-500/25 active:scale-95 transition-all">Сохранить изменения</button>
     </div>
   </div>
@@ -2576,48 +2573,28 @@ function renderExcelTable() {
   const thead = document.getElementById('excelThead');
   const tbody = document.getElementById('excelTbody');
   
-  if (!activeTableData.colHeaders) activeTableData.colHeaders = Array(activeTableData.cols).fill("");
-  if (!activeTableData.rowHeaders) activeTableData.rowHeaders = Array(activeTableData.rows).fill("");
-  if (!activeTableData.colWidths) activeTableData.colWidths = Array(activeTableData.cols).fill(180);
-  if (!activeTableData.rowHeights) activeTableData.rowHeights = Array(activeTableData.rows).fill(45);
-
-  // Фиксируем левый верхний угол (z-[60]), чтобы он не прокручивался ни по вертикали, ни по горизонтали
-  let headHtml = '<tr><th class="p-0 border-r border-b dark:border-gray-700 bg-gray-100 dark:bg-gray-900 w-16 align-middle sticky left-0 top-0 z-[60] shadow-[1px_1px_0_rgba(0,0,0,0.1)]"><i data-lucide="corner-down-right" class="w-4 h-4 mx-auto text-gray-400"></i></th>';
+  // Хедер
+  let headHtml = '<tr><th class="p-3 border-r dark:border-gray-700 bg-gray-100 dark:bg-gray-900 w-10 text-[10px] font-black text-gray-400">#</th>';
   for (let c = 0; c < activeTableData.cols; c++) {
-    const title = activeTableData.colHeaders[c] || `Столбец ${c + 1}`;
-    // Шапка колонок (sticky top-0 z-50)
-    headHtml += `<th class="p-0 border-r border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900/90 align-top shadow-sm sticky top-0 z-50 backdrop-blur-md">
-      <div style="width: ${activeTableData.colWidths[c]}px; min-width: 80px;" class="resize-x overflow-hidden" onmouseup="activeTableData.colWidths[${c}] = this.offsetWidth">
-        <input type="text" value="${title}" onmousedown="event.stopPropagation()" oninput="activeTableData.colHeaders[${c}] = this.value" placeholder="Столбец ${c + 1}" class="w-full h-10 px-3 bg-transparent outline-none text-[11px] font-black text-gray-500 tracking-wider text-center focus:text-blue-500 focus:bg-white dark:focus:bg-gray-800 transition-colors" />
-      </div>
-    </th>`;
+    headHtml += `<th class="p-3 border-r dark:border-gray-700 text-left text-[10px] font-black uppercase text-gray-500 tracking-widest">Колонка ${c + 1}</th>`;
   }
   thead.innerHTML = headHtml + '</tr>';
 
+  // Тело
   let bodyHtml = '';
   for (let r = 0; r < activeTableData.rows; r++) {
-    const rowTitle = activeTableData.rowHeaders[r] || `${r + 1}`;
-    bodyHtml += `<tr class="border-b dark:border-gray-700 hover:bg-blue-50/20 dark:hover:bg-blue-900/10 transition-colors">`;
-    
-    // Шапка строк (sticky left-0 z-40)
-    bodyHtml += `<td class="p-0 border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-900/95 align-top shadow-[1px_0_0_rgba(0,0,0,0.1)] sticky left-0 z-40 backdrop-blur-md">
-      <div style="height: ${activeTableData.rowHeights[r]}px; min-height: 40px;" class="resize-y overflow-hidden flex items-center justify-center w-16" onmouseup="activeTableData.rowHeights[${r}] = this.offsetHeight">
-         <input type="text" value="${rowTitle}" onmousedown="event.stopPropagation()" oninput="activeTableData.rowHeaders[${r}] = this.value" placeholder="${r + 1}" class="w-full h-full text-center bg-transparent outline-none text-[11px] font-bold text-gray-400 focus:text-blue-500 focus:bg-white dark:focus:bg-gray-800 transition-colors" />
-      </div>
-    </td>`;
-    
+    bodyHtml += `<tr class="border-b dark:border-gray-700 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">`;
+    bodyHtml += `<td class="p-3 border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 text-center text-[10px] font-bold text-gray-400">${r + 1}</td>`;
     for (let c = 0; c < activeTableData.cols; c++) {
       const val = activeTableData.tableData[r][c] || "";
-      // Реализация Excel-поведения: whitespace-nowrap overflow-hidden скрывает лишнее (показывает начало текста).
-      // focus:whitespace-normal focus:overflow-auto раскрывает содержимое при клике внутрь ячейки.
-      bodyHtml += `<td class="p-0 border-r dark:border-gray-700 align-top relative h-full bg-white dark:bg-gray-800">
-        <textarea onmousedown="event.stopPropagation()" oninput="updateTableCell(${r}, ${c}, this.value)" class="absolute inset-0 w-full h-full p-2.5 bg-transparent outline-none text-sm dark:text-white focus:bg-white dark:focus:bg-gray-700 transition-all border-2 border-transparent focus:border-blue-500 resize-none hide-scroll whitespace-nowrap overflow-hidden focus:whitespace-normal focus:overflow-auto z-10 focus:z-30 focus:shadow-xl">${val}</textarea>
+      bodyHtml += `<td class="p-0 border-r dark:border-gray-700">
+        <input type="text" value="${val}" oninput="updateTableCell(${r}, ${c}, this.value)" 
+               class="w-full h-full p-3 bg-transparent outline-none text-sm dark:text-white focus:bg-white dark:focus:bg-gray-700 transition-all border-2 border-transparent focus:border-blue-500" />
       </td>`;
     }
     bodyHtml += `</tr>`;
   }
   tbody.innerHTML = bodyHtml;
-  lucide.createIcons();
 }
 
 function updateTableCell(r, c, val) {
@@ -2635,7 +2612,7 @@ function commitTableToDb() {
     if (col.id == activeTableData.colId) {
       col.cards = col.cards.map(c => {
         if (c.id == activeTableData.cardId) {
-          return activeTableData;
+          return { ...c, tableData: activeTableData.tableData };
         }
         return c;
       });
@@ -2643,58 +2620,8 @@ function commitTableToDb() {
     return col;
   });
   persist();
-  showSystemToast('Таблица сохранена', 'Структура и данные успешно синхронизированы.', 'check-circle', 'text-blue-500', 'bg-blue-50');
+  showSystemToast('Таблица сохранена', 'Данные успешно синхронизированы.', 'check-circle', 'text-blue-500', 'bg-blue-50');
   closeTableEditor();
-}
-
-// Визионерская логика экспорта в персональные Google Таблицы
-async function exportToGoogleSheets() {
-  if (!activeTableData) return;
-  showSystemToast('Экспорт...', 'Запрашиваем доступ к Google Sheets.', 'loader-2', 'text-blue-500', 'bg-blue-50');
-
-  try {
-    // Добавляем необходимые Scope для работы с таблицами
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/spreadsheets');
-    
-    // Получаем токен с правами на создание файлов
-    const result = await auth.currentUser.reauthenticateWithPopup(provider);
-    const accessToken = result.credential.accessToken;
-
-    // Формируем массив данных для Sheets: Заголовки + Ячейки
-    const exportGrid = [];
-    const headerRow = ["ID/Title", ...activeTableData.colHeaders.map((h, i) => h || `Столбец ${i + 1}`)];
-    exportGrid.push(headerRow);
-
-    activeTableData.tableData.forEach((row, rIdx) => {
-      const rowName = activeTableData.rowHeaders[rIdx] || `${rIdx + 1}`;
-      exportGrid.push([rowName, ...row]);
-    });
-
-    // 1. Создаем новую таблицу через Sheets API
-    const createRes = await fetch('https://sheets.googleapis.com/v1/spreadsheets', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ properties: { title: `Blocko Pro: ${activeTableData.title}` } })
-    });
-    
-    const sheetInfo = await createRes.json();
-    if (!sheetInfo.spreadsheetId) throw new Error("Spreadsheet ID missing");
-
-    // 2. Записываем данные в созданный файл
-    await fetch(`https://sheets.googleapis.com/v1/spreadsheets/${sheetInfo.spreadsheetId}/values/A1:update?valueInputOption=USER_ENTERED`, {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values: exportGrid })
-    });
-
-    showSystemToast('Успех! 📊', 'Таблица создана в вашем Google Sheets.', 'check-circle', 'text-green-500', 'bg-green-50');
-    window.open(`https://docs.google.com/spreadsheets/d/${sheetInfo.spreadsheetId}`, '_blank');
-
-  } catch (err) {
-    console.error("Export Error:", err);
-    showSystemToast('Сбой экспорта', 'Проверьте соединение или права доступа.', 'alert-circle', 'text-red-500', 'bg-red-50');
-  }
 }
 </script>
 </body>
