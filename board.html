@@ -1304,7 +1304,6 @@ function render() {
       return;
   }
 
-  // 2. Формирование DOM
   board.innerHTML = ''; 
 
   columns.forEach(col => {
@@ -1323,10 +1322,53 @@ function render() {
 
     const cardsHtml = filteredCards.map(c => {
       const displayTitle = highlightText(c.title, searchQuery);
+      
+      // === РЕНДЕР ОПРОСА ===
+      if (c.type === 'poll') {
+        const totalVotes = c.options.reduce((sum, o) => sum + o.votes.length, 0);
+        const hasVotedAny = c.options.some(o => o.votes.includes(currentUser.id));
+        
+        const optionsHtml = c.options.map((opt, i) => {
+          const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
+          const myVote = opt.votes.includes(currentUser.id);
+          const barColor = myVote ? 'bg-purple-500' : 'bg-purple-200 dark:bg-purple-900/50';
+          const textColor = myVote ? 'text-white' : 'text-gray-700 dark:text-gray-300';
+          
+          return `
+            <div onclick="votePoll('${col.id}', '${c.id}', ${i}); event.stopPropagation();" 
+                 class="relative overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2.5 cursor-pointer hover:border-purple-400 transition-colors group/opt mb-2 shadow-sm">
+              <div class="absolute left-0 top-0 bottom-0 ${barColor} opacity-20 transition-all duration-500" style="width: ${percent}%"></div>
+              <div class="relative z-10 flex justify-between items-center text-xs font-bold ${textColor}">
+                <span class="flex items-center gap-1.5">${opt.text} ${myVote ? '<i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-purple-500"></i>' : ''}</span>
+                <span>${percent}%</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div data-id="${c.id}" class="card-item bg-white dark:bg-gray-900 border border-purple-200 dark:border-purple-900/50 p-4 rounded-2xl shadow-sm ${isViewer ? '' : 'cursor-grab'} select-none relative group transition-all hover:shadow-md">
+            ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}'); event.stopPropagation();" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
+            <div class="flex items-center gap-2 mb-3">
+              <div class="p-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-500 rounded-lg"><i data-lucide="bar-chart-3" class="w-4 h-4"></i></div>
+              <span class="text-[10px] font-black uppercase tracking-widest text-purple-500">Опрос</span>
+            </div>
+            <div class="font-bold text-sm leading-snug mb-4 text-gray-900 dark:text-white pr-8">${displayTitle}</div>
+            <div class="space-y-1 mb-4">
+              ${optionsHtml}
+            </div>
+            <div class="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest pt-3 border-t border-gray-100 dark:border-gray-800">
+              <span><i data-lucide="users" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> ${totalVotes} голосов</span>
+              <span>${c.isAnonymous ? 'Анонимно' : 'Публично'}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      // === ОБЫЧНАЯ КАРТОЧКА ===
       const isOverdue = c.dueDate && c.dueDate < todayStr;
       const overdueClass = isOverdue ? 'deadline-overdue' : '';
 
-      // Чек-лист превью
       let checklistHtml = '';
       if (c.checklist && c.checklist.length > 0) {
         const total = c.checklist.length; 
@@ -1344,7 +1386,6 @@ function render() {
           </div>`;
       }
 
-      // Дедлайн превью
       let dueDateHtml = '';
       if (c.dueDate) {
         const bgColors = isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400';
@@ -1395,10 +1436,10 @@ function render() {
       </div>
       ${isViewer ? '' : `
       <div class="p-3 pt-0 flex gap-2">
-        <button onclick="openEditModal(${col.id})" class="flex-[4] py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors">
+        <button onclick="openEditModal(${col.id})" class="flex-[4] py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors border border-transparent dark:border-gray-700/50 border-dashed">
           <i data-lucide="plus" class="w-4 h-4"></i> Карточка
         </button>
-        <button onclick="openMoreAddModal(${col.id})" class="flex-1 py-2.5 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-white/50 dark:hover:bg-black/20 rounded-xl transition-colors">
+        <button onclick="openMoreAddModal(${col.id})" class="flex-1 py-2.5 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-white/50 dark:hover:bg-black/20 rounded-xl transition-colors border border-transparent dark:border-gray-700/50">
           <i data-lucide="more-horizontal" class="w-5 h-5"></i>
         </button>
       </div>`}
@@ -1426,9 +1467,8 @@ function render() {
         
         if(!fromCol || !toCol) return;
         
-        // Перемещение данных в массиве
         fromCol.cards = fromCol.cards.filter(card => { 
-          if(card.id === Number(evt.item.dataset.id)){ 
+          if(card.id === Number(evt.item.dataset.id) || card.id === evt.item.dataset.id){ // Учтен строковый id для опросов
             mCard = card; return false; 
           } return true; 
         }); 
@@ -1791,6 +1831,131 @@ function sendPushNotification(title, body) {
   } else if (Notification.permission !== "denied") {
     Notification.requestPermission();
   }
+}
+
+// --- ЛОГИКА ОПРОСОВ (POLLS) И КНОПКИ ЕЩЕ ---
+let activeColForMore = null;
+
+function openMoreAddModal(colId) {
+  activeColForMore = colId;
+  const el = document.getElementById('moreAddModal');
+  const content = document.getElementById('moreAddContent');
+  el.classList.remove('hidden');
+  setTimeout(() => {
+    el.classList.remove('opacity-0');
+    content.classList.remove('scale-95');
+  }, 10);
+  lucide.createIcons();
+}
+
+function closeMoreAddModal() {
+  const el = document.getElementById('moreAddModal');
+  const content = document.getElementById('moreAddContent');
+  el.classList.add('opacity-0');
+  content.classList.add('scale-95');
+  setTimeout(() => el.classList.add('hidden'), 300);
+}
+
+function preparePollCreation() {
+  closeMoreAddModal();
+  const modal = document.getElementById('pollConstructorModal');
+  const content = document.getElementById('pollConstructorContent');
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    modal.classList.remove('opacity-0');
+    content.classList.remove('scale-95');
+  }, 10);
+  document.getElementById('pollQuestion').focus();
+}
+
+function closePollConstructor() {
+  const modal = document.getElementById('pollConstructorModal');
+  const content = document.getElementById('pollConstructorContent');
+  modal.classList.add('opacity-0');
+  content.classList.add('scale-95');
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    // Сброс формы
+    document.getElementById('pollQuestion').value = "";
+    document.getElementById('pollOptionsList').innerHTML = `
+      <input type="text" class="poll-opt w-full px-5 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:border-purple-500 transition-colors dark:text-white" placeholder="Вариант 1">
+      <input type="text" class="poll-opt w-full px-5 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:border-purple-500 transition-colors dark:text-white" placeholder="Вариант 2">
+    `;
+    document.getElementById('pollAnonymous').checked = false;
+  }, 300);
+}
+
+function addPollOptionField() {
+  const container = document.getElementById('pollOptionsList');
+  const input = document.createElement('input');
+  input.className = "poll-opt w-full px-5 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:border-purple-500 transition-colors dark:text-white mt-2";
+  input.placeholder = `Вариант ${container.children.length + 1}`;
+  container.appendChild(input);
+  input.focus();
+}
+
+function savePoll() {
+  const question = document.getElementById('pollQuestion').value.trim();
+  const inputs = document.querySelectorAll('.poll-opt');
+  const options = Array.from(inputs).map(i => i.value.trim()).filter(v => v !== "");
+  
+  if (!question || options.length < 2) {
+    return showSystemToast('Ошибка', 'Введите вопрос и минимум 2 варианта.', 'alert-circle', 'text-red-500', 'bg-red-50');
+  }
+
+  const pollData = {
+    id: 'poll_' + Date.now(),
+    title: question,
+    type: 'poll',
+    options: options.map(opt => ({ text: opt, votes: [] })),
+    isAnonymous: document.getElementById('pollAnonymous').checked,
+    author: currentUser,
+    archived: false,
+    createdAt: new Date().toISOString()
+  };
+
+  const colIndex = columns.findIndex(c => c.id === activeColForMore);
+  columns[colIndex].cards.push(pollData);
+  persist();
+  closePollConstructor();
+}
+
+function votePoll(colId, cardId, optionIndex) {
+  if (!currentUser) return;
+  const col = columns.find(c => c.id == colId);
+  const poll = col.cards.find(c => c.id == cardId);
+  if (!poll || poll.type !== 'poll') return;
+
+  const uid = currentUser.id;
+
+  // Ищем, голосовал ли уже пользователь за любой другой вариант
+  const prevVoteIndex = poll.options.findIndex(opt => opt.votes.includes(uid));
+
+  // Если нажал на тот же вариант — забираем голос
+  if (prevVoteIndex === optionIndex) {
+    poll.options[optionIndex].votes = poll.options[optionIndex].votes.filter(id => id !== uid);
+  } else {
+    // Если голосовал за другой — удаляем голос оттуда
+    if (prevVoteIndex !== -1) {
+      poll.options[prevVoteIndex].votes = poll.options[prevVoteIndex].votes.filter(id => id !== uid);
+    }
+    // Добавляем голос в новый вариант
+    poll.options[optionIndex].votes.push(uid);
+    fireConfetti(); // Маленькая радость при голосовании
+  }
+
+  persist();
+}
+
+// Прямое удаление опроса (минуя модалку редактирования)
+function deleteCardDirectly(colId, cardId) {
+  openConfirmModal('Удалить опрос?', 'Это действие нельзя отменить.', 'Удалить', true, () => {
+    columns = columns.map(col => { 
+      if(col.id == colId) col.cards = col.cards.filter(c => c.id != cardId); 
+      return col; 
+    }); 
+    persist(); 
+  });
 }
 </script>
 </body>
