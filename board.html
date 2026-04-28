@@ -482,39 +482,31 @@
   </div>
 </div>
 
-<div id="pollStatsModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 transition-all duration-300 opacity-0">
-  <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-md" onclick="closePollStatsModal()"></div>
-  <div id="pollStatsContent" class="bg-[#F8F9FD] dark:bg-[#0B0F1A] w-full max-w-2xl rounded-[32px] shadow-2xl relative z-10 transform scale-95 transition-all duration-300 flex flex-col max-h-[90vh] overflow-hidden border border-white/20 dark:border-gray-800">
-    <div class="p-8 overflow-y-auto hide-scroll flex-1">
-        <div class="flex justify-between items-start mb-8">
-          <div>
-            <div class="flex items-center gap-2 mb-2">
-                <i data-lucide="bar-chart-3" class="w-4 h-4 text-purple-500"></i>
-                <span class="text-[11px] font-black uppercase tracking-[0.2em] text-purple-500">Результаты опроса</span>
-            </div>
-            <h2 id="pollStatsTitle" class="text-2xl font-black text-gray-900 dark:text-white leading-tight"></h2>
-          </div>
-          <button onclick="closePollStatsModal()" class="p-3 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-2xl transition-all shadow-sm border border-gray-100 dark:border-gray-700"><i data-lucide="x" class="w-5 h-5 text-gray-500"></i></button>
-        </div>
+<div id="contentViewModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 px-4">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700 relative overflow-hidden">
+    <button onclick="closeContentViewModal()" class="absolute top-6 right-6 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2.5 rounded-2xl transition-colors z-20 border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
 
-        <div id="pollStatsLists" class="space-y-4 mb-10"></div>
-        
-        <div class="mt-8 pt-8 border-t border-gray-200/50 dark:border-gray-800">
-          <div class="flex items-center justify-between mb-6">
-              <h3 class="text-lg font-bold text-gray-900 dark:text-white">Обсуждение</h3>
-              <div id="pollCommentsCount" class="text-[10px] font-black bg-purple-100 dark:bg-purple-900/30 text-purple-600 px-2 py-1 rounded-lg uppercase">0 сообщений</div>
-          </div>
-          
-          <div id="pollCommentsList" class="space-y-4 mb-6"></div>
-          
-          <div class="flex gap-4 p-2 bg-white dark:bg-gray-800 rounded-[24px] border border-gray-100 dark:border-gray-700 shadow-sm">
-            <div id="pollCommentMyAvatar" class="flex-shrink-0"></div>
-            <div class="flex-1 flex gap-2">
-              <input id="pollCommentInput" placeholder="Написать комментарий..." onkeypress="if(event.key==='Enter') addCommentToPoll()" class="flex-1 bg-transparent border-none outline-none text-sm dark:text-white placeholder:text-gray-400" />
-              <button onclick="addCommentToPoll()" class="w-10 h-10 bg-purple-600 hover:bg-purple-500 text-white rounded-full flex items-center justify-center transition-all shadow-lg shadow-purple-500/20 active:scale-90"><i data-lucide="send" class="w-4 h-4"></i></button>
-            </div>
+    <div class="flex-1 overflow-y-auto pr-2 hide-scroll">
+      <div id="cvHeader" class="mb-6"></div>
+      <h2 id="cvTitle" class="text-3xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"></h2>
+      
+      <div id="cvBody" class="mb-8"></div>
+
+      <div class="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700">
+        <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <i data-lucide="message-square" class="w-4 h-4 text-blue-500"></i> Обсуждение
+        </h3>
+        <div id="cvCommentsList" class="space-y-4 mb-6"></div>
+        <div class="flex gap-3 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-[1.5rem] border border-gray-100 dark:border-gray-700 shadow-inner">
+          <div id="cvMyAvatar" class="flex-shrink-0"></div>
+          <div class="flex-1 flex gap-2">
+            <input id="cvCommentInput" placeholder="Напишите сообщение..." class="flex-1 bg-transparent border-none outline-none text-sm dark:text-white px-2" onkeypress="if(event.key==='Enter') addCommentToContent()" />
+            <button onclick="addCommentToContent()" class="p-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-md active:scale-95"><i data-lucide="send" class="w-4 h-4"></i></button>
           </div>
         </div>
+      </div>
     </div>
   </div>
 </div>
@@ -2158,65 +2150,102 @@ function deleteCardDirectly(colId, cardId, typeLabel = 'опрос') {
   });
 }
 
-let activePollData = null; // Для хранения текущего открытого опроса
+let activeContentView = null; // { colId, cardId, type }
 
 function openPollStatsModal(colId, cardId) {
-  const col = columns.find(c => c.id == colId);
-  if (!col) return;
-  const poll = col.cards.find(c => c.id == cardId);
-  if (!poll || poll.type !== 'poll') return;
+    const col = columns.find(c => c.id == colId);
+    const card = col.cards.find(c => c.id == cardId);
+    activeContentView = { colId, cardId, type: 'poll' };
+    
+    document.getElementById('cvTitle').innerText = card.title;
+    document.getElementById('cvHeader').innerHTML = `<div class="flex items-center gap-2 text-purple-500 mb-2"><i data-lucide="bar-chart-3" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Результаты опроса</span></div>`;
+    
+    const container = document.getElementById('cvBody');
+    if (card.isAnonymous) {
+        container.innerHTML = `<div class="p-8 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700 text-center text-gray-500 text-sm font-medium">Это анонимный опрос. Имена участников скрыты.</div>`;
+    } else {
+        container.innerHTML = card.options.map(opt => `
+            <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 mb-3">
+                <div class="flex justify-between font-bold text-sm mb-3"><span>${opt.text}</span><span class="text-purple-500">${opt.votes.length}</span></div>
+                <div class="flex flex-wrap gap-2">${opt.votes.map(uid => getAvatarHTML(boardData.users[uid] || {name:'User', avatar:''}, 'w-7 h-7')).join('') || '<span class="text-[10px] text-gray-400">Нет голосов</span>'}</div>
+            </div>
+        `).join('');
+    }
+    
+    renderContentComments(card.comments);
+    toggleModal('contentViewModal', true);
+}
 
-  activePollData = { colId, cardId, ...poll };
-  currentColumn = colId; // Используем глобальную переменную для совместимости
-
-  document.getElementById('pollStatsTitle').innerText = poll.title;
-  const container = document.getElementById('pollStatsLists');
-  
-  // Рендер результатов
-  if (poll.isAnonymous) {
-    container.innerHTML = `
-      <div class="text-center flex flex-col items-center justify-center text-gray-500 py-8">
-        <div class="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3">
-          <i data-lucide="ghost" class="w-6 h-6 text-gray-400"></i>
+function openAudioModal(colId, cardId) {
+    const col = columns.find(c => c.id == colId);
+    const card = col.cards.find(c => c.id == cardId);
+    activeContentView = { colId, cardId, type: 'audio' };
+    
+    document.getElementById('cvTitle').innerText = card.title;
+    document.getElementById('cvHeader').innerHTML = `<div class="flex items-center gap-2 text-emerald-500 mb-2"><i data-lucide="mic" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Голосовая заметка</span></div>`;
+    
+    document.getElementById('cvBody').innerHTML = `
+        <div class="bg-emerald-50/50 dark:bg-emerald-900/20 p-6 rounded-3xl border border-emerald-100 dark:border-emerald-800/50 flex flex-col items-center">
+            <button onclick="toggleAudioPlayer(this, '${card.audioData}')" class="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform mb-4">
+                <i data-lucide="play" class="w-10 h-10 fill-current ml-1 btn-icon"></i>
+            </button>
+            <div class="w-full h-2 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden">
+                <div class="audio-progress bg-emerald-500 h-full w-0"></div>
+            </div>
         </div>
-        <span class="font-bold text-gray-900 dark:text-white text-sm">Опрос анонимный</span>
-      </div>`;
-  } else {
-    container.innerHTML = poll.options.map(opt => {
-      const usersList = opt.votes.map(uid => {
-        const uInfo = boardData.users && boardData.users[uid] ? boardData.users[uid] : { name: 'Участник', avatar: `https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff` };
-        return `
-          <div class="flex items-center gap-2 bg-white dark:bg-gray-900 p-1.5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm">
-            ${getAvatarHTML(uInfo, "w-6 h-6")}
-            <span class="text-xs font-bold text-gray-900 dark:text-white">${uInfo.name}</span>
-          </div>
-        `;
-      }).join('');
-      return `
-        <div class="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-800">
-          <h4 class="text-xs font-black text-purple-600 dark:text-purple-400 mb-2 flex items-center justify-between">
-            <span>${opt.text}</span>
-            <span class="bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded-md">${opt.votes.length}</span>
-          </h4>
-          <div class="flex flex-wrap gap-2">${usersList || '<span class="text-[10px] text-gray-400 italic">Нет голосов</span>'}</div>
-        </div>
-      `;
-    }).join('');
-  }
+    `;
+    
+    renderContentComments(card.comments);
+    toggleModal('contentViewModal', true);
+}
 
-  // Рендер комментариев
-  renderPollComments();
-  document.getElementById('pollCommentMyAvatar').innerHTML = getAvatarHTML(currentUser, "w-10 h-10");
+function renderContentComments(comments = []) {
+    const list = document.getElementById('cvCommentsList');
+    document.getElementById('cvMyAvatar').innerHTML = getAvatarHTML(currentUser, 'w-10 h-10');
+    
+    if (comments.length === 0) {
+        list.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs italic bg-gray-50/50 dark:bg-gray-900/20 rounded-2xl">Обсуждений пока нет</div>`;
+    } else {
+        list.innerHTML = comments.map(c => `
+            <div class="flex gap-3 bg-white dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                ${getAvatarHTML(c.user, 'w-8 h-8')}
+                <div>
+                    <div class="flex items-center gap-2 mb-1"><span class="font-bold text-xs dark:text-white">${c.user.name}</span><span class="text-[9px] text-gray-400">${c.time}</span></div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">${c.text}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+    lucide.createIcons();
+}
 
-  lucide.createIcons();
-  const modal = document.getElementById('pollStatsModal');
-  const content = document.getElementById('pollStatsContent');
-  modal.classList.remove('hidden');
-  setTimeout(() => {
-    modal.classList.remove('opacity-0');
-    content.classList.remove('scale-95');
-    content.classList.add('scale-100');
-  }, 10);
+function addCommentToContent() {
+    const input = document.getElementById('cvCommentInput');
+    const text = input.value.trim();
+    if (!text || !activeContentView) return;
+
+    columns = columns.map(col => {
+        if (col.id == activeContentView.colId) {
+            col.cards = col.cards.map(c => {
+                if (c.id == activeContentView.cardId) {
+                    if (!c.comments) c.comments = [];
+                    c.comments.push({ text, user: currentUser, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+                }
+                return c;
+            });
+        }
+        return col;
+    });
+
+    input.value = '';
+    persist();
+    const updatedCard = columns.find(col => col.id == activeContentView.colId).cards.find(c => c.id == activeContentView.cardId);
+    renderContentComments(updatedCard.comments);
+}
+
+function closeContentViewModal() {
+    if (currentPlayingAudio) { currentPlayingAudio.pause(); }
+    toggleModal('contentViewModal', false);
 }
 
 function renderPollComments() {
