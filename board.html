@@ -51,62 +51,35 @@
     .ambassador-frame { padding: 3px; background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: rainbow-border 3s linear infinite; border-radius: 50%; display: inline-flex; }
     .partner-frame { padding: 3px; background: linear-gradient(45deg, #6366f1, #a855f7, #ec4899); border-radius: 50%; display: inline-flex; }
     .friend-frame { padding: 3px; background: linear-gradient(45deg, #3b82f6, #06b6d4); border-radius: 50%; display: inline-flex; }
-    /* Кастомный компактный аудио-плеер */
-.audio-card-compact {
-    height: 48px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #f1f5f9;
-    padding: 0 12px;
-    border-radius: 12px;
-}
-.dark .audio-card-compact {
-    background: #1e293b;
-}
-.play-btn-circle {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: #3b82f6;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-.wave-container {
-    flex-grow: 1;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    position: relative;
-}
-.custom-progress-bar {
-    width: 100%;
-    height: 4px;
-    background: #cbd5e1;
-    border-radius: 2px;
-    position: relative;
-    cursor: pointer;
-}
-.dark .custom-progress-bar { background: #334155; }
-.progress-fill {
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    background: #3b82f6;
-    border-radius: 2px;
-    width: 0%;
-}
-.audio-time {
-    font-size: 10px;
-    font-family: monospace;
-    color: #64748b;
-    min-width: 35px;
-}
+
+    .animate-pulse-glow {
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    /* Telegram style voice player */
+    .audio-visual-bar {
+      height: 14px;
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      width: 100%;
+    }
+    .audio-visual-bin {
+      flex: 1;
+      height: 60%;
+      background: #e2e8f0;
+      border-radius: 1px;
+      transition: height 0.2s;
+    }
+    .dark .audio-visual-bin { background: #334155; }
+    .audio-visual-bin.active { background: #3b82f6; }
+    
+    @keyframes recording-ripple {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      100% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    }
+    .recording-active {
+      animation: recording-ripple 1.5s infinite;
+    }
   </style>
 
   <script>
@@ -1494,43 +1467,46 @@ function render() {
 
         return `
           <div data-id="${c.id}" onclick="openPollStatsModal('${col.id}', '${c.id}')" class="card-item bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 p-4 rounded-2xl shadow-sm ${isViewer ? 'cursor-pointer' : 'cursor-grab'} select-none relative group transition-colors cursor-pointer">
-            ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}'); event.stopPropagation();" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
-            <div class="flex items-center gap-2 mb-3">
-              <div class="p-1.5 bg-gray-100 dark:bg-gray-800 group-hover:bg-purple-50 dark:group-hover:bg-purple-900/30 text-gray-400 group-hover:text-purple-500 transition-colors rounded-lg"><i data-lucide="bar-chart-3" class="w-4 h-4"></i></div>
-              <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-purple-500 transition-colors">Опрос</span>
-            </div>
-            <div class="font-bold text-sm leading-snug mb-4 text-gray-900 dark:text-white pr-8">${displayTitle}</div>
-            <div class="space-y-1 mb-4">
-              ${optionsHtml}
-            </div>
-            <div class="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest pt-3 border-t border-gray-100 dark:border-gray-800">
-              <span><i data-lucide="users" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> ${totalVotes} ответов</span>
-              <span>${c.isAnonymous ? 'Анонимно' : 'Публично'}</span>
-            </div>
-          </div>
-        `;
-      }
+            ${isViewer ? '' : `
+      <div class="p-3 pt-0 flex flex-col gap-2">
+        <div id="inline-recorder-${col.id}" class="hidden flex items-center gap-2 bg-white dark:bg-gray-900 p-2 rounded-xl border border-blue-500 shadow-lg mb-1">
+           <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+           <div class="text-[10px] font-bold text-gray-500 flex-1" id="rec-time-${col.id}">00:00</div>
+           <button onclick="cancelInlineRecording(${col.id})" class="p-1.5 text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+           <button onclick="stopInlineRecording(${col.id})" class="p-2 bg-blue-600 text-white rounded-lg shadow-md"><i data-lucide="send" class="w-4 h-4"></i></button>
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="openEditModal(${col.id})" class="flex-[4] py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors border border-transparent dark:border-gray-700/50 border-dashed">
+            <i data-lucide="plus" class="w-4 h-4"></i> Задача
+          </button>
+          <button onmousedown="startInlineRecording(${col.id})" class="flex-1 py-2.5 flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-xl transition-all border border-transparent dark:border-gray-700/50" title="Зажать для записи">
+            <i data-lucide="mic" class="w-5 h-5"></i>
+          </button>
+          <button onclick="openMoreAddModal(${col.id})" class="flex-1 py-2.5 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-white/50 dark:hover:bg-black/20 rounded-xl transition-colors border border-transparent dark:border-gray-700/50">
+            <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>`}
 
       // === РЕНДЕР ГОЛОСОВОЙ ЗАМЕТКИ ===
       if (c.type === 'audio') {
         return `
-          <div data-id="${c.id}" class="card-item bg-white dark:bg-gray-900 border border-emerald-100 dark:border-emerald-900/30 p-2.5 rounded-xl shadow-sm ${isViewer ? '' : 'cursor-grab'} select-none relative group transition-all">
-            ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}'); event.stopPropagation();" class="absolute -top-1 -right-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white dark:bg-gray-800 rounded-full border shadow-sm z-10"><i data-lucide="x" class="w-3 h-3"></i></button>`}
-            
-            <div class="audio-card-compact">
-                <audio id="audio-raw-${c.id}" src="${c.audioData}" ontimeupdate="updateAudioProgress('${c.id}')" onended="resetAudioIcon('${c.id}')"></audio>
-                
-                <button onclick="toggleAudioPlay('${c.id}'); event.stopPropagation();" class="play-btn-circle hover:scale-105 active:scale-95 transition-transform">
-                    <i data-lucide="play" class="w-4 h-4 fill-current" id="icon-play-${c.id}"></i>
-                </button>
-                
-                <div class="wave-container">
-                    <div class="custom-progress-bar" onclick="seekAudio(event, '${c.id}'); event.stopPropagation();">
-                        <div class="progress-fill" id="progress-${c.id}"></div>
-                    </div>
-                </div>
-                
-                <span class="audio-time" id="time-${c.id}">0:00</span>
+          <div data-id="${c.id}" class="card-item bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 rounded-xl shadow-sm ${isViewer ? '' : 'cursor-grab'} select-none relative group transition-all hover:border-emerald-400">
+            <div class="flex items-center gap-3">
+               <button onclick="toggleAudioCard(this, '${c.id}'); event.stopPropagation();" class="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform shadow-md shadow-emerald-500/20">
+                  <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5" id="icon-play-${c.id}"></i>
+               </button>
+               
+               <div class="flex-1 min-w-0">
+                  <div class="text-[11px] font-bold text-gray-900 dark:text-white truncate mb-1">${c.title}</div>
+                  <div class="audio-visual-bar" id="progress-bar-${c.id}">
+                     ${Array(20).fill(0).map(() => `<div class="audio-visual-bin" style="height: ${Math.random()*60+20}%"></div>`).join('')}
+                  </div>
+                  <audio id="audio-raw-${c.id}" src="${c.audioData}" ontimeupdate="updateAudioProgress('${c.id}')" onended="resetAudioIcon('${c.id}')" class="hidden"></audio>
+               </div>
+               
+               ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}'); event.stopPropagation();" class="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
             </div>
           </div>
         `;
@@ -2196,172 +2172,6 @@ function closePollStatsModal() {
   modal.classList.add('opacity-0');
   content.classList.add('scale-95');
   setTimeout(() => modal.classList.add('hidden'), 300);
-}
-
-// --- ЛОГИКА ГОЛОСОВЫХ ЗАМЕТОК ---
-let mediaRecorder;
-let audioChunks = [];
-let audioBase64 = null;
-let isRecording = false;
-
-function prepareVoiceMemoCreation() {
-  closeMoreAddModal();
-  const modal = document.getElementById('voiceMemoModal');
-  const content = document.getElementById('voiceMemoContent');
-  modal.classList.remove('hidden');
-  setTimeout(() => {
-    modal.classList.remove('opacity-0');
-    content.classList.remove('scale-95');
-  }, 10);
-
-  // Сброс состояния
-  audioChunks = [];
-  audioBase64 = null;
-  document.getElementById('voiceMemoTitle').value = '';
-  document.getElementById('audioPreviewContainer').classList.add('hidden');
-  document.getElementById('recordBtn').classList.remove('hidden');
-  document.getElementById('stopRecordBtn').classList.add('hidden');
-  document.getElementById('saveAudioBtn').disabled = true;
-  document.getElementById('recordStatus').innerText = 'Нажмите для записи';
-  document.getElementById('recordStatus').classList.remove('text-red-500', 'animate-pulse');
-  
-  lucide.createIcons();
-}
-
-function closeVoiceMemoModal() {
-  if(isRecording) stopRecording();
-  const modal = document.getElementById('voiceMemoModal');
-  const content = document.getElementById('voiceMemoContent');
-  modal.classList.add('opacity-0');
-  content.classList.add('scale-95');
-  setTimeout(() => modal.classList.add('hidden'), 300);
-}
-
-async function startRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
-
-    mediaRecorder.ondataavailable = e => {
-      if (e.data.size > 0) audioChunks.push(e.data);
-    };
-
-    mediaRecorder.onstop = async () => {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      reader.onloadend = () => {
-        audioBase64 = reader.result;
-        const audioPreview = document.getElementById('audioPreview');
-        audioPreview.src = audioBase64;
-        document.getElementById('audioPreviewContainer').classList.remove('hidden');
-        document.getElementById('saveAudioBtn').disabled = false;
-      };
-      // Отключаем микрофон
-      stream.getTracks().forEach(track => track.stop());
-    };
-
-    mediaRecorder.start();
-    isRecording = true;
-    
-    // UI обновления
-    document.getElementById('recordBtn').classList.add('hidden');
-    document.getElementById('stopRecordBtn').classList.remove('hidden');
-    document.getElementById('recordStatus').innerText = 'Идет запись...';
-    document.getElementById('recordStatus').classList.add('text-red-500', 'animate-pulse');
-  } catch (err) {
-    showSystemToast('Ошибка', 'Нет доступа к микрофону.', 'mic-off', 'text-red-500', 'bg-red-50');
-  }
-}
-
-function stopRecording() {
-  if (mediaRecorder && isRecording) {
-    mediaRecorder.stop();
-    isRecording = false;
-    
-    // UI обновления
-    document.getElementById('stopRecordBtn').classList.add('hidden');
-    document.getElementById('recordBtn').classList.remove('hidden');
-    document.getElementById('recordStatus').innerText = 'Запись завершена';
-    document.getElementById('recordStatus').classList.remove('text-red-500', 'animate-pulse');
-  }
-}
-
-function saveVoiceMemo() {
-  if (!audioBase64) return;
-  
-  const title = document.getElementById('voiceMemoTitle').value.trim() || 'Голосовая заметка';
-
-  const audioCard = {
-    id: 'audio_' + Date.now(),
-    title: title,
-    type: 'audio',
-    audioData: audioBase64,
-    author: currentUser,
-    archived: false,
-    createdAt: new Date().toISOString()
-  };
-
-  const colIndex = columns.findIndex(c => c.id === activeColForMore);
-  columns[colIndex].cards.push(audioCard);
-  persist();
-  closeVoiceMemoModal();
-}
-
-// Переключение проигрывания
-function toggleAudioPlay(id) {
-    const audio = document.getElementById(`audio-raw-${id}`);
-    const icon = document.getElementById(`icon-play-${id}`);
-    
-    // Останавливаем все другие играющие аудио (как в TG)
-    document.querySelectorAll('audio').forEach(a => {
-        if (a.id !== `audio-raw-${id}`) {
-            a.pause();
-            const otherId = a.id.replace('audio-raw-', '');
-            resetAudioIcon(otherId);
-        }
-    });
-
-    if (audio.paused) {
-        audio.play();
-        icon.innerHTML = lucide.icons.pause.toSvg({ class: 'w-4 h-4 fill-current' });
-    } else {
-        audio.pause();
-        resetAudioIcon(id);
-    }
-}
-
-function resetAudioIcon(id) {
-    const icon = document.getElementById(`icon-play-${id}`);
-    if (icon) icon.innerHTML = lucide.icons.play.toSvg({ class: 'w-4 h-4 fill-current' });
-}
-
-// Обновление прогресс-бара и времени
-function updateAudioProgress(id) {
-    const audio = document.getElementById(`audio-raw-${id}`);
-    const progress = document.getElementById(`progress-${id}`);
-    const timeDisplay = document.getElementById(`time-${id}`);
-    
-    if (audio && progress) {
-        const percent = (audio.currentTime / audio.duration) * 100;
-        progress.style.width = `${percent}%`;
-        
-        // Форматирование времени
-        const mins = Math.floor(audio.currentTime / 60);
-        const secs = Math.floor(audio.currentTime % 60);
-        timeDisplay.innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
-}
-
-// Перемотка кликом по полоске
-function seekAudio(event, id) {
-    const audio = document.getElementById(`audio-raw-${id}`);
-    const bar = event.currentTarget;
-    const rect = bar.getBoundingClientRect();
-    const offsetX = event.clientX - rect.left;
-    const ratio = offsetX / rect.width;
-    audio.currentTime = ratio * audio.duration;
 }
 </script>
 </body>
