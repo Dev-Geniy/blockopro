@@ -544,7 +544,10 @@
       <h2 id="fullTableTitle" class="text-xl font-black dark:text-white">Редактор таблицы</h2>
     </div>
     <div class="flex gap-3">
-      <button onclick="closeTableEditor()" class="px-6 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all">Отмена</button>
+      <button onclick="exportToGoogleSheets()" class="px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-sm font-bold rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-800 transition-all shadow-sm border border-emerald-100 dark:border-emerald-800/50 flex items-center gap-2">
+        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Выгрузить в Sheets
+      </button>
+      <button onclick="closeTableEditor()" class="px-6 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-700">Отмена</button>
       <button onclick="commitTableToDb()" class="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl shadow-xl shadow-blue-500/25 active:scale-95 transition-all">Сохранить изменения</button>
     </div>
   </div>
@@ -2632,9 +2635,6 @@ function commitTableToDb() {
     if (col.id == activeTableData.colId) {
       col.cards = col.cards.map(c => {
         if (c.id == activeTableData.cardId) {
-          // ЭКСПЕРТНОЕ РЕШЕНИЕ: Возвращаем весь объект activeTableData целиком.
-          // В нём уже лежат актуальные colHeaders, rowHeaders, colWidths и rowHeights,
-          // которые мы изменяли во время работы с таблицей.
           return activeTableData;
         }
         return c;
@@ -2645,6 +2645,56 @@ function commitTableToDb() {
   persist();
   showSystemToast('Таблица сохранена', 'Структура и данные успешно синхронизированы.', 'check-circle', 'text-blue-500', 'bg-blue-50');
   closeTableEditor();
+}
+
+// Визионерская логика экспорта в персональные Google Таблицы
+async function exportToGoogleSheets() {
+  if (!activeTableData) return;
+  showSystemToast('Экспорт...', 'Запрашиваем доступ к Google Sheets.', 'loader-2', 'text-blue-500', 'bg-blue-50');
+
+  try {
+    // Добавляем необходимые Scope для работы с таблицами
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/spreadsheets');
+    
+    // Получаем токен с правами на создание файлов
+    const result = await auth.currentUser.reauthenticateWithPopup(provider);
+    const accessToken = result.credential.accessToken;
+
+    // Формируем массив данных для Sheets: Заголовки + Ячейки
+    const exportGrid = [];
+    const headerRow = ["ID/Title", ...activeTableData.colHeaders.map((h, i) => h || `Столбец ${i + 1}`)];
+    exportGrid.push(headerRow);
+
+    activeTableData.tableData.forEach((row, rIdx) => {
+      const rowName = activeTableData.rowHeaders[rIdx] || `${rIdx + 1}`;
+      exportGrid.push([rowName, ...row]);
+    });
+
+    // 1. Создаем новую таблицу через Sheets API
+    const createRes = await fetch('https://sheets.googleapis.com/v1/spreadsheets', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ properties: { title: `Blocko Pro: ${activeTableData.title}` } })
+    });
+    
+    const sheetInfo = await createRes.json();
+    if (!sheetInfo.spreadsheetId) throw new Error("Spreadsheet ID missing");
+
+    // 2. Записываем данные в созданный файл
+    await fetch(`https://sheets.googleapis.com/v1/spreadsheets/${sheetInfo.spreadsheetId}/values/A1:update?valueInputOption=USER_ENTERED`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: exportGrid })
+    });
+
+    showSystemToast('Успех! 📊', 'Таблица создана в вашем Google Sheets.', 'check-circle', 'text-green-500', 'bg-green-50');
+    window.open(`https://docs.google.com/spreadsheets/d/${sheetInfo.spreadsheetId}`, '_blank');
+
+  } catch (err) {
+    console.error("Export Error:", err);
+    showSystemToast('Сбой экспорта', 'Проверьте соединение или права доступа.', 'alert-circle', 'text-red-500', 'bg-red-50');
+  }
 }
 </script>
 </body>
