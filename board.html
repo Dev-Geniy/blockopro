@@ -51,6 +51,26 @@
     .ambassador-frame { padding: 3px; background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: rainbow-border 3s linear infinite; border-radius: 50%; display: inline-flex; }
     .partner-frame { padding: 3px; background: linear-gradient(45deg, #6366f1, #a855f7, #ec4899); border-radius: 50%; display: inline-flex; }
     .friend-frame { padding: 3px; background: linear-gradient(45deg, #3b82f6, #06b6d4); border-radius: 50%; display: inline-flex; }
+    /* Анимация радужной рамки */
+    @keyframes rainbow-glow {
+      0% { filter: hue-rotate(0deg); border-color: #3b82f6; }
+      50% { filter: hue-rotate(180deg); border-color: #ec4899; }
+      100% { filter: hue-rotate(360deg); border-color: #3b82f6; }
+    }
+
+    .animate-rainbow {
+      animation: rainbow-glow 4s linear infinite;
+    }
+
+    /* Пульсация свечения */
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.05); }
+    }
+
+    .animate-pulse-glow {
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
   </style>
 
   <script>
@@ -623,10 +643,11 @@ function loadBoard() {
         let updates = {};
         let needsUpdate = false;
 
-        if (!data.users || !data.users[currentUser.id]) {
+        if (!data.users || !data.users[currentUser.id] || data.users[currentUser.id].avatar !== (currentUser.customAvatar || currentUser.avatar)) {
            updates[`users.${currentUser.id}`] = { 
                name: currentUser.name || "User", 
-               avatar: currentUser.avatar || "", 
+               avatar: currentUser.customAvatar || currentUser.avatar || "", // Своё фото
+               badgeConfig: currentUser.badgeConfig || { frameColor: 'transparent', glowColor: 'transparent', animation: 'none' }, // Рамка
                role: isOwner ? 'owner' : 'editor' 
            };
            needsUpdate = true;
