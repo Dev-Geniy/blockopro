@@ -435,44 +435,58 @@
   </div>
 </div>
 
-  <div id="profileModal" class="hidden fixed inset-0 z-[260] flex items-center justify-center bg-gray-900/80 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-800 text-center transform transition-transform scale-95" id="profileContent">
-    <button onclick="closeProfileModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+<div id="profileModal" class="hidden fixed inset-0 z-[260] flex items-center justify-center bg-gray-900/80 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-800 text-center transform transition-transform scale-95 flex flex-col max-h-[90vh]" id="profileContent">
+    <button onclick="closeProfileModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-10"><i data-lucide="x" class="w-5 h-5"></i></button>
     
-    <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-6">Ваш Профиль</h2>
-    
-    <div id="profilePreviewArea" class="mb-8 flex justify-center"></div>
+    <div class="overflow-y-auto pr-2 custom-scroll">
+      <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-6">Ваш Профиль</h2>
+      
+      <div id="profilePreviewArea" class="mb-6 flex justify-center"></div>
 
-    <div class="space-y-6 text-left">
-      <div id="avatarUploadBlock" class="hidden">
-        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Своё фото профиля</label>
-        <div class="flex gap-3">
-          <input type="text" id="customAvatarUrl" placeholder="URL изображения (jpg/png)" class="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white">
-          <button onclick="updateProfileAvatar()" class="px-4 bg-blue-600 text-white rounded-xl font-bold text-xs">OK</button>
+      <div class="grid grid-cols-2 gap-3 mb-8">
+        <div class="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-800/50 text-left">
+          <span class="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block mb-1">Монеты</span>
+          <div class="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+            <i data-lucide="coins" class="w-4 h-4 text-amber-500"></i>
+            <span id="profileCoinsVal">0</span>
+          </div>
+        </div>
+        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/50 text-left">
+          <span class="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest block mb-1">Тариф</span>
+          <div class="text-sm font-black text-gray-900 dark:text-white uppercase truncate" id="profilePlanVal">FREE</div>
         </div>
       </div>
 
-      <div id="frameSettingsBlock" class="hidden">
-        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Цвет свечения рамки</label>
-        <div class="flex gap-3 overflow-x-auto pb-2" id="frameColorPicker">
+      <div class="space-y-6 text-left">
+        <div id="avatarUploadBlock" class="hidden">
+          <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Своё фото профиля (URL)</label>
+          <div class="flex gap-3">
+            <input type="text" id="customAvatarUrl" placeholder="https://..." class="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white">
+            <button onclick="updateProfileAvatar()" class="px-4 bg-blue-600 text-white rounded-xl font-bold text-xs active:scale-95 transition-transform">Save</button>
           </div>
+        </div>
+
+        <div id="frameSettingsBlock" class="hidden">
+          <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Кастомизация рамки</label>
+          <div class="flex gap-3 overflow-x-auto pb-2 hide-scroll" id="frameColorPicker"></div>
+        </div>
+
+        <div id="animationSettingsBlock" class="hidden">
+          <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Эффект артефакта</label>
+          <select id="frameAnimationSelect" onchange="updateProfileEffects()" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none dark:text-white cursor-pointer hover:border-blue-500 transition-colors">
+            <option value="none">Без анимации</option>
+            <option value="pulse">Пульсация (Мягкая)</option>
+            <option value="rainbow">Радужный перелив (Epic)</option>
+            <option value="flicker">Неоновое мерцание</option>
+          </select>
+        </div>
       </div>
 
-      <div id="animationSettingsBlock" class="hidden">
-        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Эффект анимации</label>
-        <select id="frameAnimationSelect" onchange="updateProfileEffects()" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none dark:text-white">
-          <option value="none">Без анимации</option>
-          <option value="pulse">Пульсация (Мягкая)</option>
-          <option value="rainbow">Радужный перелив (Epic)</option>
-          <option value="flicker">Неоновое мерцание</option>
-          <option value="spin">Вращение энергии</option>
-        </select>
-      </div>
+      <button onclick="logout()" class="w-full mt-8 py-4 border border-red-200 dark:border-red-900/50 text-red-500 font-bold rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center justify-center gap-2 active:scale-95">
+        <i data-lucide="log-out" class="w-4 h-4"></i> Выйти из системы
+      </button>
     </div>
-
-    <button onclick="logout()" class="w-full mt-10 py-4 border border-red-200 dark:border-red-900/50 text-red-500 font-bold rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center justify-center gap-2 active:scale-95">
-      <i data-lucide="log-out" class="w-4 h-4"></i> Выйти из аккаунта
-    </button>
   </div>
 </div>
   
@@ -1920,37 +1934,58 @@ async function loadAffiliateStats() {
   }
 }
 
-function openProfileSettings() {
+async function openProfileSettings() {
+  if (!currentUser) return;
+  
   const modal = document.getElementById('profileModal');
   const content = document.getElementById('profileContent');
   
-  // Заполняем настройки на основе наград
-  db.collection('users').doc(currentUser.id).get().then(doc => {
-    const data = doc.data();
+  try {
+    const userDoc = await db.collection('users').doc(currentUser.id).get();
+    const data = userDoc.exists ? userDoc.data() : {};
     const rewards = data.rewardsClaimed || [];
-    
-    // 1. Смена аватара доступна с уровня Friend
+
+    // Обновляем баланс и тариф в модалке
+    document.getElementById('profileCoinsVal').innerText = data.coins || 0;
+    document.getElementById('profilePlanVal').innerText = (data.plan || 'free').toUpperCase();
+
+    // 1. Смена аватара (уровень Friend+)
     if (rewards.includes('friend') || rewards.includes('partner') || rewards.includes('ambassador')) {
       document.getElementById('avatarUploadBlock').classList.remove('hidden');
       document.getElementById('customAvatarUrl').value = data.customAvatar || "";
+    } else {
+      document.getElementById('avatarUploadBlock').classList.add('hidden');
     }
     
-    // 2. Рамки доступны с уровня Partner
+    // 2. Рамки (уровень Partner+)
     if (rewards.includes('partner') || rewards.includes('ambassador')) {
       document.getElementById('frameSettingsBlock').classList.remove('hidden');
       renderFrameColors(data.badgeConfig?.glowColor);
+    } else {
+      document.getElementById('frameSettingsBlock').classList.add('hidden');
     }
 
-    // 3. Анимации доступны с уровня Ambassador
+    // 3. Анимации (уровень Ambassador)
     if (rewards.includes('ambassador')) {
       document.getElementById('animationSettingsBlock').classList.remove('hidden');
       document.getElementById('frameAnimationSelect').value = data.badgeConfig?.animation || 'none';
+    } else {
+      document.getElementById('animationSettingsBlock').classList.add('hidden');
     }
 
     updateProfilePreview(data);
+    
     modal.classList.remove('hidden');
-    setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
-  });
+    setTimeout(() => { 
+      modal.classList.remove('opacity-0'); 
+      content.classList.remove('scale-95'); 
+      content.classList.add('scale-100'); 
+    }, 10);
+    lucide.createIcons();
+    
+  } catch (e) {
+    showSystemToast('Ошибка', 'Не удалось загрузить данные профиля.', 'alert-triangle', 'text-red-500', 'bg-red-50');
+  }
 }
 
 function updateProfilePreview(data) {
