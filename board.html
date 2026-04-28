@@ -1281,7 +1281,7 @@ function openViewModal(colId, cardId) {
     } else if (card.type === 'audio') {
         header.innerHTML = `<div class="flex items-center gap-2 text-emerald-500 mb-2"><i data-lucide="mic" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Голосовая заметка</span></div>`;
         body.innerHTML = `<div class="bg-emerald-50/50 dark:bg-emerald-900/20 p-8 rounded-[2rem] border border-emerald-100 dark:border-emerald-800/50 flex flex-col items-center">
-            <button onclick="toggleAudioPlayer(this, '${card.audioData}')" class="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform mb-4">
+            <button onclick="toggleAudioPlayer(this, ${colId}, '${card.id}')" class="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform mb-4">
                 <i data-lucide="play" class="w-10 h-10 fill-current ml-1 btn-icon"></i>
             </button>
             <div class="w-full h-2 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden"><div class="audio-progress bg-emerald-500 h-full w-0"></div></div>
@@ -1704,7 +1704,7 @@ function render() {
             </div>
             <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6">${displayTitle}</div>
             <div class="flex items-center gap-3 bg-emerald-50/50 dark:bg-emerald-900/20 p-2 rounded-xl mb-2 border border-emerald-100/50 dark:border-emerald-800/30">
-              <button onclick="toggleAudioPlayer(this, '${c.audioData}'); event.stopPropagation();" class="w-8 h-8 flex-shrink-0 bg-emerald-500 text-white rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm">
+              <button onclick="toggleAudioPlayer(this, ${col.id}, '${c.id}'); event.stopPropagation();" class="w-8 h-8 flex-shrink-0 bg-emerald-500 text-white rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm">
                 <i data-lucide="play" class="w-4 h-4 fill-current ml-0.5 btn-icon"></i>
               </button>
               <div class="flex-1 h-1.5 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden relative">
@@ -2305,31 +2305,55 @@ function votePoll(colId, cardId, optionIndex) {
 let currentPlayingAudio = null;
 let currentAudioBtn = null;
 
-function toggleAudioPlayer(btn, audioSrc) {
+// Надежная замена SVG-иконки Lucide без конфликтов DOM
+function updatePlayerIcon(btn, iconName) {
+  const oldIcon = btn.querySelector('.btn-icon');
+  if (!oldIcon) return;
+  
+  const classes = oldIcon.getAttribute('class');
+  const newIcon = document.createElement('i');
+  newIcon.setAttribute('data-lucide', iconName);
+  newIcon.setAttribute('class', classes);
+  
+  oldIcon.parentNode.replaceChild(newIcon, oldIcon);
+  lucide.createIcons({ nameAttr: 'data-lucide' });
+}
+
+// Передаем ID вместо Base64, чтобы избежать зависаний браузера при рендере DOM
+function toggleAudioPlayer(btn, colId, cardId) {
   const progressBar = btn.parentElement.querySelector('.audio-progress');
-  const icon = btn.querySelector('.btn-icon');
+  
+  const col = columns.find(c => c.id == colId);
+  if (!col) return;
+  const card = col.cards.find(c => c.id == cardId);
+  if (!card || !card.audioData) return;
+
+  const audioSrc = card.audioData;
 
   if (currentPlayingAudio && currentPlayingAudio.src === audioSrc) {
     if (currentPlayingAudio.paused) {
       currentPlayingAudio.play();
-      icon.setAttribute('data-lucide', 'pause');
+      updatePlayerIcon(btn, 'pause');
     } else {
       currentPlayingAudio.pause();
-      icon.setAttribute('data-lucide', 'play');
+      updatePlayerIcon(btn, 'play');
     }
   } else {
     if (currentPlayingAudio) {
       currentPlayingAudio.pause();
       if (currentAudioBtn) {
-        currentAudioBtn.querySelector('.btn-icon').setAttribute('data-lucide', 'play');
-        lucide.createIcons(); // Принудительно возвращаем иконку предыдущего трека
+        updatePlayerIcon(currentAudioBtn, 'play');
       }
     }
     
     currentPlayingAudio = new Audio(audioSrc);
     currentAudioBtn = btn;
-    currentPlayingAudio.play();
-    icon.setAttribute('data-lucide', 'pause');
+    
+    currentPlayingAudio.play().then(() => {
+      updatePlayerIcon(btn, 'pause');
+    }).catch(err => {
+      showSystemToast('Ошибка', 'Не удалось воспроизвести аудио.', 'alert-triangle', 'text-red-500', 'bg-red-50');
+    });
 
     currentPlayingAudio.ontimeupdate = () => {
       if (progressBar) {
@@ -2339,12 +2363,10 @@ function toggleAudioPlayer(btn, audioSrc) {
     };
 
     currentPlayingAudio.onended = () => {
-      icon.setAttribute('data-lucide', 'play');
+      updatePlayerIcon(btn, 'play');
       if (progressBar) progressBar.style.width = '0%';
-      lucide.createIcons(); // FIX: Обновляем SVG-иконку при завершении трека
     };
   }
-  lucide.createIcons();
 }
 
 // Исправленная функция: теперь корректно обрабатывает типы данных (число/строка) и принудительно перерисовывает UI
@@ -2401,7 +2423,7 @@ function openAudioModal(colId, cardId) {
     
     document.getElementById('cvBody').innerHTML = `
         <div class="bg-emerald-50/50 dark:bg-emerald-900/20 p-6 rounded-3xl border border-emerald-100 dark:border-emerald-800/50 flex flex-col items-center">
-            <button onclick="toggleAudioPlayer(this, '${card.audioData}')" class="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform mb-4">
+            <button onclick="toggleAudioPlayer(this, ${colId}, '${cardId}')" class="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform mb-4">
                 <i data-lucide="play" class="w-10 h-10 fill-current ml-1 btn-icon"></i>
             </button>
             <div class="w-full h-2 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden">
