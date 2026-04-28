@@ -1384,6 +1384,7 @@ function render() {
   });
   
   // 4. SortableJS для самих колонок
+  // 4. SortableJS для самих колонок
   sortableInstances.push(new Sortable(board, { 
     animation: 200, 
     handle: '.col-handle', 
@@ -1399,6 +1400,11 @@ function render() {
   }));
 
   lucide.createIcons();
+  
+  // Автоматическая проверка дедлайнов при каждом рендере
+  if (typeof checkDeadlines === 'function') {
+    checkDeadlines(columns);
+  }
 }
 
 let quickAddTargetColId = null;
