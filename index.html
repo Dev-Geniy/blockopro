@@ -996,8 +996,11 @@ grid.innerHTML = filtered.map(data => {
     const isLocal = data.id && data.id.startsWith('local_');
     const isOwner = data.owner === currentUser.id;
     const hasPassword = !!data.password; 
-    const ownerInfo = data.users && data.users[data.owner] ? data.users[data.owner] : { name: 'Владелец', avatar: generateAvatarById(data.owner || 'U') };
-    
+    // Получаем данные владельца (включая badgeConfig)
+    const ownerData = data.users && data.users[data.owner] ? data.users[data.owner] : { name: 'User' };
+    // Генерируем аватар через общую функцию
+    const ownerAvatarHtml = renderUserAvatar(ownerData, "w-10 h-10");
+  
     // --- ДИНАМИЧЕСКИЕ КНОПКИ ДЕЙСТВИЙ (ОБНОВЛЕНО ДЛЯ БЭКАПОВ) ---
     let actionButtons = '';
     if (isLocal) {
