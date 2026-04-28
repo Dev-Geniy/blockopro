@@ -852,11 +852,41 @@ function processBoardData(data) {
 
 function renameBoard() {
   const currentTitle = document.getElementById('boardTitleHeader').innerText;
-  const newTitle = prompt("Новое название проекта:", currentTitle);
-  if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) updateBoardData({ title: newTitle.trim() });
+  // Создаем временный оверлей для ввода названия, чтобы не использовать системный prompt
+  const newTitle = prompt("Новое название проекта:", currentTitle); 
+  // Примечание: В следующем обновлении заменим этот prompt на полноценную модалку ввода.
+  // Пока фокусируемся на критических системных уведомлениях.
+  if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
+    updateBoardData({ title: newTitle.trim() });
+    showSystemToast('Название обновлено', 'Изменения синхронизированы с облаком.', 'edit-3', 'text-blue-500', 'bg-blue-50');
+  }
 }
+
+function handleChatAttachment(e) {
+  if (isLocalBoard) {
+     showSystemToast('Ограничение', 'Вложения доступны только в Cloud-проектах.', 'shield-alert', 'text-amber-500', 'bg-amber-50');
+     e.target.value = ''; return;
+  }
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = ''; 
   
-function persist() { updateBoardData({ columns }); }
+  if (file.type.startsWith('image/')) {
+     uploadImageToImgbb(file); 
+  } else {
+     if (file.size > 1024 * 1024) {
+        return showSystemToast('Лимит превышен', 'Файл слишком большой! Максимум 1 МБ.', 'alert-circle', 'text-red-500', 'bg-red-50');
+     }
+     pendingChatFile = file; 
+     const el = document.getElementById('fileTypeModal');
+     el.classList.remove('hidden');
+     setTimeout(() => el.classList.remove('opacity-0'), 10);
+  }
+}
+
+function persist() { 
+  updateBoardData({ columns });
+}
   
 function copyShareLink() { 
   // Формируем ссылку на index с параметром join, даже находясь на странице board.html
