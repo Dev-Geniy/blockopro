@@ -104,7 +104,7 @@
           <div id="dashUserName" class="text-sm font-bold">User</div>
           <button onclick="logout()" class="text-xs text-gray-500 hover:text-red-500 transition-colors">Выйти</button>
         </div>
-        <img id="dashAvatar" onclick="openProfileSettings()" src="" class="w-11 h-11 rounded-full border-2 border-white dark:border-gray-800 shadow-sm cursor-pointer" />
+        <div id="dashAvatarContainer" onclick="openProfileSettings()" class="cursor-pointer hover:scale-105 transition-transform"></div>
       </div>
     </div>
   </header>
@@ -764,12 +764,30 @@ auth.onAuthStateChanged((user) => {
   const authScreen = document.getElementById('authScreen');
   const dashScreen = document.getElementById('dashboardScreen');
   if (user) {
-    currentUser = { id: user.uid, name: user.displayName, avatar: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}` };
     authScreen.classList.add('hidden');
     dashScreen.classList.remove('hidden');
     dashScreen.classList.add('flex');
-    document.getElementById('dashAvatar').src = currentUser.avatar;
-    document.getElementById('dashUserName').innerText = currentUser.name;
+
+    // РЕАКТИВНОЕ ОБНОВЛЕНИЕ ПРОФИЛЯ
+    db.collection('users').doc(user.uid).onSnapshot(doc => {
+      if (doc.exists) {
+        const userData = doc.data();
+        currentUser = { 
+          id: user.uid, 
+          name: userData.name, 
+          avatar: userData.avatar,
+          customAvatar: userData.customAvatar,
+          badgeConfig: userData.badgeConfig,
+          plan: userData.plan
+        };
+        
+        // Обновляем имя и аватар в шапке (теперь через функцию рендера)
+        document.getElementById('dashUserName').innerText = currentUser.name;
+        document.getElementById('dashAvatarContainer').innerHTML = renderUserAvatar(userData, "w-11 h-11");
+        lucide.createIcons();
+      }
+    });
+
     subscribeToBoards(user.uid);
 
     // --- ПЕРЕХВАТ ИНВАЙТ-ССЫЛКИ ПРИ ВХОДЕ ---
@@ -913,7 +931,14 @@ async function loadAffiliateStats() {
   }
 }
   
-function logout() { auth.signOut(); }
+function logout() {
+  // Закрываем модалку профиля, если она открыта
+  if (typeof closeProfileModal === "function") closeProfileModal();
+  
+  auth.signOut().then(() => {
+    window.location.reload(); // Полная очистка состояния
+  });
+}
 
 // Получение локальных досок
 function getLocalBoards() {
