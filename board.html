@@ -2541,6 +2541,10 @@ function saveNewTable() {
     type: 'table',
     cols: cols,
     rows: rows,
+    colHeaders: Array(cols).fill(""),
+    rowHeaders: Array(rows).fill(""),
+    colWidths: Array(cols).fill(180),
+    rowHeights: Array(rows).fill(45),
     tableData: emptyData,
     author: currentUser,
     archived: false,
@@ -2557,7 +2561,7 @@ function saveNewTable() {
 function openTableEditor(colId, cardId) {
   const col = columns.find(c => c.id == colId);
   const card = col.cards.find(c => c.id == cardId);
-  activeTableData = JSON.parse(JSON.stringify(card)); // Клонируем для работы без автосохранения
+  activeTableData = JSON.parse(JSON.stringify(card)); 
   activeTableData.colId = colId;
   activeTableData.cardId = cardId;
 
@@ -2573,28 +2577,48 @@ function renderExcelTable() {
   const thead = document.getElementById('excelThead');
   const tbody = document.getElementById('excelTbody');
   
-  // Хедер
-  let headHtml = '<tr><th class="p-3 border-r dark:border-gray-700 bg-gray-100 dark:bg-gray-900 w-10 text-[10px] font-black text-gray-400">#</th>';
+  // Инициализация для старых таблиц (обратная совместимость)
+  if (!activeTableData.colHeaders) activeTableData.colHeaders = Array(activeTableData.cols).fill("");
+  if (!activeTableData.rowHeaders) activeTableData.rowHeaders = Array(activeTableData.rows).fill("");
+  if (!activeTableData.colWidths) activeTableData.colWidths = Array(activeTableData.cols).fill(180);
+  if (!activeTableData.rowHeights) activeTableData.rowHeights = Array(activeTableData.rows).fill(45);
+
+  // Шапка (Изменение ширины)
+  let headHtml = '<tr><th class="p-0 border-r border-b dark:border-gray-700 bg-gray-100 dark:bg-gray-900 w-16 align-middle shadow-sm z-20"><i data-lucide="corner-down-right" class="w-4 h-4 mx-auto text-gray-400"></i></th>';
   for (let c = 0; c < activeTableData.cols; c++) {
-    headHtml += `<th class="p-3 border-r dark:border-gray-700 text-left text-[10px] font-black uppercase text-gray-500 tracking-widest">Колонка ${c + 1}</th>`;
+    const title = activeTableData.colHeaders[c] || `Столбец ${c + 1}`;
+    headHtml += `<th class="p-0 border-r border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900/80 align-top shadow-sm z-10">
+      <div style="width: ${activeTableData.colWidths[c]}px; min-width: 80px;" class="resize-x overflow-hidden" onmouseup="activeTableData.colWidths[${c}] = this.offsetWidth">
+        <input type="text" value="${title}" oninput="activeTableData.colHeaders[${c}] = this.value" placeholder="Столбец ${c + 1}" class="w-full h-10 px-3 bg-transparent outline-none text-[11px] font-black text-gray-500 tracking-wider text-center focus:text-blue-500 focus:bg-white dark:focus:bg-gray-800 transition-colors" />
+      </div>
+    </th>`;
   }
   thead.innerHTML = headHtml + '</tr>';
 
-  // Тело
+  // Тело (Изменение высоты и ввод данных)
   let bodyHtml = '';
   for (let r = 0; r < activeTableData.rows; r++) {
-    bodyHtml += `<tr class="border-b dark:border-gray-700 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">`;
-    bodyHtml += `<td class="p-3 border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 text-center text-[10px] font-bold text-gray-400">${r + 1}</td>`;
+    const rowTitle = activeTableData.rowHeaders[r] || `${r + 1}`;
+    bodyHtml += `<tr class="border-b dark:border-gray-700 hover:bg-blue-50/20 dark:hover:bg-blue-900/10 transition-colors">`;
+    
+    // Номер/Название строки
+    bodyHtml += `<td class="p-0 border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 align-top shadow-sm z-10">
+      <div style="height: ${activeTableData.rowHeights[r]}px; min-height: 40px;" class="resize-y overflow-hidden flex items-center justify-center w-16" onmouseup="activeTableData.rowHeights[${r}] = this.offsetHeight">
+         <input type="text" value="${rowTitle}" oninput="activeTableData.rowHeaders[${r}] = this.value" placeholder="${r + 1}" class="w-full h-full text-center bg-transparent outline-none text-[11px] font-bold text-gray-400 focus:text-blue-500 focus:bg-white dark:focus:bg-gray-800 transition-colors" />
+      </div>
+    </td>`;
+    
+    // Ячейки
     for (let c = 0; c < activeTableData.cols; c++) {
       const val = activeTableData.tableData[r][c] || "";
-      bodyHtml += `<td class="p-0 border-r dark:border-gray-700">
-        <input type="text" value="${val}" oninput="updateTableCell(${r}, ${c}, this.value)" 
-               class="w-full h-full p-3 bg-transparent outline-none text-sm dark:text-white focus:bg-white dark:focus:bg-gray-700 transition-all border-2 border-transparent focus:border-blue-500" />
+      bodyHtml += `<td class="p-0 border-r dark:border-gray-700 align-top relative h-full">
+        <textarea oninput="updateTableCell(${r}, ${c}, this.value)" class="absolute inset-0 w-full h-full p-2.5 bg-transparent outline-none text-sm dark:text-white focus:bg-white dark:focus:bg-gray-800 transition-all border-2 border-transparent focus:border-blue-500 resize-none hide-scroll leading-relaxed">${val}</textarea>
       </td>`;
     }
     bodyHtml += `</tr>`;
   }
   tbody.innerHTML = bodyHtml;
+  lucide.createIcons();
 }
 
 function updateTableCell(r, c, val) {
@@ -2612,7 +2636,7 @@ function commitTableToDb() {
     if (col.id == activeTableData.colId) {
       col.cards = col.cards.map(c => {
         if (c.id == activeTableData.cardId) {
-          return { ...c, tableData: activeTableData.tableData };
+          return activeTableData;
         }
         return c;
       });
@@ -2620,7 +2644,7 @@ function commitTableToDb() {
     return col;
   });
   persist();
-  showSystemToast('Таблица сохранена', 'Данные успешно синхронизированы.', 'check-circle', 'text-blue-500', 'bg-blue-50');
+  showSystemToast('Таблица сохранена', 'Данные успешно отправлены в базу.', 'check-circle', 'text-blue-500', 'bg-blue-50');
   closeTableEditor();
 }
 </script>
