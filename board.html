@@ -226,7 +226,7 @@
 <div id="viewCardModal" class="hidden fixed inset-0 z-50 flex justify-center bg-gray-900/40 dark:bg-black/60 glass-modal overflow-y-auto pt-10 pb-10 opacity-0 transition-opacity duration-200">
   <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-2xl shadow-2xl relative my-auto border border-gray-200 dark:border-gray-700">
     <button onclick="closeViewModal()" class="absolute top-6 right-6 text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 p-2 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
-    <div class="flex items-center gap-2 mb-4 text-xs font-medium text-gray-500 dark:text-gray-400"><img id="viewAuthorAvatar" src="" class="w-6 h-6 rounded-full bg-gray-200 shadow-sm" /><span id="viewAuthorName" class="text-gray-800 dark:text-gray-200">User</span> создал(а) задачу</div>
+    <div class="flex items-center gap-2 mb-4 text-xs font-medium text-gray-500 dark:text-gray-400"><div class="flex items-center gap-2 mb-4 text-xs font-medium text-gray-500 dark:text-gray-400"><div id="viewAuthorAvatarContainer"></div><span id="viewAuthorName" class="text-gray-800 dark:text-gray-200">User</span> создал(а) задачу</div>
     <div id="viewTags" class="flex gap-2 mb-3 flex-wrap"></div>
     <h2 id="viewTitle" class="text-3xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"></h2>
     <img id="viewImage" src="" class="w-full rounded-xl mb-6 hidden object-cover max-h-96 border border-gray-200 dark:border-gray-700 shadow-sm" />
@@ -236,7 +236,7 @@
       <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><i data-lucide="message-square" class="w-4 h-4 text-blue-500"></i> Обсуждение</h3>
       <div id="viewCommentsList" class="space-y-4 mb-4 text-sm"></div>
       <div class="flex gap-3 pt-2">
-        <img id="commentMyAvatar" src="" class="w-10 h-10 rounded-full flex-shrink-0 shadow-sm" />
+        <div id="commentMyAvatarContainer"></div>
         <div class="flex-1 flex gap-2">
           <input id="viewCommentInput" placeholder="Оставьте комментарий..." onkeypress="if(event.key==='Enter') addCommentFromView()" class="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500" />
           <button onclick="addCommentFromView()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm transition-colors"><i data-lucide="send" class="w-4 h-4"></i></button>
