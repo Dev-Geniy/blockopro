@@ -1384,7 +1384,11 @@ function renderColorPicker() { document.getElementById('colorPicker').innerHTML 
 
 function openEditModal(colId, cardId = null) {
   currentColumn = colId; 
-  editingCard = cardId ? columns.find(c => c.id === colId).cards.find(c => c.id === cardId) : null;
+  
+  // FIX: Используем нестрогое сравнение (==) для корректного поиска ID (строка vs число)
+  const targetCol = columns.find(c => c.id == colId);
+  editingCard = (cardId && targetCol) ? targetCol.cards.find(c => c.id == cardId) : null;
+  
   activeTags = editingCard ? [...(editingCard.tags || [])] : []; 
   pendingImageFile = null;
   activeChecklist = editingCard && editingCard.checklist ? [...editingCard.checklist] : [];
@@ -1395,10 +1399,20 @@ function openEditModal(colId, cardId = null) {
   document.getElementById('uploadStatus').innerText = ''; 
   const preview = document.getElementById('editImagePreview');
 
-  if (editingCard?.image) { preview.src = editingCard.image; preview.classList.remove('hidden'); document.getElementById('dropzoneText').classList.add('opacity-0'); } 
-  else { preview.classList.add('hidden'); document.getElementById('dropzoneText').classList.remove('opacity-0'); }
-  renderTagsPicker(); renderChecklistEdit(); toggleModal('editCardModal', true);
+  if (editingCard?.image) { 
+    preview.src = editingCard.image; 
+    preview.classList.remove('hidden'); 
+    document.getElementById('dropzoneText').classList.add('opacity-0'); 
+  } else { 
+    preview.classList.add('hidden'); 
+    document.getElementById('dropzoneText').classList.remove('opacity-0'); 
+  }
+  
+  renderTagsPicker(); 
+  renderChecklistEdit(); 
+  toggleModal('editCardModal', true);
 }
+  
 function closeEditModal() { toggleModal('editCardModal', false); }
 
 const dropzone = document.getElementById('dropzoneLabel');
