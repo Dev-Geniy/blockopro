@@ -91,30 +91,3 @@ const REWARDS = {
     desc: "Анимированная рамка + 60 дней тарифа Company" 
   }
 };
-
-// ==========================================
-// 7. ГЛОБАЛЬНЫЙ ДВИЖОК АВАТАРОВ (С РАМКАМИ)
-// ==========================================
-function renderUserAvatar(userConfig, sizeClass = "w-11 h-11") {
-  if (!userConfig) return '';
-  const config = userConfig.badgeConfig || { frameColor: 'transparent', glowColor: 'transparent', animation: 'none' };
-  const avatarUrl = userConfig.customAvatar || userConfig.avatar || `https://ui-avatars.com/api/?name=${userConfig.name || 'U'}`;
-
-  let animationClass = "";
-  if (config.animation === 'pulse') animationClass = "animate-pulse-glow";
-  if (config.animation === 'rainbow') animationClass = "animate-rainbow";
-  if (config.animation === 'flicker') animationClass = "animate-bounce";
-
-  // Если рамки нет, просто возвращаем картинку
-  if (!config.frameColor || config.frameColor === 'transparent') {
-    return `<img src="${avatarUrl}" class="${sizeClass} rounded-full object-cover shadow-sm flex-shrink-0 border border-gray-200 dark:border-gray-700" title="${userConfig.name || ''}" />`;
-  }
-
-  // Если рамка есть
-  return `
-    <div class="relative flex-shrink-0 ${sizeClass} rounded-full transition-all duration-500 flex items-center justify-center ${animationClass}"
-         style="background: ${config.frameColor}; box-shadow: 0 0 15px ${config.glowColor}; padding: 3px;">
-      <img src="${avatarUrl}" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-gray-950 bg-white" title="${userConfig.name || ''}" />
-    </div>
-  `;
-}
