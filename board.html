@@ -488,8 +488,22 @@
       <h3 class="text-xl font-black dark:text-white leading-tight" id="pollStatsTitle">Статистика опроса</h3>
       <button onclick="closePollStatsModal()" class="text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 rounded-full bg-gray-100 dark:bg-gray-800 flex-shrink-0 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
-    <div id="pollStatsLists" class="overflow-y-auto hide-scroll space-y-4 pr-1">
+    <div id="pollStatsLists" class="overflow-y-auto hide-scroll space-y-4 pr-1 flex-1">
+    </div>
+    
+    <div id="pollChatContainer" class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+      <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+        <i data-lucide="message-square" class="w-4 h-4 text-purple-500"></i> Обсуждение опроса
+      </h3>
+      <div id="pollCommentsList" class="space-y-4 mb-4 text-sm max-h-48 overflow-y-auto hide-scroll"></div>
+      <div class="flex gap-3 pt-2">
+        <div id="pollCommentMyAvatar"></div>
+        <div class="flex-1 flex gap-2">
+          <input id="pollCommentInput" placeholder="Ваше мнение..." onkeypress="if(event.key==='Enter') addCommentToPoll()" class="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-purple-500" />
+          <button onclick="addCommentToPoll()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-xl text-sm transition-colors shadow-md shadow-purple-500/20"><i data-lucide="send" class="w-4 h-4"></i></button>
+        </div>
       </div>
+    </div>
   </div>
 </div>
   
@@ -2125,53 +2139,55 @@ function deleteCardDirectly(colId, cardId, typeLabel = 'опрос') {
   });
 }
 
+let activePollData = null; // Для хранения текущего открытого опроса
+
 function openPollStatsModal(colId, cardId) {
   const col = columns.find(c => c.id == colId);
   if (!col) return;
   const poll = col.cards.find(c => c.id == cardId);
   if (!poll || poll.type !== 'poll') return;
 
+  activePollData = { colId, cardId, ...poll };
+  currentColumn = colId; // Используем глобальную переменную для совместимости
+
   document.getElementById('pollStatsTitle').innerText = poll.title;
   const container = document.getElementById('pollStatsLists');
   
+  // Рендер результатов
   if (poll.isAnonymous) {
     container.innerHTML = `
-      <div class="text-center flex flex-col items-center justify-center text-gray-500 py-12">
-        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-          <i data-lucide="ghost" class="w-8 h-8 text-gray-400"></i>
+      <div class="text-center flex flex-col items-center justify-center text-gray-500 py-8">
+        <div class="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3">
+          <i data-lucide="ghost" class="w-6 h-6 text-gray-400"></i>
         </div>
-        <span class="font-bold text-gray-900 dark:text-white">Опрос анонимный</span>
-        <span class="text-xs mt-1">Имена участников скрыты настройками приватности.</span>
+        <span class="font-bold text-gray-900 dark:text-white text-sm">Опрос анонимный</span>
       </div>`;
   } else {
     container.innerHTML = poll.options.map(opt => {
       const usersList = opt.votes.map(uid => {
-        // Берем пользователя из boardData, если нет - создаем заглушку
         const uInfo = boardData.users && boardData.users[uid] ? boardData.users[uid] : { name: 'Участник', avatar: `https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff` };
         return `
-          <div class="flex items-center gap-3 bg-white dark:bg-gray-900 p-2 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
-            ${getAvatarHTML(uInfo, "w-7 h-7")}
-            <span class="text-sm font-bold text-gray-900 dark:text-white">${uInfo.name}</span>
+          <div class="flex items-center gap-2 bg-white dark:bg-gray-900 p-1.5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm">
+            ${getAvatarHTML(uInfo, "w-6 h-6")}
+            <span class="text-xs font-bold text-gray-900 dark:text-white">${uInfo.name}</span>
           </div>
         `;
       }).join('');
-      
-      const emptyState = opt.votes.length === 0 ? `<div class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">Никто не выбрал</div>` : '';
-
       return `
-        <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-200 dark:border-gray-700">
-          <h4 class="text-sm font-black text-purple-600 dark:text-purple-400 mb-3 flex items-center justify-between">
+        <div class="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-800">
+          <h4 class="text-xs font-black text-purple-600 dark:text-purple-400 mb-2 flex items-center justify-between">
             <span>${opt.text}</span>
-            <span class="bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded-md text-[10px]">${opt.votes.length} чел.</span>
+            <span class="bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded-md">${opt.votes.length}</span>
           </h4>
-          <div class="space-y-2">
-            ${usersList}
-            ${emptyState}
-          </div>
+          <div class="flex flex-wrap gap-2">${usersList || '<span class="text-[10px] text-gray-400 italic">Нет голосов</span>'}</div>
         </div>
       `;
     }).join('');
   }
+
+  // Рендер комментариев
+  renderPollComments();
+  document.getElementById('pollCommentMyAvatar').innerHTML = getAvatarHTML(currentUser, "w-10 h-10");
 
   lucide.createIcons();
   const modal = document.getElementById('pollStatsModal');
@@ -2180,7 +2196,60 @@ function openPollStatsModal(colId, cardId) {
   setTimeout(() => {
     modal.classList.remove('opacity-0');
     content.classList.remove('scale-95');
+    content.classList.add('scale-100');
   }, 10);
+}
+
+function renderPollComments() {
+  const list = document.getElementById('pollCommentsList');
+  const poll = columns.find(c => c.id == activePollData.colId).cards.find(c => c.id == activePollData.cardId);
+  
+  if (!poll.comments || poll.comments.length === 0) {
+    list.innerHTML = '<div class="text-gray-400 text-center py-4 text-xs">Обсуждений пока нет. Будьте первыми!</div>';
+    return;
+  }
+
+  list.innerHTML = poll.comments.map(c => `
+    <div class="flex gap-3 bg-gray-50/50 dark:bg-gray-900/40 p-3 rounded-2xl border border-gray-100 dark:border-gray-800">
+      ${getAvatarHTML(c.user, "w-8 h-8")}
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2 mb-0.5">
+          <span class="font-bold text-[11px] text-gray-900 dark:text-gray-200 truncate">${c.user.name}</span>
+          <span class="text-[9px] text-gray-400">${c.time}</span>
+        </div>
+        <div class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed break-words">${c.text}</div>
+      </div>
+    </div>
+  `).join('');
+  setTimeout(() => { list.scrollTop = list.scrollHeight; }, 50);
+}
+
+function addCommentToPoll() {
+  const input = document.getElementById('pollCommentInput');
+  const text = input.value.trim();
+  if (!text || !activePollData) return;
+
+  columns = columns.map(col => {
+    if (col.id == activePollData.colId) {
+      col.cards = col.cards.map(c => {
+        if (c.id == activePollData.cardId) {
+          if (!c.comments) c.comments = [];
+          c.comments.push({
+            text,
+            user: currentUser,
+            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+          });
+        }
+        return c;
+      });
+    }
+    return col;
+  });
+
+  input.value = '';
+  persist();
+  renderPollComments();
+  lucide.createIcons();
 }
 
 function closePollStatsModal() {
