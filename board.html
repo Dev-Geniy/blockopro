@@ -2301,14 +2301,12 @@ function votePoll(colId, cardId, optionIndex) {
   render(); // Обновляем прогресс-бары в реальном времени
 }
 
-// Прямое удаление опроса (минуя модалку редактирования)
 // Глобальное управление кастомным плеером
 let currentPlayingAudio = null;
 let currentAudioBtn = null;
 
 function toggleAudioPlayer(btn, audioSrc) {
-  const container = btn.closest('.card-item');
-  const progressBar = container.querySelector('.audio-progress');
+  const progressBar = btn.parentElement.querySelector('.audio-progress');
   const icon = btn.querySelector('.btn-icon');
 
   if (currentPlayingAudio && currentPlayingAudio.src === audioSrc) {
@@ -2322,7 +2320,10 @@ function toggleAudioPlayer(btn, audioSrc) {
   } else {
     if (currentPlayingAudio) {
       currentPlayingAudio.pause();
-      if (currentAudioBtn) currentAudioBtn.querySelector('.btn-icon').setAttribute('data-lucide', 'play');
+      if (currentAudioBtn) {
+        currentAudioBtn.querySelector('.btn-icon').setAttribute('data-lucide', 'play');
+        lucide.createIcons(); // Принудительно возвращаем иконку предыдущего трека
+      }
     }
     
     currentPlayingAudio = new Audio(audioSrc);
@@ -2331,13 +2332,16 @@ function toggleAudioPlayer(btn, audioSrc) {
     icon.setAttribute('data-lucide', 'pause');
 
     currentPlayingAudio.ontimeupdate = () => {
-      const progress = (currentPlayingAudio.currentTime / currentPlayingAudio.duration) * 100;
-      progressBar.style.width = progress + '%';
+      if (progressBar) {
+        const progress = (currentPlayingAudio.currentTime / currentPlayingAudio.duration) * 100;
+        progressBar.style.width = progress + '%';
+      }
     };
 
     currentPlayingAudio.onended = () => {
       icon.setAttribute('data-lucide', 'play');
-      progressBar.style.width = '0%';
+      if (progressBar) progressBar.style.width = '0%';
+      lucide.createIcons(); // FIX: Обновляем SVG-иконку при завершении трека
     };
   }
   lucide.createIcons();
