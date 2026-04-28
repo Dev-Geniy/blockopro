@@ -2632,7 +2632,10 @@ function commitTableToDb() {
     if (col.id == activeTableData.colId) {
       col.cards = col.cards.map(c => {
         if (c.id == activeTableData.cardId) {
-          return { ...c, tableData: activeTableData.tableData };
+          // ЭКСПЕРТНОЕ РЕШЕНИЕ: Возвращаем весь объект activeTableData целиком.
+          // В нём уже лежат актуальные colHeaders, rowHeaders, colWidths и rowHeights,
+          // которые мы изменяли во время работы с таблицей.
+          return activeTableData;
         }
         return c;
       });
@@ -2640,7 +2643,7 @@ function commitTableToDb() {
     return col;
   });
   persist();
-  showSystemToast('Таблица сохранена', 'Данные успешно синхронизированы.', 'check-circle', 'text-blue-500', 'bg-blue-50');
+  showSystemToast('Таблица сохранена', 'Структура и данные успешно синхронизированы.', 'check-circle', 'text-blue-500', 'bg-blue-50');
   closeTableEditor();
 }
 </script>
