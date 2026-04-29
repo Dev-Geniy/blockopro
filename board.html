@@ -65,13 +65,13 @@
       <i data-lucide="arrow-left" class="w-5 h-5"></i>
     </a>
     <div class="flex items-center gap-2">
-      <h1 id="boardTitleHeader" onclick="renameBoard()" class="text-xl font-bold tracking-tight cursor-pointer hover:text-blue-500 hover:underline transition-all truncate max-w-[150px] sm:max-w-xs" title="Нажмите, чтобы переименовать">Загрузка...</h1>
+      <h1 id="boardTitleHeader" class="text-xl font-bold tracking-tight cursor-pointer hover:text-blue-500 hover:underline transition-all truncate max-w-[150px] sm:max-w-xs" title="Нажмите, чтобы переименовать">Загрузка...</h1>
       <span id="localBadge" class="hidden bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded-md"><i data-lucide="hard-drive" class="w-3 h-3 inline pb-0.5"></i> ОФЛАЙН</span>
     </div>
   </div>
   
   <div class="flex-1 items-center justify-between mx-4 gap-4 hidden md:flex">
-    <div id="shareLinkContainer" class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full pl-3 pr-1 py-1 border border-transparent dark:border-gray-700 max-w-[200px] cursor-pointer group hover:border-blue-200 transition-colors" onclick="copyShareLink()" title="Скопировать инвайт-ссылку">
+    <div id="shareLinkContainer" class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full pl-3 pr-1 py-1 border border-transparent dark:border-gray-700 max-w-[200px] cursor-pointer group hover:border-blue-200 transition-colors" title="Скопировать инвайт-ссылку">
       <div class="flex-1 truncate text-[10px] text-gray-500 font-mono select-none" id="shareUrlText">Ссылка</div>
       <div class="ml-2 p-1 text-gray-400 group-hover:text-blue-500"><i data-lucide="link" class="w-3 h-3"></i></div>
     </div>
@@ -79,30 +79,29 @@
     <div class="flex flex-1 max-w-xl items-center gap-2">
       <div class="relative flex-1">
         <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-        <input type="text" id="boardSearch" oninput="debouncedSearch()" placeholder="Поиск задач..." 
+        <input type="text" id="boardSearch" placeholder="Поиск задач..." 
                class="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:ring-2 focus:ring-blue-500 rounded-xl text-sm outline-none transition-all dark:text-white">
       </div>
-      <select id="tagFilter" onchange="handleSearchAndFilter()" 
-              class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-bold px-3 py-2 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+      <select id="tagFilter" class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-bold px-3 py-2 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
         <option value="all">Все теги</option>
       </select>
     </div>
   </div>
 
   <div class="flex gap-2 items-center">
-    <button onclick="toggleMobileMenu()" class="md:hidden p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 transition-colors shadow-sm">
+    <button id="btnMobileMenu" class="md:hidden p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 transition-colors shadow-sm">
       <i data-lucide="menu" class="w-4 h-4"></i>
     </button>
-    <button onclick="window.location.href='archive.html?b=' + BOARD_ID" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Архив проекта">
+    <button id="btnArchive" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Архив проекта">
       <i data-lucide="archive" class="w-4 h-4"></i>
     </button>
-    <button id="btnTeam" onclick="toggleMembers()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Команда проекта">
+    <button id="btnTeam" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Команда проекта">
       <i data-lucide="users" class="w-4 h-4"></i>
     </button>
-    <button onclick="toggleSettings()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Настройки доски">
+    <button id="btnSettings" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Настройки доски">
       <i data-lucide="settings" class="w-4 h-4"></i>
     </button>
-    <button id="btnChat" onclick="toggleChat()" class="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors shadow-sm relative" title="Чат">
+    <button id="btnChat" class="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors shadow-sm relative" title="Чат">
       <i data-lucide="message-square" class="w-4 h-4"></i>
       <span id="chatBadge" class="hidden absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse border-2 border-white dark:border-gray-900 shadow-sm">0</span>
     </button>
@@ -144,10 +143,10 @@
     <div class="p-3 border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 flex gap-2 items-center">
       <label class="cursor-pointer p-3 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors bg-gray-100 dark:bg-gray-800 rounded-xl flex-shrink-0" title="Прикрепить файл (<1MB)">
         <i data-lucide="paperclip" class="w-5 h-5"></i>
-        <input type="file" class="hidden" onchange="handleChatAttachment(event)" />
+        <input type="file" id="chatAttachmentInput" class="hidden" />
       </label>
-      <input id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Написать..." class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
-      <button onclick="sendChatMessage()" class="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-colors flex-shrink-0"><i data-lucide="send" class="w-5 h-5"></i></button>
+      <input id="chatInput" placeholder="Написать..." class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
+      <button id="btnSendChat" class="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-colors flex-shrink-0"><i data-lucide="send" class="w-5 h-5"></i></button>
     </div>
   </aside>
   
@@ -616,16 +615,6 @@
 <script>
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
-
-// --- 1. ОПТИМИЗАЦИЯ ПОИСКА (Debounce) ---
-function debounce(func, timeout = 300) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => { func.apply(this, args); }, timeout);
-  };
-}
-const debouncedSearch = debounce(() => render());
 
 // --- 2. ГОРЯЧИЕ КЛАВИШИ ---
 document.addEventListener('keydown', (e) => {
@@ -1183,18 +1172,6 @@ function processBoardData(data) {
   renderSettingsTags();
 }
 
-function renameBoard() {
-  const currentTitle = document.getElementById('boardTitleHeader').innerText;
-  // Создаем временный оверлей для ввода названия, чтобы не использовать системный prompt
-  const newTitle = prompt("Новое название проекта:", currentTitle); 
-  // Примечание: В следующем обновлении заменим этот prompt на полноценную модалку ввода.
-  // Пока фокусируемся на критических системных уведомлениях.
-  if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
-    updateBoardData({ title: newTitle.trim() });
-    showSystemToast('Название обновлено', 'Изменения синхронизированы с облаком.', 'edit-3', 'text-blue-500', 'bg-blue-50');
-  }
-}
-
 function handleChatAttachment(e) {
   if (isLocalBoard) {
      showSystemToast('Ограничение', 'Вложения доступны только в Cloud-проектах.', 'shield-alert', 'text-amber-500', 'bg-amber-50');
@@ -1221,22 +1198,6 @@ function persist() {
   updateBoardData({ columns });
 }
   
-function copyShareLink() { 
-  // Формируем ссылку на index с параметром join, даже находясь на странице board.html
-  const url = window.location.origin + window.location.pathname.replace('board.html', '').replace('index.html', '') + '?join=' + BOARD_ID;
-  navigator.clipboard.writeText(url); 
-  
-  showSystemToast(
-    'Ссылка-приглашение скопирована!', 
-    'Отправьте её команде. Проект автоматически добавится в их рабочее пространство.', 
-    'link', 
-    'text-indigo-500', 
-    'bg-indigo-50 dark:bg-indigo-900/30'
-  );
-}
-  
-function handleSearchAndFilter() { render(); }
-
 function updateTagFilterDropdown() {
   const select = document.getElementById('tagFilter');
   if (!select) return;
@@ -1415,13 +1376,171 @@ function renderSingleMessage(msg, container, msgId) {
   `;
   lucide.createIcons();
 }
-  
-function sendChatMessage() {
-  if (isLocalBoard) return;
-  const text = document.getElementById('chatInput').value.trim();
-  if(text) db.collection("boards").doc(BOARD_ID).collection("chat").add({ text, user: currentUser, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-  document.getElementById('chatInput').value = '';
+// ==========================================
+// MODULE: GLOBAL UI & SEARCH CONTROLLER
+// ==========================================
+// Заменяет все глобальные функции шапки и убивает render() при поиске
+class GlobalUIController {
+  constructor() {
+    this.searchInput = document.getElementById('boardSearch');
+    this.tagFilter = document.getElementById('tagFilter');
+    this.bindEvents();
+  }
+
+  // Вспомогательная функция debounce
+  debounce(func, timeout = 300) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { func.apply(this, args); }, timeout);
+    };
+  }
+
+  bindEvents() {
+    // 1. Делегирование событий клика для шапки и общих элементов
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('#boardTitleHeader')) this.renameBoard();
+      if (e.target.closest('#shareLinkContainer') || e.target.closest('.copy-share-btn')) this.copyShareLink();
+      if (e.target.closest('#btnArchive')) window.location.href = 'archive.html?b=' + BOARD_ID;
+      if (e.target.closest('#btnSettings')) AppEvents.emit('ui:settings:toggled');
+      if (e.target.closest('#btnMobileMenu')) document.getElementById('mobileMenuDropdown').classList.toggle('hidden');
+    });
+
+    // 2. Слушатели инпутов (Поиск без полного рендера!)
+    if (this.searchInput) {
+      this.searchInput.addEventListener('input', this.debounce((e) => {
+        AppEvents.emit('ui:search:changed', { query: e.target.value, tag: this.tagFilter?.value || 'all' });
+      }, 300));
+    }
+
+    if (this.tagFilter) {
+      this.tagFilter.addEventListener('change', (e) => {
+        AppEvents.emit('ui:search:changed', { query: this.searchInput?.value || '', tag: e.target.value });
+      });
+    }
+
+    // 3. Подписка на событие поиска (O(1) DOM Manipulations)
+    AppEvents.on('ui:search:changed', (filters) => this.filterCardsGranular(filters.query, filters.tag));
+    
+    // 4. Подписка на открытие сайдбаров (закрываем другие)
+    AppEvents.on('ui:settings:toggled', () => {
+      this.closeOtherSidebars('settingsSidebar');
+      document.getElementById('settingsSidebar').classList.toggle('translate-x-full');
+    });
+    AppEvents.on('ui:members:toggled', () => {
+      this.closeOtherSidebars('membersSidebar');
+      document.getElementById('membersSidebar').classList.toggle('translate-x-full');
+    });
+    AppEvents.on(EVENTS.CHAT_TOGGLED, () => {
+      this.closeOtherSidebars('chatSidebar');
+      // Класс SidebarController сам откроет/закроет нужный контейнер
+    });
+  }
+
+  closeOtherSidebars(excludeId) { 
+    ['chatSidebar', 'settingsSidebar', 'membersSidebar'].forEach(id => { 
+      if (id !== excludeId) {
+        const el = document.getElementById(id);
+        if(el) el.classList.add('translate-x-full'); 
+      }
+    });
+  }
+
+  // ЭКСПЕРТНЫЙ ПОДХОД: Фильтрация карточек без пересборки DOM
+  filterCardsGranular(queryStr, tagId) {
+    const query = queryStr.toLowerCase().trim();
+    
+    // 1. Проходим по закэшированным DOM элементам карточек
+    domCache.cards.forEach((el, strId) => {
+      const cardData = stateMap.get(strId);
+      if (!cardData) return;
+
+      const matchesSearch = cardData.title.toLowerCase().includes(query) || (cardData.description || "").toLowerCase().includes(query);
+      const matchesTag = tagId === "all" || (cardData.tags && cardData.tags.includes(tagId));
+
+      if (matchesSearch && matchesTag && !cardData.archived) {
+        el.classList.remove('hidden');
+      } else {
+        el.classList.add('hidden');
+      }
+    });
+
+    // 2. Обновляем счетчики карточек в шапках колонок O(1)
+    domCache.columns.forEach((el, colId) => {
+      const visibleCount = el.querySelectorAll('.card-item:not(.hidden)').length;
+      const countBadge = el.previousElementSibling?.querySelector('.rounded-full.border');
+      if (countBadge) countBadge.innerText = visibleCount;
+    });
+  }
+
+  renameBoard() {
+    const currentTitle = document.getElementById('boardTitleHeader').innerText;
+    const newTitle = prompt("Новое название проекта:", currentTitle);
+    if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
+      updateBoardData({ title: newTitle.trim() });
+      showSystemToast('Название обновлено', 'Изменения сохранены.', 'edit-3', 'text-blue-500', 'bg-blue-50');
+    }
+  }
+
+  copyShareLink() {
+    const url = window.location.origin + window.location.pathname.replace('board.html', '').replace('index.html', '') + '?join=' + BOARD_ID;
+    navigator.clipboard.writeText(url); 
+    showSystemToast('Ссылка скопирована!', 'Отправьте её команде.', 'link', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
+  }
 }
+
+// ==========================================
+// MODULE: CHAT CONTROLLER (Decoupled Logic)
+// ==========================================
+class ChatController {
+  constructor() {
+    this.input = document.getElementById('chatInput');
+    this.btnSend = document.getElementById('btnSendChat');
+    this.attachmentInput = document.getElementById('chatAttachmentInput');
+    this.bindEvents();
+  }
+
+  bindEvents() {
+    // Убиваем инлайн события и слушаем через JS
+    if (this.btnSend) {
+      this.btnSend.addEventListener('click', () => this.sendMessage());
+    }
+    
+    if (this.input) {
+      this.input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') this.sendMessage();
+      });
+    }
+
+    if (this.attachmentInput) {
+      this.attachmentInput.addEventListener('change', (e) => {
+        if (typeof handleChatAttachment === 'function') handleChatAttachment(e);
+      });
+    }
+  }
+
+  sendMessage() {
+    if (isLocalBoard) return;
+    if (!this.input) return;
+
+    const text = this.input.value.trim();
+    if (text) {
+      db.collection("boards").doc(BOARD_ID).collection("chat").add({ 
+        text, 
+        user: currentUser, 
+        timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+      });
+    }
+    this.input.value = '';
+    this.input.focus();
+  }
+}
+
+// Инициализация новых глобальных контроллеров
+document.addEventListener('DOMContentLoaded', () => {
+  window.AppGlobalUI = new GlobalUIController();
+  window.AppChatLogic = new ChatController();
+});
 
 // ==========================================
 // MODULE: UI MODAL CONTROLLER (Decoupled)
