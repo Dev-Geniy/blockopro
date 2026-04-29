@@ -707,8 +707,8 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 mb-10">
-      <!-- ЭНТЕРПРАЙЗ: Интерактивная кнопка для развертывания списка партнеров -->
-      <div onclick="toggleReferralsList()" class="cursor-pointer group bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-6 rounded-[2rem] relative overflow-hidden transition-all duration-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 flex flex-col justify-center">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 mb-6">
+      <div class="group bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-6 rounded-[2rem] relative overflow-hidden transition-all duration-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 flex flex-col justify-center">
         <div class="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
         <div class="flex items-center justify-between relative z-10">
           <div class="flex flex-col">
@@ -719,7 +719,6 @@
             <i data-lucide="users" class="w-6 h-6"></i>
           </div>
         </div>
-        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 text-[9px] text-blue-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"><i data-lucide="eye" class="w-3 h-3"></i> Показать список</div>
       </div>
       
       <div class="group bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-200 dark:border-indigo-500/30 p-6 rounded-[2rem] relative overflow-hidden transition-all duration-500 hover:shadow-xl hover:shadow-indigo-500/20 hover:-translate-y-1 flex flex-col justify-between">
@@ -739,51 +738,17 @@
       </div>
     </div>
 
-    <div class="mb-12 relative z-10">
-      <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2 justify-center">
-        <i data-lucide="award" class="w-5 h-5 text-amber-500"></i> Зал Славы (Достижения)
+    <!-- ЭНТЕРПРАЙЗ: Постоянно видимый список партнеров -->
+    <div id="referralsNetworkBlock" class="bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-6 rounded-[2rem] shadow-sm relative z-10 mb-8 transition-all duration-500">
+      <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+        <span class="flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Ваша команда</span>
+        <span id="referralsCountBadge" class="bg-blue-50 dark:bg-blue-900/30 text-blue-500 px-2 py-1 rounded-md text-[10px]">0</span>
       </h4>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        <div id="tier_friend" class="flex flex-col gap-3">
-          <div id="badgeFriend" class="opacity-40 grayscale bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-8 rounded-[2.5rem] flex flex-col items-center text-center transition-all duration-700 h-full">
-             <div class="w-16 h-16 rounded-[1.5rem] bg-blue-100 dark:bg-blue-900/40 text-blue-500 flex items-center justify-center mb-4 border border-blue-200 dark:border-blue-800 shadow-inner"><i data-lucide="user-plus" class="w-8 h-8"></i></div>
-             <h5 class="font-extrabold text-lg dark:text-white mb-1">Друг проекта</h5>
-             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">10 приглашенных</p>
-             <p id="reward_text_friend" class="hidden text-[9px] text-emerald-500 font-bold mt-4">+14 дней Freelancer</p>
-          </div>
-          <button id="btn_activate_friend" onclick="claimReward('friend')" class="hidden w-full py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">Активировать бонус</button>
-        </div>
-        
-        <div id="tier_partner" class="flex flex-col gap-3">
-          <div id="badgePartner" class="opacity-40 grayscale bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-8 rounded-[2.5rem] flex flex-col items-center text-center transition-all duration-700 h-full">
-             <div class="w-16 h-16 rounded-[1.5rem] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-500 flex items-center justify-center mb-4 border border-indigo-200 dark:border-indigo-800 shadow-inner"><i data-lucide="users" class="w-8 h-8"></i></div>
-             <h5 class="font-extrabold text-lg dark:text-white mb-1">Партнер проекта</h5>
-             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">25 приглашенных</p>
-             <p id="reward_text_partner" class="hidden text-[9px] text-indigo-500 font-bold mt-4">+14 дней Company</p>
-          </div>
-          <button id="btn_activate_partner" onclick="claimReward('partner')" class="hidden w-full py-3 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all">Активировать бонус</button>
-        </div>
-        
-        <div id="tier_ambassador" class="flex flex-col gap-3">
-          <div id="badgeAmbassador" class="opacity-40 grayscale bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-8 rounded-[2.5rem] flex flex-col items-center text-center transition-all duration-700 relative overflow-hidden h-full">
-             <div id="ambassadorGlow" class="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 opacity-0 transition-opacity duration-1000 blur-2xl"></div>
-             <div class="relative z-10 flex flex-col items-center">
-               <div class="w-16 h-16 rounded-[1.5rem] bg-amber-100 dark:bg-amber-900/40 text-amber-500 flex items-center justify-center mb-4 relative border border-amber-200 dark:border-amber-800 shadow-inner">
-                 <div id="ambassadorSpin" class="absolute inset-0 rounded-[1.5rem] border-2 border-amber-400 opacity-0"></div>
-                 <i data-lucide="crown" class="w-8 h-8"></i>
-               </div>
-               <h5 class="font-extrabold text-lg dark:text-white mb-1" id="ambassadorText">Амбассадор</h5>
-               <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1" id="ambassadorDesc">50 чел. + 10 оплат</p>
-               <p id="reward_text_ambassador" class="hidden text-[9px] text-amber-500 font-bold mt-4">+60 дней Company</p>
-             </div>
-          </div>
-          <button id="btn_activate_ambassador" onclick="claimReward('ambassador')" class="hidden w-full py-3 bg-amber-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 active:scale-95 transition-all">Активировать бонус</button>
-        </div>
-
+      <div id="referralsList" class="flex flex-wrap gap-5 max-h-48 overflow-y-auto custom-scroll pt-2 pb-4">
+         <!-- Аватарки загружаются скриптом -->
       </div>
     </div>
-    
+
     <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-8 rounded-[2rem] relative z-10 group transition-colors hover:border-blue-300 dark:hover:border-blue-700 mb-2">
       <label class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2">
         <i data-lucide="link" class="w-4 h-4"></i> Ваша уникальная ссылка
@@ -793,17 +758,6 @@
         <button onclick="copyAffiliateLink()" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap">
           <i data-lucide="copy" class="w-5 h-5"></i> Скопировать
         </button>
-      </div>
-    </div>
-    
-    <!-- ЭНТЕРПРАЙЗ: Скрытый блок со списком партнеров (раскрывается по клику) -->
-    <div id="referralsNetworkBlock" class="hidden bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-6 rounded-[2rem] shadow-sm relative z-10 mt-4 transition-all duration-500 opacity-0 transform -translate-y-4">
-      <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
-        <span class="flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Ваша команда</span>
-        <span id="referralsCountBadge" class="bg-blue-50 dark:bg-blue-900/30 text-blue-500 px-2 py-1 rounded-md text-[10px]">0</span>
-      </h4>
-      <div id="referralsList" class="flex flex-wrap gap-5 max-h-48 overflow-y-auto custom-scroll pt-2 pb-4">
-         <!-- Аватарки загружаются скриптом -->
       </div>
     </div>
     
@@ -967,8 +921,6 @@ async function loginWithGoogle() {
 }
 
 // --- ЛОГИКА ПАРТНЕРСКОЙ ПРОГРАММЫ ---
-let referralsLoaded = false; // Состояние для загрузки списка партнеров
-
 function openAffiliateModal() {
   if (!currentUser) return showSystemToast('Авторизация', 'Войдите в систему, чтобы получить партнерскую ссылку.', 'lock', 'text-amber-500', 'bg-amber-50');
   
@@ -998,12 +950,8 @@ function openAffiliateModal() {
     content.classList.add('scale-100');
   }, 10);
   
-  // Сбрасываем список рефералов при каждом новом открытии окна
-  referralsLoaded = false; 
-  const refBlock = document.getElementById('referralsNetworkBlock');
-  if(refBlock) refBlock.classList.add('hidden', 'opacity-0', '-translate-y-4');
-
   loadAffiliateStats();
+  loadReferralsList(); // Загружаем список партнеров сразу
   lucide.createIcons();
 }
 
@@ -1061,49 +1009,35 @@ async function loadAffiliateStats() {
   }
 }
 
-// ЭНТЕРПРАЙЗ: Загрузка и показ сетки партнеров по клику
-async function toggleReferralsList() {
-  const block = document.getElementById('referralsNetworkBlock');
+// ЭНТЕРПРАЙЗ: Прямая загрузка списка партнеров в открытое окно
+async function loadReferralsList() {
+  if (!currentUser) return;
+  const listEl = document.getElementById('referralsList');
+  listEl.innerHTML = '<div class="w-full text-center py-6 text-blue-500 font-bold text-xs animate-pulse">Синхронизация сети...</div>';
   
-  if (block.classList.contains('hidden')) {
-    // Разворачиваем блок
-    block.classList.remove('hidden');
-    setTimeout(() => block.classList.remove('opacity-0', '-translate-y-4'), 10);
+  try {
+    const snap = await db.collection('users').where('referredBy', '==', currentUser.id).limit(100).get();
+    document.getElementById('referralsCountBadge').innerText = snap.size;
     
-    if (!referralsLoaded && currentUser) {
-      const listEl = document.getElementById('referralsList');
-      listEl.innerHTML = '<div class="w-full text-center py-6 text-blue-500 font-bold text-xs animate-pulse">Синхронизация сети...</div>';
-      
-      try {
-        const snap = await db.collection('users').where('referredBy', '==', currentUser.id).limit(100).get();
-        document.getElementById('referralsCountBadge').innerText = snap.size;
-        
-        if (snap.empty) {
-           listEl.innerHTML = '<div class="w-full text-center py-6 text-gray-500 text-xs font-medium">У вас пока нет партнеров. Поделитесь ссылкой!</div>';
-        } else {
-           let html = '';
-           snap.forEach(doc => {
-             const user = doc.data();
-             html += `
-               <div class="relative group cursor-pointer flex flex-col items-center">
-                 ${renderUserAvatar(user, 'w-12 h-12 hover:z-10 transition-transform hover:scale-110')}
-                 <span class="absolute -bottom-6 bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">${user.name || 'Секретный Агент'}</span>
-               </div>
-             `;
-           });
-           listEl.innerHTML = html;
-           lucide.createIcons();
-        }
-        referralsLoaded = true;
-      } catch(e) {
-        console.error(e);
-        listEl.innerHTML = '<div class="w-full text-center py-6 text-red-500 text-xs font-bold">Ошибка сети. Проверьте индексы Firebase.</div>';
-      }
+    if (snap.empty) {
+       listEl.innerHTML = '<div class="w-full text-center py-6 text-gray-500 text-xs font-medium">У вас пока нет партнеров. Поделитесь ссылкой!</div>';
+    } else {
+       let html = '';
+       snap.forEach(doc => {
+         const user = doc.data();
+         html += `
+           <div class="relative group cursor-pointer flex flex-col items-center">
+             ${renderUserAvatar(user, 'w-12 h-12 hover:z-10 transition-transform hover:scale-110')}
+             <span class="absolute -bottom-6 bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">${user.name || 'Секретный Агент'}</span>
+           </div>
+         `;
+       });
+       listEl.innerHTML = html;
+       lucide.createIcons();
     }
-  } else {
-    // Сворачиваем блок
-    block.classList.add('opacity-0', '-translate-y-4');
-    setTimeout(() => block.classList.add('hidden'), 300);
+  } catch(e) {
+    console.error(e);
+    listEl.innerHTML = '<div class="w-full text-center py-6 text-red-500 text-xs font-bold">Ошибка сети. Проверьте индексы Firebase.</div>';
   }
 }
   
