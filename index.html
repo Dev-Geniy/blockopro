@@ -697,8 +697,8 @@
     </button>
     
     <div class="text-center mb-10 relative z-10">
-      <div id="affiliateUserAvatarWrap" class="relative w-24 h-24 mx-auto mb-5 z-10 flex items-center justify-center">
-        <!-- Аватарка будет динамически внедрена сюда -->
+      <div id="affiliateUserAvatarWrap" class="relative w-32 h-32 mx-auto mb-6 z-10 flex items-center justify-center">
+        <!-- Аватарка будет динамически внедрена сюда (Увеличенный размер w-32) -->
         <div class="absolute inset-0 bg-indigo-500 blur-2xl opacity-20 rounded-full"></div>
       </div>
       <span class="text-indigo-500 font-bold text-xs uppercase tracking-[0.3em] mb-3 block">Развивайте экосистему</span>
@@ -706,8 +706,7 @@
       <p class="text-gray-500 dark:text-gray-400 text-base max-w-2xl mx-auto font-medium">Получайте 20% с каждой оплаты привлеченного пользователя навсегда. Достигайте статусов и открывайте уникальные награды!</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 mb-10">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 mb-6">
       <div class="group bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-6 rounded-[2rem] relative overflow-hidden transition-all duration-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 flex flex-col justify-center">
         <div class="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
         <div class="flex items-center justify-between relative z-10">
@@ -733,19 +732,65 @@
           </div>
         </div>
         <button onclick="window.location.href='store.html'" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500 transition-all shadow-md shadow-indigo-500/25 active:scale-95 flex items-center justify-center gap-2 relative z-10">
-          <i data-lucide="shopping-bag" class="w-4 h-4"></i> Потратить
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i> Потратить в Магазине
         </button>
       </div>
     </div>
 
-    <!-- ЭНТЕРПРАЙЗ: Постоянно видимый список партнеров -->
-    <div id="referralsNetworkBlock" class="bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-6 rounded-[2rem] shadow-sm relative z-10 mb-8 transition-all duration-500">
+    <!-- Восстановленный блок команды (во всю ширину) -->
+    <div id="referralsNetworkBlock" class="bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 p-6 rounded-[2rem] shadow-sm relative z-10 mb-10 transition-all duration-500">
       <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
         <span class="flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Ваша команда</span>
         <span id="referralsCountBadge" class="bg-blue-50 dark:bg-blue-900/30 text-blue-500 px-2 py-1 rounded-md text-[10px]">0</span>
       </h4>
       <div id="referralsList" class="flex flex-wrap gap-5 max-h-48 overflow-y-auto custom-scroll pt-2 pb-4">
          <!-- Аватарки загружаются скриптом -->
+      </div>
+    </div>
+
+    <!-- Восстановленный Зал Славы (Достижения) -->
+    <div class="mb-10 relative z-10">
+      <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2 justify-center">
+        <i data-lucide="award" class="w-5 h-5 text-amber-500"></i> Зал Славы (Достижения)
+      </h4>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div id="tier_friend" class="flex flex-col gap-3">
+          <div id="badgeFriend" class="opacity-40 grayscale bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-6 rounded-[2.5rem] flex flex-col items-center text-center transition-all duration-700 h-full">
+             <div class="w-14 h-14 rounded-[1.2rem] bg-blue-100 dark:bg-blue-900/40 text-blue-500 flex items-center justify-center mb-3 border border-blue-200 dark:border-blue-800 shadow-inner"><i data-lucide="user-plus" class="w-6 h-6"></i></div>
+             <h5 class="font-extrabold text-base dark:text-white mb-1">Друг проекта</h5>
+             <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">10 приглашенных</p>
+             <p id="reward_text_friend" class="hidden text-[9px] text-emerald-500 font-bold mt-3">+14 дней Freelancer</p>
+          </div>
+          <button id="btn_activate_friend" onclick="claimReward('friend')" class="hidden w-full py-2.5 bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">Активировать бонус</button>
+        </div>
+        
+        <div id="tier_partner" class="flex flex-col gap-3">
+          <div id="badgePartner" class="opacity-40 grayscale bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-6 rounded-[2.5rem] flex flex-col items-center text-center transition-all duration-700 h-full">
+             <div class="w-14 h-14 rounded-[1.2rem] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-500 flex items-center justify-center mb-3 border border-indigo-200 dark:border-indigo-800 shadow-inner"><i data-lucide="users" class="w-6 h-6"></i></div>
+             <h5 class="font-extrabold text-base dark:text-white mb-1">Партнер проекта</h5>
+             <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">25 приглашенных</p>
+             <p id="reward_text_partner" class="hidden text-[9px] text-indigo-500 font-bold mt-3">+14 дней Company</p>
+          </div>
+          <button id="btn_activate_partner" onclick="claimReward('partner')" class="hidden w-full py-2.5 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all">Активировать бонус</button>
+        </div>
+        
+        <div id="tier_ambassador" class="flex flex-col gap-3">
+          <div id="badgeAmbassador" class="opacity-40 grayscale bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-6 rounded-[2.5rem] flex flex-col items-center text-center transition-all duration-700 relative overflow-hidden h-full">
+             <div id="ambassadorGlow" class="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 opacity-0 transition-opacity duration-1000 blur-2xl"></div>
+             <div class="relative z-10 flex flex-col items-center">
+               <div class="w-14 h-14 rounded-[1.2rem] bg-amber-100 dark:bg-amber-900/40 text-amber-500 flex items-center justify-center mb-3 relative border border-amber-200 dark:border-amber-800 shadow-inner">
+                 <div id="ambassadorSpin" class="absolute inset-0 rounded-[1.2rem] border-2 border-amber-400 opacity-0"></div>
+                 <i data-lucide="crown" class="w-6 h-6"></i>
+               </div>
+               <h5 class="font-extrabold text-base dark:text-white mb-1" id="ambassadorText">Амбассадор</h5>
+               <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1" id="ambassadorDesc">50 чел. + 10 оплат</p>
+               <p id="reward_text_ambassador" class="hidden text-[9px] text-amber-500 font-bold mt-3">+60 дней Company</p>
+             </div>
+          </div>
+          <button id="btn_activate_ambassador" onclick="claimReward('ambassador')" class="hidden w-full py-2.5 bg-amber-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 active:scale-95 transition-all">Активировать бонус</button>
+        </div>
+
       </div>
     </div>
 
@@ -938,7 +983,7 @@ function openAffiliateModal() {
     avatarWrap.innerHTML = `
       <div class="absolute inset-0 bg-indigo-500 blur-2xl opacity-20 rounded-full"></div>
       <div class="relative z-10 flex items-center justify-center p-1.5 bg-white dark:bg-gray-800 rounded-full border border-gray-100 dark:border-gray-700 shadow-xl">
-        ${renderUserAvatar(currentUser, 'w-20 h-20')}
+        ${renderUserAvatar(currentUser, 'w-32 h-32')}
       </div>
     `;
   }
