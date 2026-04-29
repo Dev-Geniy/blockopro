@@ -1542,28 +1542,62 @@ function renderChecklistEdit() {
   const container = document.getElementById('editChecklistContainer');
   const progressText = document.getElementById('checklistProgressText');
   const progressBar = document.getElementById('checklistProgressBar');
-  if (activeChecklist.length === 0) { container.innerHTML = ''; progressText.innerText = '0%'; progressBar.style.width = '0%'; return; }
+  
+  if (!activeChecklist || activeChecklist.length === 0) { 
+    container.innerHTML = ''; 
+    progressText.innerText = '0%'; 
+    progressBar.style.width = '0%'; 
+    return; 
+  }
+  
   const doneCount = activeChecklist.filter(i => i.isCompleted).length;
   const percent = Math.round((doneCount / activeChecklist.length) * 100);
-  progressText.innerText = `${percent}%`; progressBar.style.width = `${percent}%`;
+  progressText.innerText = `${percent}%`; 
+  progressBar.style.width = `${percent}%`;
   progressBar.className = percent === 100 ? 'bg-green-500 h-full transition-all duration-300' : 'bg-blue-500 h-full transition-all duration-300';
+  
   container.innerHTML = activeChecklist.map((item, index) => `
-    <div class="flex items-center justify-between group bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-      <label class="flex items-center gap-3 cursor-pointer flex-1 px-2">
-        <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onchange="toggleChecklistItemEdit(${index})" class="w-4 h-4 text-blue-600 rounded border-gray-300" />
-        <span class="text-sm ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}">${item.text}</span>
+    <div class="flex items-start justify-between group bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm" data-id="${index}">
+      <div class="drag-handle cursor-grab text-gray-400 hover:text-blue-500 px-2 flex-shrink-0 mt-0.5">
+        <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+      </div>
+      <label class="flex items-start gap-3 cursor-pointer flex-1 px-2 min-w-0">
+        <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onchange="toggleChecklistItemEdit(${index})" class="w-4 h-4 text-blue-600 rounded border-gray-300 flex-shrink-0 mt-0.5" />
+        <span class="text-sm ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} break-words flex-1 leading-tight">${item.text}</span>
       </label>
-      <button onclick="removeChecklistItem(${index})" class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+      <button onclick="removeChecklistItem(${index})" class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex-shrink-0 mt-[-4px]">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>
+      </button>
     </div>
   `).join('');
   lucide.createIcons();
+
+  // Инициализация Drag and Drop для чек-листа
+  if (window.checklistSortable) window.checklistSortable.destroy();
+  window.checklistSortable = new Sortable(container, {
+    handle: '.drag-handle',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    onEnd: function (evt) {
+      // Меняем элементы местами в массиве при перетаскивании
+      const movedItem = activeChecklist.splice(evt.oldIndex, 1)[0];
+      activeChecklist.splice(evt.newIndex, 0, movedItem);
+      renderChecklistEdit(); // Перерисовка для обновления индексов
+    }
+  });
 }
 
 function addChecklistItem() {
   const input = document.getElementById('newChecklistItem'); const text = input.value.trim();
   if (!text) return; activeChecklist.push({ id: Date.now(), text, isCompleted: false }); input.value = ''; renderChecklistEdit();
 }
-function toggleChecklistItemEdit(index) { activeChecklist[index].isCompleted = !activeChecklist[index].isCompleted; renderChecklistEdit(); }
+
+function toggleChecklistItemEdit(index) { 
+  activeChecklist[index].isCompleted = !activeChecklist[index].isCompleted; 
+  if (activeChecklist[index].isCompleted) fireConfetti(); // Вызываем конфетти при чеке
+  renderChecklistEdit(); 
+}
+
 function removeChecklistItem(index) { activeChecklist.splice(index, 1); renderChecklistEdit(); }
 
 function renderChecklistView() {
@@ -1578,9 +1612,9 @@ function renderChecklistView() {
     <div class="space-y-2">
   `;
   html += viewingCard.checklist.map((item, index) => `
-    <label class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl cursor-pointer border border-gray-100 dark:border-gray-800">
-      <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onchange="toggleChecklistView(${index})" class="w-5 h-5 text-blue-600 rounded border-gray-300" />
-      <span class="text-sm font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'}">${item.text}</span>
+    <label class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl cursor-pointer border border-gray-100 dark:border-gray-800 transition-colors hover:border-blue-300">
+      <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onchange="toggleChecklistView(${index})" class="w-5 h-5 text-blue-600 rounded border-gray-300 flex-shrink-0 mt-0.5" />
+      <span class="text-sm font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'} break-words flex-1 leading-relaxed">${item.text}</span>
     </label>
   `).join('');
   container.innerHTML = html + '</div>'; lucide.createIcons();
@@ -1588,9 +1622,20 @@ function renderChecklistView() {
 
 function toggleChecklistView(index) {
   viewingCard.checklist[index].isCompleted = !viewingCard.checklist[index].isCompleted;
-  if (viewingCard.checklist[index].isCompleted) fireConfetti(); // Вызываем конфетти
-  columns = columns.map(col => { if(col.id === currentColumn) col.cards = col.cards.map(c => c.id === viewingCard.id ? viewingCard : c); return col; });
-  persist(); renderChecklistView(); 
+  if (viewingCard.checklist[index].isCompleted) fireConfetti(); 
+  
+  columns = columns.map(col => { 
+    // FIX: Используем нестрогое сравнение (==), так как currentColumn может быть строкой
+    if (col.id == currentColumn) { 
+      const updatedCards = col.cards.map(c => c.id == viewingCard.id ? viewingCard : c);
+      return { ...col, cards: updatedCards };
+    } 
+    return col; 
+  });
+  
+  persist(); 
+  renderChecklistView(); 
+  render(); // Обновляем саму доску, чтобы прогресс-бар снаружи карточки тоже изменился
 }
 
 function render() {
