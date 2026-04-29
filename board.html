@@ -1389,15 +1389,38 @@ async function addCommentToContent() {
     renderContentComments(updatedCard.comments);
 }
 
-function addColumn(){ columns.push({ id: Date.now(), name: "Новая колонка", color: 'default', cards: [] }); persist(); }
-function openColModal(id){ editingColId = id; const col = columns.find(c => c.id === id); selectedColColor = col.color || 'default'; document.getElementById('colNameInput').value = col.name; renderColorPicker(); toggleModal('colModal', true); }
-function closeColModal(){ toggleModal('colModal', false); }
-function saveColumn() { columns = columns.map(c => c.id === editingColId ? {...c, name: document.getElementById('colNameInput').value, color: selectedColColor} : c); persist(); closeColModal(); }
+function addColumn() { 
+  columns.push({ id: Date.now(), name: "Новая колонка", color: 'default', cards: [] }); 
+  persist(); 
+  render(); // Обновляем UI после добавления
+}
+
+function openColModal(id) { 
+  editingColId = id; 
+  // ЭНТЕРПРАЙЗ: Используем нестрогое равенство (==) для обхода конфликта типов String/Number из data-атрибутов
+  const col = columns.find(c => c.id == id); 
+  if (!col) return;
+  selectedColColor = col.color || 'default'; 
+  document.getElementById('colNameInput').value = col.name; 
+  renderColorPicker(); 
+  toggleModal('colModal', true); 
+}
+
+function closeColModal() { toggleModal('colModal', false); }
+
+function saveColumn() { 
+  columns = columns.map(c => c.id == editingColId ? {...c, name: document.getElementById('colNameInput').value, color: selectedColColor} : c); 
+  persist(); 
+  closeColModal(); 
+  render(); // Мгновенно перерисовываем шапку колонки
+}
 
 function deleteColumn() { 
   openConfirmModal('Удалить колонку?', 'Все задачи внутри колонки также будут удалены навсегда!', 'Удалить', true, () => {
-    columns = columns.filter(c => c.id !== editingColId); 
-    persist(); closeColModal(); 
+    columns = columns.filter(c => c.id != editingColId); 
+    persist(); 
+    closeColModal(); 
+    render(); // Мгновенно убираем колонку из UI
   });
 }
 
@@ -2357,20 +2380,35 @@ function savePoll() {
     return showSystemToast('Ошибка', 'Введите вопрос и минимум 2 варианта.', 'alert-circle', 'text-red-500', 'bg-red-50');
   }
 
+  const cardId = 'poll_' + Date.now();
   const pollData = {
-    id: 'poll_' + Date.now(),
+    id: cardId,
     title: question,
     type: 'poll',
     options: options.map(opt => ({ text: opt, votes: [] })),
     isAnonymous: document.getElementById('pollAnonymous').checked,
     author: currentUser,
     archived: false,
+    columnId: activeColForMore,
+    order: allCards.length,
     createdAt: new Date().toISOString()
   };
 
-  const colIndex = columns.findIndex(c => c.id === activeColForMore);
-  columns[colIndex].cards.push(pollData);
-  persist();
+  if (isLocalBoard) {
+    const colIndex = columns.findIndex(c => c.id == activeColForMore);
+    if (colIndex !== -1) {
+      if (!columns[colIndex].cards) columns[colIndex].cards = [];
+      columns[colIndex].cards.push(pollData);
+      persist();
+      render();
+    }
+  } else {
+    // Пишем напрямую в подколлекцию
+    db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({
+      ...pollData,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
   closePollConstructor();
 }
 
@@ -2772,33 +2810,45 @@ function stopRecording() {
   }
 }
 
-// Новая функция сохранения аудио-заметки
+// Новая функция сохранения аудио-заметки (Архитектура Subcollections)
 function saveVoiceMemo() {
   if (!audioBase64) {
     return showSystemToast('Ошибка', 'Сначала запишите аудио-сообщение.', 'mic-off', 'text-red-500', 'bg-red-50');
   }
 
   const title = document.getElementById('voiceMemoTitle').value.trim() || 'Голосовая заметка';
+  const cardId = 'audio_' + Date.now();
 
   const audioCard = {
-    id: 'audio_' + Date.now(),
+    id: cardId,
     title: title,
     type: 'audio',
-    audioData: audioBase64, // Наш записанный Base64
+    audioData: audioBase64,
     author: currentUser,
     archived: false,
+    columnId: activeColForMore,
+    order: allCards.length,
     createdAt: new Date().toISOString(),
     comments: []
   };
 
-  const colIndex = columns.findIndex(c => c.id === activeColForMore);
-  if (colIndex !== -1) {
-    columns[colIndex].cards.push(audioCard);
-    persist(); // Отправляем данные в облако или LocalStorage
-    render(); // Принудительно обновляем доску
-    closeVoiceMemoModal();
-    showSystemToast('Добавлено', 'Голосовая заметка успешно сохранена.', 'mic', 'text-emerald-500', 'bg-emerald-50');
+  if (isLocalBoard) {
+    const colIndex = columns.findIndex(c => c.id == activeColForMore);
+    if (colIndex !== -1) {
+      if (!columns[colIndex].cards) columns[colIndex].cards = [];
+      columns[colIndex].cards.push(audioCard);
+      persist(); 
+      render(); 
+    }
+  } else {
+    db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({
+      ...audioCard,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
   }
+  
+  closeVoiceMemoModal();
+  showSystemToast('Добавлено', 'Голосовая заметка успешно сохранена.', 'mic', 'text-emerald-500', 'bg-emerald-50');
 }
 
 // --- ЛОГИКА ТАБЛИЦ (EXCEL STYLE) ---
@@ -2827,9 +2877,10 @@ function saveNewTable() {
   const rows = parseInt(document.getElementById('tableRows').value) || 5;
 
   const emptyData = Array(rows).fill(null).map(() => Array(cols).fill(""));
+  const cardId = 'table_' + Date.now();
 
   const tableCard = {
-    id: 'table_' + Date.now(),
+    id: cardId,
     title: title,
     type: 'table',
     cols: cols,
@@ -2837,13 +2888,26 @@ function saveNewTable() {
     tableData: emptyData,
     author: currentUser,
     archived: false,
+    columnId: activeColForMore,
+    order: allCards.length,
     createdAt: new Date().toISOString(),
     comments: []
   };
 
-  const colIndex = columns.findIndex(c => c.id === activeColForMore);
-  columns[colIndex].cards.push(tableCard);
-  persist();
+  if (isLocalBoard) {
+    const colIndex = columns.findIndex(c => c.id == activeColForMore);
+    if (colIndex !== -1) {
+      if (!columns[colIndex].cards) columns[colIndex].cards = [];
+      columns[colIndex].cards.push(tableCard);
+      persist();
+      render();
+    }
+  } else {
+    db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({
+      ...tableCard,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
   closeTableConstructor();
 }
 
@@ -2901,18 +2965,26 @@ function closeTableEditor() {
 }
 
 function commitTableToDb() {
-  columns = columns.map(col => {
-    if (col.id == activeTableData.colId) {
-      col.cards = col.cards.map(c => {
-        if (c.id == activeTableData.cardId) {
-          return { ...c, tableData: activeTableData.tableData };
-        }
-        return c;
-      });
-    }
-    return col;
-  });
-  persist();
+  if (isLocalBoard) {
+    columns = columns.map(col => {
+      if (col.id == activeTableData.colId) {
+        col.cards = col.cards.map(c => {
+          if (c.id == activeTableData.cardId) {
+            return { ...c, tableData: activeTableData.tableData };
+          }
+          return c;
+        });
+      }
+      return col;
+    });
+    persist();
+    render(); // Перерисовываем UI для локальной версии
+  } else {
+    // В облаке используем наш единый диспетчер (Store Dispatcher)
+    dispatchCardUpdate(activeTableData.cardId, activeTableData.colId, { 
+      tableData: activeTableData.tableData 
+    });
+  }
   showSystemToast('Таблица сохранена', 'Данные успешно синхронизированы.', 'check-circle', 'text-blue-500', 'bg-blue-50');
   closeTableEditor();
 }
