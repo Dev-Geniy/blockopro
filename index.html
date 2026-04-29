@@ -1441,6 +1441,19 @@ async function joinBoardById(id) {
       
       // Если пользователь еще не участник — прописываем его в базу
       if (!isMember) {
+        // ЭНТЕРПРАЙЗ ЛОГИКА: Строгая проверка лимитов тарифа владельца
+        const ownerDoc = await db.collection('users').doc(data.owner).get();
+        const ownerPlan = ownerDoc.exists ? (ownerDoc.data().plan || 'free') : 'free';
+        
+        const currentMembersCount = data.members ? data.members.length : 0;
+        let maxMembers = 3; // Лимит Free тарифа
+        if (ownerPlan === 'freelancer') maxMembers = 10;
+        if (ownerPlan === 'pro') maxMembers = 9999;
+        
+        if (currentMembersCount >= maxMembers) {
+          return showSystemToast('Лимит достигнут', 'Владелец доски исчерпал лимит участников для своего тарифа.', 'users', 'text-red-500', 'bg-red-50');
+        }
+
         await docRef.update({
           members: firebase.firestore.FieldValue.arrayUnion(currentUser.id),
           [`users.${currentUser.id}`]: { name: currentUser.name, avatar: currentUser.avatar, role: 'editor' }
