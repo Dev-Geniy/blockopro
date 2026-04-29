@@ -1607,267 +1607,277 @@ function toggleChecklistView(index) {
   render(); // Обновляем саму доску, чтобы прогресс-бар снаружи карточки тоже изменился
 }
 
+let renderRAF = null;
+
 function render() {
-  const board = document.getElementById('board');
-  if (!board) return;
+  if (renderRAF) cancelAnimationFrame(renderRAF);
 
-  // 1. Очистка старых инстансов SortableJS для предотвращения утечек памяти
-  sortableInstances.forEach(inst => {
-    if (typeof inst.destroy === 'function') inst.destroy();
-  });
-  sortableInstances = [];
+  renderRAF = requestAnimationFrame(() => {
+    const board = document.getElementById('board');
+    if (!board) return;
 
-  const searchQuery = document.getElementById('boardSearch')?.value.toLowerCase() || "";
-  const filterTag = document.getElementById('tagFilter')?.value || "all";
-  const todayStr = new Date().toISOString().split('T')[0];
-  
-  // Определяем права доступа
-  const myRole = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role : 'editor';
-  const isViewer = myRole === 'viewer' && !isLocalBoard;
-
-  const addColBtn = document.getElementById('addColumnBtn');
-  if (addColBtn) addColBtn.style.display = isViewer ? 'none' : 'flex';
-  
-  if (!columns || columns.length === 0) {
-      board.innerHTML = `<div class="w-full text-center py-20 text-gray-400 font-medium">Создайте свою первую колонку!</div>`;
-      return;
-  }
-
-  board.innerHTML = ''; 
-
-  columns.forEach(col => {
-    const colorStyle = BOARD_UI_COLORS[col.color] || BOARD_UI_COLORS['default'];
-    const wrap = document.createElement('div');
-    wrap.dataset.id = col.id; 
-    wrap.className = `flex-shrink-0 w-[320px] rounded-2xl border flex flex-col max-h-full shadow-sm bg-gray-100 dark:bg-gray-800/60 ${colorStyle.border}`;
-    
-    const safeCards = col.cards || [];
-
-    const filteredCards = safeCards.filter(card => {
-      const matchesSearch = card.title.toLowerCase().includes(searchQuery) || (card.description || "").toLowerCase().includes(searchQuery);
-      const matchesTag = filterTag === "all" || (card.tags && card.tags.includes(filterTag));
-      return matchesSearch && matchesTag && !card.archived; 
+    // 1. Очистка старых инстансов SortableJS для предотвращения утечек памяти
+    sortableInstances.forEach(inst => {
+      if (typeof inst.destroy === 'function') inst.destroy();
     });
+    sortableInstances = [];
 
-    const cardsHtml = filteredCards.map(c => {
-      const displayTitle = highlightText(c.title, searchQuery);
-      const authorAvatar = c.author ? `<img src="${c.author.avatar}" class="w-5 h-5 rounded-full border border-white dark:border-gray-800 shadow-sm" title="${c.author.name}" />` : '';
-      const commentsCountText = c.comments && c.comments.length > 0 
-          ? `<span class="flex items-center gap-1"><i data-lucide="message-square" class="w-3 h-3"></i> ${c.comments.length}</span>` 
-          : '';
+    const searchQuery = document.getElementById('boardSearch')?.value.toLowerCase() || "";
+    const filterTag = document.getElementById('tagFilter')?.value || "all";
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    // Определяем права доступа
+    const myRole = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role : 'editor';
+    const isViewer = myRole === 'viewer' && !isLocalBoard;
 
-      // === РЕНДЕР ТАБЛИЦЫ (EXCEL STYLE) ===
-      if (c.type === 'table') {
-        return `
-          <div data-id="${c.id}" onclick="openTableEditor('${col.id}', '${c.id}')" class="card-item bg-white dark:bg-gray-900 border border-blue-100 dark:border-blue-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
-            ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}', 'таблицу'); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
-            <div class="flex items-center gap-2 mb-2">
-              <i data-lucide="table" class="w-3 h-3 text-blue-500"></i>
-              <span class="text-[9px] font-black uppercase tracking-widest text-blue-500">Таблица</span>
-            </div>
-            <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6">${displayTitle}</div>
-            <div class="flex items-center gap-1.5 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl mb-2 border border-blue-100/50 dark:border-blue-800/30">
-               <i data-lucide="layout" class="w-4 h-4 text-blue-400"></i>
-               <span class="text-[10px] font-bold text-gray-500">${c.cols} x ${c.rows} ячеек</span>
-            </div>
-            <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
-              <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                <span>Excel</span>
-                ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
-              </div>
-              ${authorAvatar}
-            </div>
-          </div>
-        `;
-      }
+    const addColBtn = document.getElementById('addColumnBtn');
+    if (addColBtn) addColBtn.style.display = isViewer ? 'none' : 'flex';
+    
+    if (!columns || columns.length === 0) {
+        // Убираем innerHTML, используем безопасный DOM API
+        const emptyState = document.createElement('div');
+        emptyState.className = "w-full text-center py-20 text-gray-400 font-medium";
+        emptyState.textContent = "Создайте свою первую колонку!";
+        board.replaceChildren(emptyState);
+        return;
+    }
 
-      // === РЕНДЕР ОПРОСА (УНИФИЦИРОВАННЫЙ СТИЛЬ) ===
-      if (c.type === 'poll') {
-        const totalVotes = c.options.reduce((sum, o) => sum + o.votes.length, 0);
-        const optionsHtml = c.options.map((opt, i) => {
-          const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
-          const myVote = opt.votes.includes(currentUser.id);
-          const barColor = myVote ? 'bg-purple-500' : 'bg-purple-200 dark:bg-purple-900/50';
-          const textColor = myVote ? 'text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300';
+    // Batching DOM Updates: собираем всё в виртуальном фрагменте перед вставкой в DOM
+    const fragment = document.createDocumentFragment();
+
+    columns.forEach(col => {
+      const colorStyle = BOARD_UI_COLORS[col.color] || BOARD_UI_COLORS['default'];
+      const wrap = document.createElement('div');
+      wrap.dataset.id = col.id; 
+      wrap.className = `flex-shrink-0 w-[320px] rounded-2xl border flex flex-col max-h-full shadow-sm bg-gray-100 dark:bg-gray-800/60 ${colorStyle.border}`;
+      
+      const safeCards = col.cards || [];
+
+      const filteredCards = safeCards.filter(card => {
+        const matchesSearch = card.title.toLowerCase().includes(searchQuery) || (card.description || "").toLowerCase().includes(searchQuery);
+        const matchesTag = filterTag === "all" || (card.tags && card.tags.includes(filterTag));
+        return matchesSearch && matchesTag && !card.archived; 
+      });
+
+      const cardsHtml = filteredCards.map(c => {
+        const displayTitle = highlightText(c.title, searchQuery);
+        const authorAvatar = c.author ? `<img src="${c.author.avatar}" class="w-5 h-5 rounded-full border border-white dark:border-gray-800 shadow-sm" title="${c.author.name}" />` : '';
+        const commentsCountText = c.comments && c.comments.length > 0 
+            ? `<span class="flex items-center gap-1"><i data-lucide="message-square" class="w-3 h-3"></i> ${c.comments.length}</span>` 
+            : '';
+
+        // === РЕНДЕР ТАБЛИЦЫ (EXCEL STYLE) ===
+        if (c.type === 'table') {
           return `
-            <div onclick="votePoll('${col.id}', '${c.id}', ${i}); event.stopPropagation();" 
-                 class="relative overflow-hidden rounded-xl bg-purple-50/30 dark:bg-purple-900/10 border border-purple-100/50 dark:border-purple-800/30 p-2.5 cursor-pointer group/opt mb-2 transition-all active:scale-[0.98]">
-              <div class="absolute left-0 top-0 bottom-0 ${barColor} opacity-20 transition-all duration-500" style="width: ${percent}%"></div>
-              <div class="relative z-10 flex justify-between items-center text-[11px] font-bold ${textColor}">
-                <span class="flex items-center gap-1.5 truncate pr-2">${opt.text} ${myVote ? '<i data-lucide="check-circle-2" class="w-3 h-3 text-purple-500"></i>' : ''}</span>
-                <span class="flex-shrink-0">${percent}%</span>
+            <div data-id="${c.id}" onclick="openTableEditor('${col.id}', '${c.id}')" class="card-item bg-white dark:bg-gray-900 border border-blue-100 dark:border-blue-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
+              ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}', 'таблицу'); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
+              <div class="flex items-center gap-2 mb-2">
+                <i data-lucide="table" class="w-3 h-3 text-blue-500"></i>
+                <span class="text-[9px] font-black uppercase tracking-widest text-blue-500">Таблица</span>
+              </div>
+              <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6">${displayTitle}</div>
+              <div class="flex items-center gap-1.5 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl mb-2 border border-blue-100/50 dark:border-blue-800/30">
+                 <i data-lucide="layout" class="w-4 h-4 text-blue-400"></i>
+                 <span class="text-[10px] font-bold text-gray-500">${c.cols} x ${c.rows} ячеек</span>
+              </div>
+              <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  <span>Excel</span>
+                  ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
+                </div>
+                ${authorAvatar}
+              </div>
+            </div>
+          `;
+        }
+
+        // === РЕНДЕР ОПРОСА (УНИФИЦИРОВАННЫЙ СТИЛЬ) ===
+        if (c.type === 'poll') {
+          const totalVotes = c.options.reduce((sum, o) => sum + o.votes.length, 0);
+          const optionsHtml = c.options.map((opt, i) => {
+            const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
+            const myVote = opt.votes.includes(currentUser.id);
+            const barColor = myVote ? 'bg-purple-500' : 'bg-purple-200 dark:bg-purple-900/50';
+            const textColor = myVote ? 'text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300';
+            return `
+              <div onclick="votePoll('${col.id}', '${c.id}', ${i}); event.stopPropagation();" 
+                   class="relative overflow-hidden rounded-xl bg-purple-50/30 dark:bg-purple-900/10 border border-purple-100/50 dark:border-purple-800/30 p-2.5 cursor-pointer group/opt mb-2 transition-all active:scale-[0.98]">
+                <div class="absolute left-0 top-0 bottom-0 ${barColor} opacity-20 transition-all duration-500" style="width: ${percent}%"></div>
+                <div class="relative z-10 flex justify-between items-center text-[11px] font-bold ${textColor}">
+                  <span class="flex items-center gap-1.5 truncate pr-2">${opt.text} ${myVote ? '<i data-lucide="check-circle-2" class="w-3 h-3 text-purple-500"></i>' : ''}</span>
+                  <span class="flex-shrink-0">${percent}%</span>
+                </div>
+              </div>`;
+          }).join('');
+
+          return `
+            <div data-id="${c.id}" onclick="openViewModal(${col.id}, '${c.id}')" class="card-item bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none">
+              ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}', 'опрос'); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
+              <div class="flex items-center gap-2 mb-2">
+                <i data-lucide="bar-chart-3" class="w-3 h-3 text-purple-500"></i>
+                <span class="text-[9px] font-black uppercase tracking-widest text-purple-500">Опрос</span>
+              </div>
+              <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6">${displayTitle}</div>
+              <div class="space-y-1 mb-2">${optionsHtml}</div>
+              <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                <div class="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                  <span><i data-lucide="users" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> ${totalVotes}</span>
+                  <span class="opacity-50">|</span>
+                  ${commentsCountText ? `${commentsCountText} <span class="opacity-50">|</span> ` : ''}
+                  <span>${c.isAnonymous ? 'Анон' : 'Публ'}</span>
+                </div>
+                ${authorAvatar}
               </div>
             </div>`;
-        }).join('');
-
-        return `
-          <div data-id="${c.id}" onclick="openViewModal(${col.id}, '${c.id}')" class="card-item bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none">
-            ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}', 'опрос'); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
-            <div class="flex items-center gap-2 mb-2">
-              <i data-lucide="bar-chart-3" class="w-3 h-3 text-purple-500"></i>
-              <span class="text-[9px] font-black uppercase tracking-widest text-purple-500">Опрос</span>
-            </div>
-            <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6">${displayTitle}</div>
-            <div class="space-y-1 mb-2">${optionsHtml}</div>
-            <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50">
-              <div class="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                <span><i data-lucide="users" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> ${totalVotes}</span>
-                <span class="opacity-50">|</span>
-                ${commentsCountText ? `${commentsCountText} <span class="opacity-50">|</span> ` : ''}
-                <span>${c.isAnonymous ? 'Анон' : 'Публ'}</span>
-              </div>
-              ${authorAvatar}
-            </div>
-          </div>`;
-      }
-
-      // === РЕНДЕР ГОЛОСОВОЙ ЗАМЕТКИ ===
-      if (c.type === 'audio') {
-        return `
-          <div data-id="${c.id}" onclick="openViewModal(${col.id}, '${c.id}')" class="card-item bg-white dark:bg-gray-800 border border-emerald-100 dark:border-emerald-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
-            ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}', 'заметку'); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
-            <div class="flex items-center gap-2 mb-2">
-              <i data-lucide="mic" class="w-3 h-3 text-emerald-500"></i>
-              <span class="text-[9px] font-black uppercase tracking-widest text-emerald-500">Аудио ТЗ</span>
-            </div>
-            <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6">${displayTitle}</div>
-            <div class="flex items-center gap-3 bg-emerald-50/50 dark:bg-emerald-900/20 p-2 rounded-xl mb-2 border border-emerald-100/50 dark:border-emerald-800/30">
-              <button onclick="toggleAudioPlayer(this, ${col.id}, '${c.id}'); event.stopPropagation();" class="w-8 h-8 flex-shrink-0 bg-emerald-500 text-white rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm">
-                <i data-lucide="play" class="w-4 h-4 fill-current ml-0.5 btn-icon"></i>
-              </button>
-              <div class="flex-1 h-1.5 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden relative">
-                <div class="audio-progress bg-emerald-500 h-full w-0 transition-all duration-100"></div>
-              </div>
-            </div>
-            <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
-              <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                <span>Аудио</span>
-                ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
-              </div>
-              ${authorAvatar}
-            </div>
-          </div>`;
-      }
-
-      // === ОБЫЧНАЯ КАРТОЧКА ===
-      const isOverdue = c.dueDate && c.dueDate < todayStr;
-      const overdueClass = isOverdue ? 'deadline-overdue' : '';
-      let checklistHtml = '';
-      if (c.checklist && c.checklist.length > 0) {
-        const done = c.checklist.filter(i => i.isCompleted).length;
-        const percent = Math.round((done / c.checklist.length) * 100);
-        checklistHtml = `
-          <div class="mt-3 mb-1">
-            <div class="flex justify-between items-center text-[10px] font-bold text-gray-400 mb-1.5">
-              <span class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> ${done}/${c.checklist.length}</span>
-              <span>${percent}%</span>
-            </div>
-            <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div class="${done === c.checklist.length ? 'bg-green-500' : 'bg-blue-500'} h-full transition-all" style="width: ${percent}%"></div>
-            </div>
-          </div>`;
-      }
-      let dueDateHtml = c.dueDate ? `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}"><i data-lucide="clock" class="w-3 h-3"></i> ${new Date(c.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</div>` : '';
-      const tagsHtml = c.tags?.length ? `<div class="flex gap-1 mb-2">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; }).join('')}</div>` : '';
-      const normalComments = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
-
-      return `
-        <div data-id="${c.id}" onclick="openViewModal(${col.id}, '${c.id}')" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none">
-          ${isViewer ? '' : `<button onclick="openEditModal(${col.id}, '${c.id}'); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>`}
-          ${c.image ? `<img src="${c.image}" loading="lazy" class="mb-3 rounded-lg w-full h-32 object-cover border dark:border-gray-700/50 pointer-events-none" />` : ''}
-          ${tagsHtml}
-          <div class="font-bold text-sm leading-tight pr-8 mb-3 text-gray-900 dark:text-white">${displayTitle}</div>
-          ${checklistHtml}
-          <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50">
-            <div class="flex gap-2 items-center text-gray-400">${dueDateHtml}${c.description ? '<i data-lucide="align-left" class="w-3.5 h-3.5 text-gray-400"></i>' : ''}${normalComments}</div>
-            ${authorAvatar}
-          </div>
-        </div>`;
-    }).join('');
-    
-    const emptyStateHtml = filteredCards.length === 0 
-      ? `<div class="h-24 border-2 border-dashed border-gray-300 dark:border-gray-700/50 rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-xs font-bold gap-2 select-none opacity-50"><i data-lucide="download-cloud" class="w-5 h-5"></i> Перетащите сюда</div>` 
-      : '';
-      
-    wrap.innerHTML = `
-      <div class="p-4 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center col-handle ${isViewer ? '' : 'cursor-grab'} select-none">
-        <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-full shadow-sm" style="background-color: ${colorStyle.hex}"></div>
-          <h2 class="font-bold text-sm text-gray-900 dark:text-white">${col.name}</h2>
-          <span class="text-xs font-bold px-2 py-0.5 rounded-full border bg-white/50 dark:bg-black/20 text-gray-600 dark:text-gray-400 border-gray-200/50 dark:border-gray-700/50">${filteredCards.length}</span>
-        </div>
-        ${isViewer ? '' : `<button onclick="openColModal(${col.id})" class="text-gray-400 hover:text-blue-500 p-1 rounded transition-colors"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>`}
-      </div>
-      <div id="cards-${col.id}" ${isViewer ? '' : `ondblclick="quickAddCard(${col.id})"`} class="p-3 flex-1 overflow-y-auto hide-scroll space-y-3 min-h-[50px] ${isViewer ? '' : 'cursor-pointer'}">
-        ${cardsHtml}
-        ${emptyStateHtml}
-      </div>
-      ${isViewer ? '' : `
-      <div class="p-3 pt-0 flex gap-2">
-        <button onclick="openEditModal(${col.id})" class="flex-[4] py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors border border-transparent dark:border-gray-700/50 border-dashed">
-          <i data-lucide="plus" class="w-4 h-4"></i> Карточка
-        </button>
-        <button onclick="openMoreAddModal(${col.id})" class="flex-1 py-2.5 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-white/50 dark:hover:bg-black/20 rounded-xl transition-colors border border-transparent dark:border-gray-700/50">
-          <i data-lucide="more-horizontal" class="w-5 h-5"></i>
-        </button>
-      </div>`}
-    `;
-    board.appendChild(wrap);
-    
-    // 3. Инициализация SortableJS для каждой колонки
-    const colEl = document.getElementById(`cards-${col.id}`);
-    // Оптимизированный Drag & Drop для подколлекций
-    sortableInstances.push(new Sortable(colEl, { 
-      group: 'shared', animation: 150, disabled: isViewer,
-      onEnd: async function (evt) { 
-        const cardId = evt.item.dataset.id;
-        const toColId = evt.to.id.replace('cards-','');
-        
-        if (isLocalBoard) {
-          // Локальная логика остается прежней (массив)
-          let mCard;
-          columns.forEach(c => {
-             const found = c.cards.find(card => card.id == cardId);
-             if(found) { mCard = found; c.cards = c.cards.filter(card => card.id != cardId); }
-          });
-          const targetCol = columns.find(c => c.id == toColId);
-          targetCol.cards.splice(evt.newIndex, 0, mCard);
-          persist();
-        } else {
-          // ENTERPRISE MOVE: Обновляем только ОДИН документ в Firebase
-          // Указываем новый ColumnID и высчитываем Order (в данном случае индекс в DOM)
-          await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).update({
-            columnId: toColId,
-            order: evt.newIndex,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-          // Остальные карточки в колонке подтянутся через onSnapshot автоматически
         }
+
+        // === РЕНДЕР ГОЛОСОВОЙ ЗАМЕТКИ ===
+        if (c.type === 'audio') {
+          return `
+            <div data-id="${c.id}" onclick="openViewModal(${col.id}, '${c.id}')" class="card-item bg-white dark:bg-gray-800 border border-emerald-100 dark:border-emerald-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
+              ${isViewer ? '' : `<button onclick="deleteCardDirectly('${col.id}', '${c.id}', 'заметку'); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`}
+              <div class="flex items-center gap-2 mb-2">
+                <i data-lucide="mic" class="w-3 h-3 text-emerald-500"></i>
+                <span class="text-[9px] font-black uppercase tracking-widest text-emerald-500">Аудио ТЗ</span>
+              </div>
+              <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6">${displayTitle}</div>
+              <div class="flex items-center gap-3 bg-emerald-50/50 dark:bg-emerald-900/20 p-2 rounded-xl mb-2 border border-emerald-100/50 dark:border-emerald-800/30">
+                <button onclick="toggleAudioPlayer(this, ${col.id}, '${c.id}'); event.stopPropagation();" class="w-8 h-8 flex-shrink-0 bg-emerald-500 text-white rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm">
+                  <i data-lucide="play" class="w-4 h-4 fill-current ml-0.5 btn-icon"></i>
+                </button>
+                <div class="flex-1 h-1.5 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden relative">
+                  <div class="audio-progress bg-emerald-500 h-full w-0 transition-all duration-100"></div>
+                </div>
+              </div>
+              <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  <span>Аудио</span>
+                  ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
+                </div>
+                ${authorAvatar}
+              </div>
+            </div>`;
+        }
+
+        // === ОБЫЧНАЯ КАРТОЧКА ===
+        const isOverdue = c.dueDate && c.dueDate < todayStr;
+        const overdueClass = isOverdue ? 'deadline-overdue' : '';
+        let checklistHtml = '';
+        if (c.checklist && c.checklist.length > 0) {
+          const done = c.checklist.filter(i => i.isCompleted).length;
+          const percent = Math.round((done / c.checklist.length) * 100);
+          checklistHtml = `
+            <div class="mt-3 mb-1">
+              <div class="flex justify-between items-center text-[10px] font-bold text-gray-400 mb-1.5">
+                <span class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> ${done}/${c.checklist.length}</span>
+                <span>${percent}%</span>
+              </div>
+              <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div class="${done === c.checklist.length ? 'bg-green-500' : 'bg-blue-500'} h-full transition-all" style="width: ${percent}%"></div>
+              </div>
+            </div>`;
+        }
+        let dueDateHtml = c.dueDate ? `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}"><i data-lucide="clock" class="w-3 h-3"></i> ${new Date(c.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</div>` : '';
+        const tagsHtml = c.tags?.length ? `<div class="flex gap-1 mb-2">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; }).join('')}</div>` : '';
+        const normalComments = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
+
+        return `
+          <div data-id="${c.id}" onclick="openViewModal(${col.id}, '${c.id}')" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none">
+            ${isViewer ? '' : `<button onclick="openEditModal(${col.id}, '${c.id}'); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>`}
+            ${c.image ? `<img src="${c.image}" loading="lazy" class="mb-3 rounded-lg w-full h-32 object-cover border dark:border-gray-700/50 pointer-events-none" />` : ''}
+            ${tagsHtml}
+            <div class="font-bold text-sm leading-tight pr-8 mb-3 text-gray-900 dark:text-white">${displayTitle}</div>
+            ${checklistHtml}
+            <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+              <div class="flex gap-2 items-center text-gray-400">${dueDateHtml}${c.description ? '<i data-lucide="align-left" class="w-3.5 h-3.5 text-gray-400"></i>' : ''}${normalComments}</div>
+              ${authorAvatar}
+            </div>
+          </div>`;
+      }).join('');
+      
+      const emptyStateHtml = filteredCards.length === 0 
+        ? `<div class="h-24 border-2 border-dashed border-gray-300 dark:border-gray-700/50 rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-xs font-bold gap-2 select-none opacity-50"><i data-lucide="download-cloud" class="w-5 h-5"></i> Перетащите сюда</div>` 
+        : '';
+        
+      wrap.innerHTML = `
+        <div class="p-4 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center col-handle ${isViewer ? '' : 'cursor-grab'} select-none">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full shadow-sm" style="background-color: ${colorStyle.hex}"></div>
+            <h2 class="font-bold text-sm text-gray-900 dark:text-white">${col.name}</h2>
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full border bg-white/50 dark:bg-black/20 text-gray-600 dark:text-gray-400 border-gray-200/50 dark:border-gray-700/50">${filteredCards.length}</span>
+          </div>
+          ${isViewer ? '' : `<button onclick="openColModal(${col.id})" class="text-gray-400 hover:text-blue-500 p-1 rounded transition-colors"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>`}
+        </div>
+        <div id="cards-${col.id}" ${isViewer ? '' : `ondblclick="quickAddCard(${col.id})"`} class="p-3 flex-1 overflow-y-auto hide-scroll space-y-3 min-h-[50px] ${isViewer ? '' : 'cursor-pointer'}">
+          ${cardsHtml}
+          ${emptyStateHtml}
+        </div>
+        ${isViewer ? '' : `
+        <div class="p-3 pt-0 flex gap-2">
+          <button onclick="openEditModal(${col.id})" class="flex-[4] py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors border border-transparent dark:border-gray-700/50 border-dashed">
+            <i data-lucide="plus" class="w-4 h-4"></i> Карточка
+          </button>
+          <button onclick="openMoreAddModal(${col.id})" class="flex-1 py-2.5 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-white/50 dark:hover:bg-black/20 rounded-xl transition-colors border border-transparent dark:border-gray-700/50">
+            <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+          </button>
+        </div>`}
+      `;
+      // Вместо прямой вставки в board, добавляем в DocumentFragment
+      fragment.appendChild(wrap);
+      
+      // Инициализация SortableJS для текущей колонки (оставляем как есть, так как DOM-нода wrap уже существует)
+      const colEl = wrap.querySelector(`#cards-${col.id}`);
+      sortableInstances.push(new Sortable(colEl, { 
+        group: 'shared', animation: 150, disabled: isViewer,
+        onEnd: async function (evt) { 
+          const cardId = evt.item.dataset.id;
+          const toColId = evt.to.id.replace('cards-','');
+          
+          if (isLocalBoard) {
+            let mCard;
+            columns.forEach(c => {
+               const found = c.cards.find(card => card.id == cardId);
+               if(found) { mCard = found; c.cards = c.cards.filter(card => card.id != cardId); }
+            });
+            const targetCol = columns.find(c => c.id == toColId);
+            targetCol.cards.splice(evt.newIndex, 0, mCard);
+            persist();
+          } else {
+            await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).update({
+              columnId: toColId,
+              order: evt.newIndex,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+        } 
+      }));
+    });
+    
+    // Единоразовое обновление DOM дерева через replaceChildren (без innerHTML = '')
+    board.replaceChildren(fragment);
+
+    // 4. SortableJS для самих колонок
+    sortableInstances.push(new Sortable(board, { 
+      animation: 200, 
+      handle: '.col-handle', 
+      ghostClass: 'sortable-ghost', 
+      dragClass: 'sortable-drag', 
+      forceFallback: true, 
+      disabled: isViewer,
+      onEnd: function (evt) { 
+        const movedCol = columns.splice(evt.oldIndex, 1)[0];
+        columns.splice(evt.newIndex, 0, movedCol); 
+        persist(); 
       } 
     }));
+
+    lucide.createIcons();
+
+    // 5. Автоматическая проверка дедлайнов при каждом рендере
+    if (typeof checkDeadlines === 'function') {
+      checkDeadlines(columns);
+    }
   });
-  
-  // 4. SortableJS для самих колонок
-  sortableInstances.push(new Sortable(board, { 
-    animation: 200, 
-    handle: '.col-handle', 
-    ghostClass: 'sortable-ghost', 
-    dragClass: 'sortable-drag', 
-    forceFallback: true, 
-    disabled: isViewer,
-    onEnd: function (evt) { 
-      const movedCol = columns.splice(evt.oldIndex, 1)[0];
-      columns.splice(evt.newIndex, 0, movedCol); 
-      persist(); 
-    } 
-  }));
-
-  lucide.createIcons();
-
-  // 5. Автоматическая проверка дедлайнов при каждом рендере
-  if (typeof checkDeadlines === 'function') {
-    checkDeadlines(columns);
-  }
 }
 
 let quickAddTargetColId = null;
