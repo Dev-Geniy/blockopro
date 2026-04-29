@@ -807,6 +807,11 @@ function ensureUserTag(data) {
 let cardsUnsubscribe = null;
 let allCards = [];
 
+// ENTERPRISE SYNC ENGINE: Granular UI Edition
+let cardsUnsubscribe = null;
+let allCards = [];
+let isInitialRender = true; // Флаг первой загрузки
+
 function loadBoard() {
   if (isLocalBoard) {
     document.getElementById('localBadge').classList.remove('hidden');
@@ -818,13 +823,12 @@ function loadBoard() {
       }
       boardData = data;
       columns = data.columns || [];
-      processBoardData(boardData);
+      processBoardData(boardData); // Локальная доска рендерится целиком
     }
   } else {
     document.getElementById('shareUrlText').innerText = window.location.href;
     const docRef = db.collection("boards").doc(BOARD_ID);
     
-    // 1. Слушаем метаданные доски (названия колонок, теги, фон)
     docRef.onSnapshot((doc) => {
       if (!doc.exists) return;
       boardData = doc.data();
@@ -834,14 +838,15 @@ function loadBoard() {
         window.location.href = 'index.html'; return;
       }
 
-      // 2. Если поток карточек еще не запущен — запускаем (Granular Updates)
       if (!cardsUnsubscribe) {
+        // Слушаем изменения коллекции карточек
         cardsUnsubscribe = docRef.collection("cards").onSnapshot((querySnapshot) => {
           allCards = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-          syncAndRender();
+          syncAndRender(querySnapshot.docChanges());
         });
       } else {
-        syncAndRender(); // Пересобираем при изменении метаданных
+        // Если изменились только метаданные доски (например, название)
+        document.getElementById('boardTitleHeader').innerText = boardData.title;
       }
 
       renderMembersSidebar();
@@ -850,15 +855,82 @@ function loadBoard() {
   }
 }
 
-// Склеиваем структуру колонок с карточками из подколлекции
-function syncAndRender() {
+// РЕАКТИВНАЯ СИНХРОНИЗАЦИЯ
+function syncAndRender(docChanges = []) {
+  // 1. "Тихое" обновление состояния данных (State) в фоне
   columns = (boardData.columns || []).map(col => ({
     ...col,
     cards: allCards.filter(c => c.columnId == col.id).sort((a, b) => (a.order || 0) - (b.order || 0))
   }));
-  processBoardData(boardData);
+
+  // 2. Если это первая загрузка — рендерим доску целиком (Full Render)
+  if (isInitialRender) {
+    processBoardData(boardData);
+    isInitialRender = false;
+    return;
+  }
+
+  // 3. ГРАНУЛЯРНОЕ ОБНОВЛЕНИЕ (Granular Updates)
+  if (docChanges.length > 0) {
+    let needsFullRender = false;
+
+    docChanges.forEach(change => {
+       const cardData = { id: change.doc.id, ...change.doc.data() };
+       
+       if (change.type === "added") {
+         // Для новых карточек пока перерисовываем целевую колонку
+         needsFullRender = true; 
+       }
+       if (change.type === "modified") {
+         updateCardUI(cardData.id, cardData);
+       }
+       if (change.type === "removed") {
+         const el = document.querySelector(`[data-id="${cardData.id}"]`);
+         if (el) el.remove(); // Ювелирное удаление узла из DOM
+       }
+    });
+
+    if (needsFullRender) {
+      render(); // В будущем заменим на renderColumn(colId)
+    }
+  }
 }
 
+// КОНТРОЛЛЕР ТОЧЕЧНОГО ОБНОВЛЕНИЯ КАРТОЧКИ (Без полного рендера)
+function updateCardUI(cardId, data) {
+  const el = document.querySelector(`.card-item[data-id="${cardId}"]`);
+  if (!el) return;
+
+  // Если карточка поменяла колонку (Drag & Drop другим пользователем), 
+  // точечного обновления мало, нужен ререндер колонок.
+  // Optimistic UI: Если мы сами её перетащили, DOM уже обновлен Sortable.js
+  const currentParentCol = el.closest('[id^="cards-"]')?.id.replace('cards-', '');
+  if (currentParentCol && currentParentCol !== data.columnId) {
+     render(); 
+     return;
+  }
+
+  // Точечно обновляем заголовок
+  const titleEl = el.querySelector('.font-bold.text-sm');
+  if (titleEl && titleEl.innerText !== data.title) {
+    titleEl.innerText = data.title;
+  }
+
+  // Точечно обновляем прогресс-бар чек-листа (если он есть)
+  if (data.checklist && data.checklist.length > 0) {
+    const done = data.checklist.filter(i => i.isCompleted).length;
+    const percent = Math.round((done / data.checklist.length) * 100);
+    const progressText = el.querySelector('.text-gray-400 span:last-child');
+    const progressBar = el.querySelector('.bg-blue-500, .bg-green-500');
+    
+    if (progressText) progressText.innerText = `${percent}%`;
+    if (progressBar) {
+      progressBar.style.width = `${percent}%`;
+      progressBar.className = percent === 100 ? 'bg-green-500 h-full transition-all' : 'bg-blue-500 h-full transition-all';
+    }
+  }
+}
+  
 function initChatListener(docRef) {
   docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
     const chatBox = document.getElementById("chatMessages");
