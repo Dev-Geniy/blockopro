@@ -805,7 +805,14 @@ function ensureUserTag(data) {
 
 // ENTERPRISE SYNC ENGINE: Subcollections Edition
 let cardsUnsubscribe = null;
-let allCards = [];
+let allCardsMap = new Map(); // O(1) чтения и модификации
+let allCards = []; // Для обратной совместимости логики
+let renderFrameId = null;
+
+// Внедряем CSS-оптимизацию для аппаратного ускорения и ленивого рендеринга 10k+ карточек
+if (!document.getElementById('blocko-perf-css')) {
+  document.head.insertAdjacentHTML('beforeend', '<style id="blocko-perf-css">.card-item { content-visibility: auto; contain-intrinsic-size: 150px; will-change: transform; }</style>');
+}
 
 function loadBoard() {
   if (isLocalBoard) {
@@ -834,10 +841,18 @@ function loadBoard() {
         window.location.href = 'index.html'; return;
       }
 
-      // 2. Если поток карточек еще не запущен — запускаем (Granular Updates)
+      // 2. Оптимизированный поток: Granular Updates + Исключение архива из чтения
       if (!cardsUnsubscribe) {
-        cardsUnsubscribe = docRef.collection("cards").onSnapshot((querySnapshot) => {
-          allCards = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        cardsUnsubscribe = docRef.collection("cards").where("archived", "==", false).onSnapshot((querySnapshot) => {
+          // Гранулярная обработка: обновляем в Map только то, что реально изменилось
+          querySnapshot.docChanges().forEach((change) => {
+            if (change.type === "added" || change.type === "modified") {
+              allCardsMap.set(change.doc.id, { id: change.doc.id, ...change.doc.data() });
+            }
+            if (change.type === "removed") {
+              allCardsMap.delete(change.doc.id);
+            }
+          });
           syncAndRender();
         });
       } else {
@@ -850,13 +865,19 @@ function loadBoard() {
   }
 }
 
-// Склеиваем структуру колонок с карточками из подколлекции
+// Склеиваем структуру колонок с карточками из подколлекции через Batching DOM Updates
 function syncAndRender() {
-  columns = (boardData.columns || []).map(col => ({
-    ...col,
-    cards: allCards.filter(c => c.columnId == col.id).sort((a, b) => (a.order || 0) - (b.order || 0))
-  }));
-  processBoardData(boardData);
+  if (renderFrameId) cancelAnimationFrame(renderFrameId);
+  
+  // Batching: группируем перерисовку, чтобы браузер не захлебывался
+  renderFrameId = requestAnimationFrame(() => {
+    allCards = Array.from(allCardsMap.values());
+    columns = (boardData.columns || []).map(col => ({
+      ...col,
+      cards: allCards.filter(c => c.columnId == col.id).sort((a, b) => (a.order || 0) - (b.order || 0))
+    }));
+    processBoardData(boardData);
+  });
 }
 
 function initChatListener(docRef) {
