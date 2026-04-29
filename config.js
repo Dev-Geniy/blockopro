@@ -12,13 +12,20 @@ const firebaseConfig = {
 };
 
 // ==========================================
-// 2. ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ И АВТОРИЗАЦИИ
+// 2. ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ И АВТОРИЗАЦИИ (OFFLINE-FIRST ENTERPRISE)
 // ==========================================
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
 const db = firebase.firestore();
+
+// Включаем агрессивное локальное кэширование (IndexedDB)
+// Это обеспечит Zero-Latency загрузку данных и бесшовную работу без интернета
+db.enablePersistence({ synchronizeTabs: true }).catch(() => {
+    // Молчаливый фоллбэк, если браузер (например, режим инкогнито) не поддерживает локальное хранилище
+});
+
 const auth = firebase.auth();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 
