@@ -2190,8 +2190,11 @@ function renderBadgeSelector(currentBadge, rewards) {
 async function setActiveBadge(badge) {
   if (!currentUser) return;
   await db.collection('users').doc(currentUser.id).update({ badgeStatus: badge });
-  const doc = await db.collection('users').doc(currentUser.id).get();
   
+  // Отправляем изменения во все проекты пользователя
+  await syncUserProfileToBoards({ badgeStatus: badge });
+  
+  const doc = await db.collection('users').doc(currentUser.id).get();
   currentUser.badgeStatus = badge; // Обновляем локально
   updateProfilePreview(doc.data());
   renderBadgeSelector(badge, doc.data().rewardsClaimed || []);
@@ -2203,7 +2206,48 @@ async function setActiveBadge(badge) {
       lucide.createIcons();
   }
   
-  showSystemToast('Сохранено', 'Отображаемый бейдж изменен!', 'check-circle', 'text-green-500', 'bg-green-50');
+  showSystemToast('Сохранено', 'Отображаемый бейдж изменен везде!', 'check-circle', 'text-green-500', 'bg-green-50');
+}
+
+// ЭНТЕРПРАЙЗ: Фоновая синхронизация профиля по всем активным проектам пользователя
+// ЭНТЕРПРАЙЗ: Фоновая синхронизация профиля по всем активным проектам пользователя
+async function syncUserProfileToBoards(updates) {
+  if (!currentUser || !currentUser.id) return;
+  try {
+    const boardsSnapshot = await db.collection('boards').where('members', 'array-contains', currentUser.id).get();
+    
+    // Масштабирование: обход системного лимита Firebase (500 операций на один batch)
+    const batches = [];
+    let currentBatch = db.batch();
+    let opCount = 0;
+    
+    boardsSnapshot.forEach(doc => {
+      const boardData = doc.data();
+      if (boardData.users && boardData.users[currentUser.id]) {
+        currentBatch.update(doc.ref, {
+          [`users.${currentUser.id}`]: {
+            ...boardData.users[currentUser.id],
+            ...updates
+          }
+        });
+        opCount++;
+        
+        // Разделяем пакеты по 450 операций для абсолютной безопасности
+        if (opCount === 450) {
+          batches.push(currentBatch.commit());
+          currentBatch = db.batch();
+          opCount = 0;
+        }
+      }
+    });
+    
+    if (opCount > 0) {
+      batches.push(currentBatch.commit());
+    }
+    
+    // Параллельно и быстро фиксируем все пакеты в базе данных
+    await Promise.all(batches);
+  } catch (e) { console.error("Global sync error:", e); }
 }
 
 function updateProfilePreview(data) {
@@ -2215,14 +2259,19 @@ async function updateProfileAvatar() {
   const url = document.getElementById('customAvatarUrl').value.trim();
   await db.collection('users').doc(currentUser.id).update({ customAvatar: url });
   
+  // Отправляем изменения во все проекты пользователя
+  await syncUserProfileToBoards({ customAvatar: url });
+  
   currentUser.customAvatar = url; // Обновляем локально
   const dashAvatarEl = document.getElementById('dashAvatar');
   if(dashAvatarEl) {
       dashAvatarEl.outerHTML = renderUserAvatar(currentUser, 'w-11 h-11', 'dashAvatar', 'openProfileSettings()');
       lucide.createIcons();
   }
-  showSystemToast('Обновлено', 'Ваше фото профиля изменено!', 'image', 'text-blue-500', 'bg-blue-50');
+  showSystemToast('Обновлено', 'Ваше фото профиля изменено везде!', 'image', 'text-blue-500', 'bg-blue-50');
 }
+
+// --- НЕДОСТАЮЩИЕ ФУНКЦИИ ДЛЯ МОДАЛКИ ПРОФИЛЯ ---
 
 // 1. Функция закрытия окна
 function closeProfileModal() {
@@ -2262,16 +2311,30 @@ function renderFrameColors(currentColor) {
 // 3. Сохранение выбранного цвета в базу
 async function applyFrameColor(frameColor, glowColor) {
   if (!currentUser) return;
+  
+  // Получаем текущий конфиг, чтобы не затереть анимацию
+  const userDoc = await db.collection('users').doc(currentUser.id).get();
+  const currentConfig = userDoc.data().badgeConfig || {};
+  const newConfig = { ...currentConfig, frameColor, glowColor };
+  
   await db.collection('users').doc(currentUser.id).set({
-    badgeConfig: { frameColor, glowColor }
+    badgeConfig: newConfig
   }, { merge: true });
   
-  // Сразу обновляем превью в окне
-  const doc = await db.collection('users').doc(currentUser.id).get();
-  updateProfilePreview(doc.data());
-  // Обновляем палитру, чтобы выделить активный цвет
+  await syncUserProfileToBoards({ badgeConfig: newConfig });
+  
+  const updatedDoc = await db.collection('users').doc(currentUser.id).get();
+  currentUser.badgeConfig = newConfig; // Обновляем локально
+  updateProfilePreview(updatedDoc.data());
   renderFrameColors(glowColor);
-  showSystemToast('Сохранено', 'Цвет рамки обновлен!', 'palette', 'text-indigo-500', 'bg-indigo-50');
+  
+  const dashAvatarEl = document.getElementById('dashAvatar');
+  if(dashAvatarEl) {
+      dashAvatarEl.outerHTML = renderUserAvatar(updatedDoc.data(), 'w-11 h-11', 'dashAvatar', 'openProfileSettings()');
+      lucide.createIcons();
+  }
+  
+  showSystemToast('Сохранено', 'Цвет рамки обновлен везде!', 'palette', 'text-indigo-500', 'bg-indigo-50');
 }
 
 // 4. Сохранение анимации (для Амбассадоров)
@@ -2279,14 +2342,27 @@ async function updateProfileEffects() {
   if (!currentUser) return;
   const animation = document.getElementById('frameAnimationSelect').value;
   
+  const userDoc = await db.collection('users').doc(currentUser.id).get();
+  const currentConfig = userDoc.data().badgeConfig || {};
+  const newConfig = { ...currentConfig, animation };
+  
   await db.collection('users').doc(currentUser.id).set({
-    badgeConfig: { animation }
+    badgeConfig: newConfig
   }, { merge: true });
   
-  // Обновляем превью
-  const doc = await db.collection('users').doc(currentUser.id).get();
-  updateProfilePreview(doc.data());
-  showSystemToast('Сохранено', 'Анимация обновлена!', 'zap', 'text-amber-500', 'bg-amber-50');
+  await syncUserProfileToBoards({ badgeConfig: newConfig });
+  
+  const updatedDoc = await db.collection('users').doc(currentUser.id).get();
+  currentUser.badgeConfig = newConfig;
+  updateProfilePreview(updatedDoc.data());
+  
+  const dashAvatarEl = document.getElementById('dashAvatar');
+  if(dashAvatarEl) {
+      dashAvatarEl.outerHTML = renderUserAvatar(updatedDoc.data(), 'w-11 h-11', 'dashAvatar', 'openProfileSettings()');
+      lucide.createIcons();
+  }
+  
+  showSystemToast('Сохранено', 'Анимация обновлена везде!', 'zap', 'text-amber-500', 'bg-amber-50');
 }
 </script>
 </body>
