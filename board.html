@@ -217,8 +217,9 @@
       <div class="flex gap-3 pt-2">
         <img id="commentMyAvatar" src="" class="w-10 h-10 rounded-full flex-shrink-0 shadow-sm" />
         <div class="flex-1 flex gap-2">
-          <input id="viewCommentInput" placeholder="Оставьте комментарий..." onkeypress="if(event.key==='Enter') addCommentFromView()" class="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500" />
-          <button onclick="addCommentFromView()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm transition-colors"><i data-lucide="send" class="w-4 h-4"></i></button>
+       
+           <input id="viewCommentInput" data-enter-action="card:comment_added" placeholder="Оставьте комментарий..." class="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500" />
+          <button data-action="card:comment_added" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm transition-colors"><i data-lucide="send" class="w-4 h-4"></i></button>
         </div>
       </div>
     </div>
@@ -227,51 +228,61 @@
 
 <div id="editCardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200">
   <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700">
+    
     <div class="flex justify-between items-center mb-5 pb-4 border-b border-gray-100 dark:border-gray-700/50">
       <input id="editTitle" placeholder="Введите название задачи..." class="text-2xl font-bold bg-transparent outline-none w-full dark:text-white placeholder-gray-400 dark:placeholder-gray-600" />
-      <button onclick="closeEditModal()" class="ml-4 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <button data-action="ui:modal:closed" data-modal="editCardModal" class="ml-4 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
+
     <div class="flex-1 overflow-y-auto pr-2 space-y-6">
       <div><span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Теги (Labels)</span><div id="editTagsContainer" class="flex gap-2 flex-wrap"></div></div>
       <div><span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Дедлайн</span><input type="date" id="editDueDate" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-medium dark:text-white focus:ring-2 focus:ring-blue-500" /></div>
+      
       <div>
         <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Обложка</span>
         <label id="dropzoneLabel" class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-2xl cursor-pointer h-36 relative overflow-hidden transition-all group bg-gray-50/50 dark:bg-gray-900/30">
           <div id="dropzoneText" class="flex flex-col items-center"><div class="p-3 bg-white dark:bg-gray-800 rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform"><i data-lucide="image-plus" class="w-6 h-6 text-blue-500"></i></div><span class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-blue-500">Нажмите или перетащите картинку</span></div>
           <img id="editImagePreview" class="absolute inset-0 w-full h-full object-cover hidden" />
-          <input type="file" id="editImage" class="hidden" accept="image/*" />
+          <input type="file" id="editImage" class="hidden" accept="image/*" data-change-action="card:image_selected" />
         </label>
         <div id="uploadStatus" class="text-xs font-medium text-blue-500 text-center mt-2"></div>
       </div>
+
       <div>
         <span class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex justify-between items-center">Чек-лист<span id="checklistProgressText" class="text-blue-500 font-bold">0%</span></span>
         <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mb-3 overflow-hidden"><div id="checklistProgressBar" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div></div>
         <div id="editChecklistContainer" class="space-y-2 mb-3"></div>
-        <div class="flex gap-2"><input id="newChecklistItem" onkeypress="if(event.key==='Enter') addChecklistItem()" placeholder="Добавить пункт подзадачи..." class="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white" /><button onclick="addChecklistItem()" class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 hover:bg-blue-200 px-4 py-2.5 rounded-xl text-sm font-bold">Добавить</button></div>
+        <div class="flex gap-2">
+          <input id="newChecklistItem" data-enter-action="card:checklist_item_add" placeholder="Добавить пункт подзадачи..." class="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white" />
+          <button data-action="card:checklist_item_add" class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 hover:bg-blue-200 px-4 py-2.5 rounded-xl text-sm font-bold">Добавить</button>
+        </div>
       </div>
+
       <div>
         <div class="flex justify-between items-center mb-3">
           <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block">Описание (Markdown)</span>
-          <button onclick="generateAIDescription()" id="aiGenBtn" class="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 px-2 py-1.5 rounded-lg font-bold flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3 h-3"></i> AI ПЛАН</button>
+          <button data-action="card:generate_ai_desc" id="aiGenBtn" class="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 px-2 py-1.5 rounded-lg font-bold flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3 h-3"></i> AI ПЛАН</button>
         </div>
         <div class="flex gap-1 mb-2 bg-gray-100 dark:bg-gray-900/50 p-1 rounded-lg w-fit">
-          <button onclick="insertMarkdown('**', '**')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded transition-colors text-xs font-bold" title="Жирный">B</button>
-          <button onclick="insertMarkdown('*', '*')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded transition-colors text-xs italic" title="Курсив">I</button>
-          <button onclick="insertMarkdown('- [ ] ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded transition-colors text-[10px]" title="Чек-лист">☑</button>
+          <button data-action="card:insert_markdown" data-prefix="**" data-suffix="**" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded transition-colors text-xs font-bold" title="Жирный">B</button>
+          <button data-action="card:insert_markdown" data-prefix="*" data-suffix="*" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded transition-colors text-xs italic" title="Курсив">I</button>
+          <button data-action="card:insert_markdown" data-prefix="- [ ] " data-suffix="" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded transition-colors text-[10px]" title="Чек-лист">☑</button>
         </div>
         <textarea id="editDescription" placeholder="- [ ] Чеклист 1&#10;- [x] Чеклист 2&#10;**Жирный текст** и *курсив*" rows="5" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-mono dark:text-gray-300 resize-y"></textarea>
       </div>
     </div>
+
     <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-100 dark:border-gray-700/50">
       <div class="flex gap-2">
-        <button onclick="deleteCard()" class="text-red-500 hover:bg-red-50 px-3 py-2.5 rounded-xl text-sm font-bold" title="Удалить навсегда"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-        <button onclick="archiveCard()" class="text-amber-600 hover:bg-amber-50 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2"><i data-lucide="archive" class="w-4 h-4"></i> В архив</button>
+        <button data-action="card:delete_requested" class="text-red-500 hover:bg-red-50 px-3 py-2.5 rounded-xl text-sm font-bold" title="Удалить навсегда"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        <button data-action="card:archive_requested" class="text-amber-600 hover:bg-amber-50 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2"><i data-lucide="archive" class="w-4 h-4"></i> В архив</button>
       </div>
       <div class="flex gap-3">
-        <button onclick="closeEditModal()" class="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">Отмена</button>
-        <button onclick="saveCard()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95"><i data-lucide="check" class="w-4 h-4"></i> Сохранить</button>
+        <button data-action="ui:modal:closed" data-modal="editCardModal" class="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">Отмена</button>
+        <button data-action="card:save_requested" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95"><i data-lucide="check" class="w-4 h-4"></i> Сохранить</button>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -312,8 +323,8 @@
       </div>
     </div>
     <div class="mt-8 flex gap-3">
-      <button onclick="closeQuickAdd()" class="flex-1 py-3 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl">Отмена</button>
-      <button onclick="confirmQuickAdd()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/25 active:scale-95">Создать</button>
+      <button data-action="ui:modal:closed" data-modal="quickAddModal" class="flex-1 py-3 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl">Отмена</button>
+      <button data-action="card:quick_add_confirmed" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/25 active:scale-95">Создать</button>
     </div>
   </div>
 </div>
@@ -1226,6 +1237,16 @@ class SidebarController {
     // 1. Подписка на глобальную шину событий (Никаких прямых вызовов из других файлов!)
     AppEvents.on(EVENTS.CHAT_TOGGLED, () => this.toggleChat());
     AppEvents.on('ui:members:toggled', () => this.toggleMembers());
+    // Новые слушатели модалки
+    AppEvents.on('card:checklist_item_add', () => this.addChecklistItem());
+    AppEvents.on('card:checklist_item_toggle', (payload) => this.toggleChecklist(payload.index));
+    AppEvents.on('card:checklist_item_remove', (payload) => this.removeChecklist(payload.index));
+    AppEvents.on('card:insert_markdown', (payload) => this.insertMarkdown(payload.prefix, payload.suffix));
+    AppEvents.on('card:generate_ai_desc', () => { if(typeof generateAIDescription === 'function') generateAIDescription() });
+    AppEvents.on('card:image_selected', (payload) => {
+      const file = payload.element.files[0];
+      if (typeof handleImageSelection === 'function') handleImageSelection(file);
+    });
     
     // 2. Event Delegation (Слушаем клики глобально, готовимся к удалению onclick из HTML)
     document.addEventListener('click', (e) => {
@@ -2056,6 +2077,17 @@ class CardController {
     AppEvents.on('card:save_requested', () => this.saveActiveCard());
     AppEvents.on('card:delete_requested', () => this.deleteActiveCard());
     AppEvents.on('card:archive_requested', () => this.archiveActiveCard());
+
+    // Новые слушатели модалки (Чек-лист, Markdown, AI, Изображения)
+    AppEvents.on('card:checklist_item_add', () => this.addChecklistItem());
+    AppEvents.on('card:checklist_item_toggle', (payload) => this.toggleChecklist(payload.index));
+    AppEvents.on('card:checklist_item_remove', (payload) => this.removeChecklist(payload.index));
+    AppEvents.on('card:insert_markdown', (payload) => this.insertMarkdown(payload.prefix, payload.suffix));
+    AppEvents.on('card:generate_ai_desc', () => { if(typeof generateAIDescription === 'function') generateAIDescription() });
+    AppEvents.on('card:image_selected', (payload) => {
+      const file = payload.element.files[0];
+      if (typeof handleImageSelection === 'function') handleImageSelection(file);
+    });
   }
 
   async saveActiveCard() {
@@ -2147,6 +2179,38 @@ class CardController {
       showSystemToast('Архивировано', 'Задача перемещена в хранилище.', 'archive', 'text-amber-500', 'bg-amber-50');
     });
   }
+
+  // --- Новые методы, перенесенные из глобальной области ---
+
+  addChecklistItem() {
+    const input = document.getElementById('newChecklistItem');
+    const text = input.value.trim();
+    if (!text) return;
+    activeChecklist.push({ id: Date.now(), text, isCompleted: false });
+    input.value = '';
+    if (typeof renderChecklistEdit === 'function') renderChecklistEdit();
+  }
+
+  toggleChecklist(index) {
+    activeChecklist[index].isCompleted = !activeChecklist[index].isCompleted;
+    if (activeChecklist[index].isCompleted && typeof fireConfetti === 'function') fireConfetti();
+    if (typeof renderChecklistEdit === 'function') renderChecklistEdit();
+  }
+
+  removeChecklist(index) {
+    activeChecklist.splice(index, 1);
+    if (typeof renderChecklistEdit === 'function') renderChecklistEdit();
+  }
+
+  insertMarkdown(prefix, suffix) {
+    const textarea = document.getElementById('editDescription');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selected = text.substring(start, end);
+    textarea.value = text.substring(0, start) + prefix + selected + suffix + text.substring(end);
+    textarea.focus();
+  }
 }
 
 // Инициализируем контроллер
@@ -2183,10 +2247,10 @@ function renderChecklistEdit() {
         <i data-lucide="grip-vertical" class="w-4 h-4"></i>
       </div>
       <label class="flex items-start gap-3 cursor-pointer flex-1 px-2 min-w-0">
-        <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onchange="toggleChecklistItemEdit(${index})" class="w-4 h-4 text-blue-600 rounded border-gray-300 flex-shrink-0 mt-0.5" />
+        <input type="checkbox" ${item.isCompleted ? 'checked' : ''} data-change-action="card:checklist_item_toggle" data-index="${index}" class="w-4 h-4 text-blue-600 rounded border-gray-300 flex-shrink-0 mt-0.5" />
         <span class="text-sm ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} break-words flex-1 leading-tight">${item.text}</span>
       </label>
-      <button onclick="removeChecklistItem(${index})" class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex-shrink-0 mt-[-4px]">
+      <button data-action="card:checklist_item_remove" data-index="${index}" class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex-shrink-0 mt-[-4px]">
         <i data-lucide="trash-2" class="w-4 h-4"></i>
       </button>
     </div>
@@ -2710,16 +2774,71 @@ async function generateAIQuickDescription() {
   }
 }
 
-// Закрытие модалок по клику на фон
-window.addEventListener('click', (e) => {
-  if (e.target.id === 'viewCardModal') closeViewModal();
-  if (e.target.id === 'editCardModal') closeEditModal();
-  if (e.target.id === 'colModal') closeColModal();
-  if (e.target.id === 'quickAddModal') closeQuickAdd();
-  if (e.target.id === 'fileTypeModal') closeFileTypeModal();
-  if (e.target.id === 'customConfirmModal') closeConfirmModal();
-  if (e.target.id === 'voiceMemoModal') closeVoiceMemoModal();
-  if (e.target.id === 'pollStatsModal') closePollStatsModal();
+// ==========================================
+// MODULE: GLOBAL ACTION DISPATCHER
+// ==========================================
+class ActionDispatcher {
+  constructor() {
+    this.bindEvents();
+  }
+
+  bindEvents() {
+    // 1. Обработка всех кликов (data-action)
+    document.addEventListener('click', (e) => {
+      const actionEl = e.target.closest('[data-action]');
+      if (!actionEl) return;
+      
+      // Не делаем preventDefault для чекбоксов, иначе они не будут визуально нажиматься
+      if (e.target.type !== 'checkbox') e.preventDefault();
+
+      const action = actionEl.getAttribute('data-action');
+      const payload = this.extractPayload(actionEl);
+      
+      AppEvents.emit(action, payload);
+    });
+
+    // 2. Обработка клавиши Enter (data-enter-action)
+    document.addEventListener('keypress', (e) => {
+      if (e.key !== 'Enter') return;
+      
+      const actionEl = e.target.closest('[data-enter-action]');
+      if (!actionEl) return;
+      
+      e.preventDefault();
+      const action = actionEl.getAttribute('data-enter-action');
+      const payload = this.extractPayload(actionEl);
+      
+      AppEvents.emit(action, payload);
+    });
+
+    // 3. Обработка изменений инпутов/файлов (data-change-action)
+    document.addEventListener('change', (e) => {
+      const actionEl = e.target.closest('[data-change-action]');
+      if (!actionEl) return;
+      
+      const action = actionEl.getAttribute('data-change-action');
+      const payload = this.extractPayload(actionEl);
+      
+      AppEvents.emit(action, payload);
+    });
+  }
+
+  // Утилита: собирает все data-* атрибуты элемента в объект (кроме самого action)
+  extractPayload(element) {
+    const payload = { element }; // Всегда передаем сам элемент
+    Array.from(element.attributes).forEach(attr => {
+      if (attr.name.startsWith('data-') && !attr.name.includes('action')) {
+        const key = attr.name.replace('data-', '').replace(/-([a-z])/g, g => g[1].toUpperCase()); // camelCase
+        payload[key] = attr.value;
+      }
+    });
+    return payload;
+  }
+}
+
+// Запускаем Диспетчер
+document.addEventListener('DOMContentLoaded', () => {
+  window.AppDispatcher = new ActionDispatcher();
 });
 
 let toastTimeout;
