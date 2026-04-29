@@ -2058,9 +2058,16 @@ async function openProfileSettings() {
     const data = userDoc.exists ? userDoc.data() : {};
     const rewards = data.rewardsClaimed || [];
 
-    // Обновляем баланс и тариф в модалке
+    // Обновляем баланс
     document.getElementById('profileCoinsVal').innerText = data.coins || 0;
-    document.getElementById('profilePlanVal').innerText = (data.plan || 'free').toUpperCase();
+    
+    // ЭНТЕРПРАЙЗ: Расчет тарифа и оставшихся дней для прозрачности UI
+    let planText = (data.plan || 'free').toUpperCase();
+    if (data.planExpiresAt) {
+      const daysLeft = Math.ceil((data.planExpiresAt - Date.now()) / (1000 * 60 * 60 * 24));
+      if (daysLeft > 0) planText += ` (${daysLeft} ДН.)`;
+    }
+    document.getElementById('profilePlanVal').innerText = planText;
 
     // 1. Смена аватара (уровень Friend+)
     if (rewards.includes('friend') || rewards.includes('partner') || rewards.includes('ambassador')) {
