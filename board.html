@@ -1300,31 +1300,72 @@ function renderMembersSidebar() {
   const container = document.getElementById('membersList');
   if (!boardData.users) return;
   const isOwner = boardData.owner === currentUser.id;
+  
   container.innerHTML = Object.entries(boardData.users).map(([uid, user]) => {
     const isMe = uid === currentUser.id;
-    const roleBadge = user.role === 'owner' ? '<span class="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-md font-bold">Владелец</span>' : '';
+    const roleBadge = user.role === 'owner' ? '<span class="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 px-2 py-0.5 rounded-md font-bold">Владелец</span>' : '';
+    
+    // ЭНТЕРПРАЙЗ: Индикатор онлайна. Вы (isMe) всегда онлайн с пульсирующей точкой.
+    // Остальные участники будут подсвечиваться серым (offline), пока мы не внедрим WebSocket Presence.
+    const onlineIndicator = isMe 
+        ? `<div class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-gray-800 rounded-full z-20 shadow-sm"><div class="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-75"></div></div>`
+        : `<div class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-gray-300 dark:bg-gray-600 border-2 border-white dark:border-gray-800 rounded-full z-20 shadow-sm" title="Офлайн"></div>`;
+
     let roleSelect = '';
+    let deleteBtn = '';
+    
     if (isOwner && user.role !== 'owner') {
       roleSelect = `
-        <select onchange="changeUserRole('${uid}', this.value)" class="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1.5 outline-none cursor-pointer">
+        <select onchange="changeUserRole('${uid}', this.value)" class="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1.5 outline-none cursor-pointer hover:border-blue-400 transition-colors">
           <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>Редактор</option>
           <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Читатель</option>
         </select>
       `;
+      deleteBtn = `
+        <button onclick="removeMember('${uid}', '${user.name}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ml-1 border border-transparent hover:border-red-100 dark:hover:border-red-800/50" title="Исключить из проекта">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      `;
     } else if (user.role !== 'owner') {
-      roleSelect = `<span class="text-xs text-gray-400 font-medium px-2">${user.role === 'editor' ? 'Редактор' : 'Читатель'}</span>`;
+      roleSelect = `<span class="text-[10px] text-gray-500 font-bold px-2 py-1 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 uppercase tracking-widest">${user.role === 'editor' ? 'Редактор' : 'Читатель'}</span>`;
     }
+
     return `
-      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-        ${getAvatarHTML(user, 'w-10 h-10')}
+      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800 transition-colors group">
+        <div class="relative">
+            ${getAvatarHTML(user, 'w-10 h-10')}
+            ${onlineIndicator}
+        </div>
         <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 mb-0.5"><span class="font-bold text-sm text-gray-900 dark:text-white truncate">${user.name} ${isMe ? '(Вы)' : ''}</span></div>
+          <div class="flex items-center gap-2 mb-1"><span class="font-bold text-sm text-gray-900 dark:text-white truncate">${user.name} ${isMe ? '<span class="text-xs font-normal text-gray-400">(Вы)</span>' : ''}</span></div>
           ${roleBadge}
         </div>
-        ${roleSelect}
+        <div class="flex items-center">
+            ${roleSelect}
+            ${deleteBtn}
+        </div>
       </div>
     `;
   }).join('');
+  lucide.createIcons();
+}
+
+// ЭНТЕРПРАЙЗ: Функция удаления участника с проверкой и подтверждением
+function removeMember(uid, name) {
+  if (isLocalBoard) return;
+  openConfirmModal('Исключить из команды?', `Вы уверены, что хотите удалить пользователя ${name} из проекта? Он мгновенно потеряет доступ к доске и всем задачам.`, 'Исключить', true, async () => {
+    try {
+        const docRef = db.collection("boards").doc(BOARD_ID);
+        await docRef.update({
+            members: firebase.firestore.FieldValue.arrayRemove(uid),
+            [`users.${uid}`]: firebase.firestore.FieldValue.delete()
+        });
+        showSystemToast('Участник удален', `${name} больше не имеет доступа к проекту.`, 'user-minus', 'text-red-500', 'bg-red-50');
+    } catch (error) {
+        console.error("Ошибка удаления:", error);
+        showSystemToast('Ошибка', 'Не удалось удалить участника.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    }
+  });
 }
 
 function renderSingleMessage(msg, container, msgId) {
