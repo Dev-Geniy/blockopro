@@ -1349,8 +1349,397 @@ function render() {
   if (typeof checkDeadlines === 'function') checkDeadlines(columns);
 }
 
-// ... остальной вспомогательный код остается чистым и нетронутым ...
+// --- СИСТЕМА ДЕДЛАЙНОВ И ПУШЕЙ ---
+function checkDeadlines(columns) {
+  const now = new Date().getTime();
+  const dayInMs = 24 * 60 * 60 * 1000;
+  let notifiedTasks = JSON.parse(sessionStorage.getItem('notified_tasks') || '[]');
 
+  columns.forEach(col => {
+    col.cards.forEach(card => {
+      if (card.dueDate) {
+        const deadline = new Date(card.dueDate).getTime();
+        const diff = deadline - now;
+        if (diff > 0 && diff <= dayInMs && !notifiedTasks.includes(card.id)) {
+          sendPushNotification(`Дедлайн близко!`, `Задача "${card.title}" истекает менее чем через 24 часа.`);
+          notifiedTasks.push(card.id);
+          showSystemToast('Внимание', `Срок задачи "${card.title}" почти истек!`, 'clock', 'text-rose-500', 'bg-rose-50');
+        }
+      }
+    });
+  });
+  sessionStorage.setItem('notified_tasks', JSON.stringify(notifiedTasks));
+}
+
+function sendPushNotification(title, body) {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "granted") {
+    navigator.serviceWorker.ready.then(registration => {
+      registration.showNotification(title, {
+        body: body,
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%233b82f6" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
+      });
+    });
+  } else if (Notification.permission !== "denied") {
+    Notification.requestPermission();
+  }
+}
+
+// --- ЛОГИКА ОПРОСОВ (POLLS) И КНОПКИ ЕЩЕ ---
+let activeColForMore = null;
+
+function openMoreAddModal(colId) {
+  activeColForMore = colId;
+  const el = document.getElementById('moreAddModal');
+  const content = document.getElementById('moreAddContent');
+  el.classList.remove('hidden');
+  setTimeout(() => { el.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+  lucide.createIcons();
+}
+
+function closeMoreAddModal() {
+  const el = document.getElementById('moreAddModal');
+  const content = document.getElementById('moreAddContent');
+  el.classList.add('opacity-0');
+  content.classList.add('scale-95');
+  setTimeout(() => el.classList.add('hidden'), 300);
+}
+
+function preparePollCreation() {
+  closeMoreAddModal();
+  const modal = document.getElementById('pollConstructorModal');
+  const content = document.getElementById('pollConstructorContent');
+  modal.classList.remove('hidden');
+  setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+  document.getElementById('pollQuestion').focus();
+}
+
+function closePollConstructor() {
+  const modal = document.getElementById('pollConstructorModal');
+  const content = document.getElementById('pollConstructorContent');
+  modal.classList.add('opacity-0');
+  content.classList.add('scale-95');
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    document.getElementById('pollQuestion').value = "";
+    document.getElementById('pollOptionsList').innerHTML = `
+      <input type="text" class="poll-opt w-full px-5 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:border-purple-500 transition-colors dark:text-white" placeholder="Вариант 1">
+      <input type="text" class="poll-opt w-full px-5 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:border-purple-500 transition-colors dark:text-white" placeholder="Вариант 2">
+    `;
+    document.getElementById('pollAnonymous').checked = false;
+  }, 300);
+}
+
+function addPollOptionField() {
+  const container = document.getElementById('pollOptionsList');
+  const input = document.createElement('input');
+  input.className = "poll-opt w-full px-5 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:border-purple-500 transition-colors dark:text-white mt-2";
+  input.placeholder = `Вариант ${container.children.length + 1}`;
+  container.appendChild(input);
+  input.focus();
+}
+
+function savePoll() {
+  const question = document.getElementById('pollQuestion').value.trim();
+  const inputs = document.querySelectorAll('.poll-opt');
+  const options = Array.from(inputs).map(i => i.value.trim()).filter(v => v !== "");
+  
+  if (!question || options.length < 2) {
+    return showSystemToast('Ошибка', 'Введите вопрос и минимум 2 варианта.', 'alert-circle', 'text-red-500', 'bg-red-50');
+  }
+
+  const pollData = {
+    id: 'poll_' + Date.now(), title: question, type: 'poll',
+    options: options.map(opt => ({ text: opt, votes: [] })),
+    isAnonymous: document.getElementById('pollAnonymous').checked,
+    author: currentUser, archived: false, createdAt: new Date().toISOString()
+  };
+
+  const colIndex = columns.findIndex(c => c.id === activeColForMore);
+  columns[colIndex].cards.push(pollData);
+  persist(); closePollConstructor();
+}
+
+function votePoll(colId, cardId, optionIndex) {
+  if (!currentUser || !currentUser.id) return;
+  let voted = false;
+  const uid = currentUser.id;
+
+  columns = columns.map(col => {
+    if (col.id == colId) {
+      const updatedCards = col.cards.map(card => {
+        if (card.id == cardId && card.type === 'poll') {
+          card.options = card.options.map((opt, idx) => {
+            const cleanVotes = (opt.votes || []).filter(v => v !== uid);
+            if (idx === optionIndex) {
+              const wasAlreadyVoted = opt.votes && opt.votes.includes(uid);
+              if (!wasAlreadyVoted) { cleanVotes.push(uid); voted = true; }
+            }
+            return { ...opt, votes: cleanVotes };
+          });
+        }
+        return card;
+      });
+      return { ...col, cards: updatedCards };
+    }
+    return col;
+  });
+
+  if (voted) fireConfetti();
+  persist(); render(); 
+}
+
+function renderPollComments() {
+  const list = document.getElementById('pollCommentsList');
+  const poll = columns.find(c => c.id == activePollData.colId).cards.find(c => c.id == activePollData.cardId);
+  if (!poll.comments || poll.comments.length === 0) {
+    list.innerHTML = '<div class="text-gray-400 text-center py-4 text-xs">Обсуждений пока нет. Будьте первыми!</div>';
+    return;
+  }
+  list.innerHTML = poll.comments.map(c => `
+    <div class="flex gap-3 bg-gray-50/50 dark:bg-gray-900/40 p-3 rounded-2xl border border-gray-100 dark:border-gray-800">
+      ${getAvatarHTML(c.user, "w-8 h-8")}
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2 mb-0.5"><span class="font-bold text-[11px] text-gray-900 dark:text-gray-200 truncate">${c.user.name}</span><span class="text-[9px] text-gray-400">${c.time}</span></div>
+        <div class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed break-words">${c.text}</div>
+      </div>
+    </div>
+  `).join('');
+  setTimeout(() => { list.scrollTop = list.scrollHeight; }, 50);
+}
+
+function addCommentToPoll() {
+  const input = document.getElementById('pollCommentInput');
+  const text = input.value.trim();
+  if (!text || !activePollData) return;
+  columns = columns.map(col => {
+    if (col.id == activePollData.colId) {
+      col.cards = col.cards.map(c => {
+        if (c.id == activePollData.cardId) {
+          if (!c.comments) c.comments = [];
+          c.comments.push({ text, user: currentUser, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+        }
+        return c;
+      });
+    }
+    return col;
+  });
+  input.value = ''; persist(); renderPollComments(); lucide.createIcons();
+}
+
+function closePollStatsModal() {
+  const modal = document.getElementById('pollStatsModal');
+  const content = document.getElementById('pollStatsContent');
+  if(modal) { modal.classList.add('opacity-0'); content.classList.add('scale-95'); setTimeout(() => modal.classList.add('hidden'), 300); }
+}
+
+// --- ЛОГИКА ГОЛОСОВЫХ ЗАМЕТОК ---
+let mediaRecorder; let audioChunks = []; let audioBase64 = null; let isRecording = false;
+
+function prepareVoiceMemoCreation() {
+  closeMoreAddModal();
+  const modal = document.getElementById('voiceMemoModal');
+  const content = document.getElementById('voiceMemoContent');
+  modal.classList.remove('hidden');
+  setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+  audioChunks = []; audioBase64 = null;
+  document.getElementById('voiceMemoTitle').value = '';
+  document.getElementById('audioPreviewContainer').classList.add('hidden');
+  document.getElementById('recordBtn').classList.remove('hidden');
+  document.getElementById('stopRecordBtn').classList.add('hidden');
+  document.getElementById('saveAudioBtn').disabled = true;
+  document.getElementById('recordStatus').innerText = 'Нажмите для записи';
+  document.getElementById('recordStatus').classList.remove('text-red-500', 'animate-pulse');
+  lucide.createIcons();
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = () => {
+        audioBase64 = reader.result;
+        document.getElementById('audioPreview').src = audioBase64;
+        document.getElementById('audioPreviewContainer').classList.remove('hidden');
+        document.getElementById('saveAudioBtn').disabled = false;
+      };
+      stream.getTracks().forEach(track => track.stop());
+    };
+    mediaRecorder.start(); isRecording = true;
+    document.getElementById('recordBtn').classList.add('hidden');
+    document.getElementById('stopRecordBtn').classList.remove('hidden');
+    document.getElementById('recordStatus').innerText = 'Идет запись...';
+    document.getElementById('recordStatus').classList.add('text-red-500', 'animate-pulse');
+  } catch (err) {
+    showSystemToast('Ошибка', 'Нет доступа к микрофону.', 'mic-off', 'text-red-500', 'bg-red-50');
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && isRecording) {
+    mediaRecorder.stop(); isRecording = false;
+    document.getElementById('stopRecordBtn').classList.add('hidden');
+    document.getElementById('recordBtn').classList.remove('hidden');
+    document.getElementById('recordStatus').innerText = 'Запись завершена';
+    document.getElementById('recordStatus').classList.remove('text-red-500', 'animate-pulse');
+  }
+}
+
+function saveVoiceMemo() {
+  if (!audioBase64) return showSystemToast('Ошибка', 'Сначала запишите аудио.', 'mic-off', 'text-red-500', 'bg-red-50');
+  const title = document.getElementById('voiceMemoTitle').value.trim() || 'Голосовая заметка';
+  const audioCard = {
+    id: 'audio_' + Date.now(), title: title, type: 'audio', audioData: audioBase64,
+    author: currentUser, archived: false, createdAt: new Date().toISOString(), comments: []
+  };
+  const colIndex = columns.findIndex(c => c.id === activeColForMore);
+  if (colIndex !== -1) {
+    columns[colIndex].cards.push(audioCard);
+    persist(); render(); 
+    AppEvents.emit('ui:modal:closed', 'voiceMemoModal');
+    showSystemToast('Добавлено', 'Голосовая заметка сохранена.', 'mic', 'text-emerald-500', 'bg-emerald-50');
+  }
+}
+
+function updatePlayerIcon(btn, iconName) {
+  const oldIcon = btn.querySelector('.btn-icon');
+  if (!oldIcon) return;
+  const classes = oldIcon.getAttribute('class');
+  const newIcon = document.createElement('i');
+  newIcon.setAttribute('data-lucide', iconName);
+  newIcon.setAttribute('class', classes);
+  oldIcon.parentNode.replaceChild(newIcon, oldIcon);
+  lucide.createIcons({ nameAttr: 'data-lucide' });
+}
+
+function toggleAudioPlayer(btn, colId, cardId) {
+  const progressBar = btn.parentElement.querySelector('.audio-progress');
+  const col = columns.find(c => c.id == colId);
+  if (!col) return;
+  const card = col.cards.find(c => c.id == cardId);
+  if (!card || !card.audioData) return;
+  const audioSrc = card.audioData;
+
+  if (currentPlayingAudio && currentPlayingAudio.src === audioSrc) {
+    if (currentPlayingAudio.paused) { currentPlayingAudio.play(); updatePlayerIcon(btn, 'pause'); } 
+    else { currentPlayingAudio.pause(); updatePlayerIcon(btn, 'play'); }
+  } else {
+    if (currentPlayingAudio) {
+      currentPlayingAudio.pause();
+      if (currentAudioBtn) updatePlayerIcon(currentAudioBtn, 'play');
+    }
+    currentPlayingAudio = new Audio(audioSrc);
+    currentAudioBtn = btn;
+    currentPlayingAudio.play().then(() => { updatePlayerIcon(btn, 'pause'); }).catch(err => { showSystemToast('Ошибка', 'Не удалось воспроизвести.', 'alert-triangle', 'text-red-500', 'bg-red-50'); });
+    currentPlayingAudio.ontimeupdate = () => { if (progressBar) progressBar.style.width = ((currentPlayingAudio.currentTime / currentPlayingAudio.duration) * 100) + '%'; };
+    currentPlayingAudio.onended = () => { updatePlayerIcon(btn, 'play'); if (progressBar) progressBar.style.width = '0%'; };
+  }
+}
+
+// --- ЛОГИКА ТАБЛИЦ (EXCEL STYLE) ---
+let activeTableData = null;
+
+function prepareTableCreation() {
+  closeMoreAddModal();
+  const modal = document.getElementById('tableConstructorModal');
+  const content = document.getElementById('tableConstructorContent');
+  modal.classList.remove('hidden');
+  setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+  document.getElementById('tableTitle').focus();
+}
+
+function closeTableConstructor() {
+  const modal = document.getElementById('tableConstructorModal');
+  const content = document.getElementById('tableConstructorContent');
+  modal.classList.add('opacity-0');
+  content.classList.add('scale-95');
+  setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function saveNewTable() {
+  const title = document.getElementById('tableTitle').value.trim() || 'Новая таблица';
+  const cols = parseInt(document.getElementById('tableCols').value) || 4;
+  const rows = parseInt(document.getElementById('tableRows').value) || 5;
+  const emptyData = Array(rows).fill(null).map(() => Array(cols).fill(""));
+  const tableCard = {
+    id: 'table_' + Date.now(), title: title, type: 'table', cols: cols, rows: rows,
+    tableData: emptyData, author: currentUser, archived: false, createdAt: new Date().toISOString(), comments: []
+  };
+  const colIndex = columns.findIndex(c => c.id === activeColForMore);
+  columns[colIndex].cards.push(tableCard);
+  persist(); closeTableConstructor();
+}
+
+function openTableEditor(colId, cardId) {
+  const col = columns.find(c => c.id == colId);
+  const card = col.cards.find(c => c.id == cardId);
+  activeTableData = JSON.parse(JSON.stringify(card));
+  activeTableData.colId = colId;
+  activeTableData.cardId = cardId;
+  document.getElementById('fullTableTitle').innerText = activeTableData.title;
+  renderExcelTable();
+  const editor = document.getElementById('tableFullEditor');
+  editor.classList.remove('hidden');
+  setTimeout(() => editor.classList.remove('opacity-0'), 10);
+}
+
+function renderExcelTable() {
+  const thead = document.getElementById('excelThead');
+  const tbody = document.getElementById('excelTbody');
+  let headHtml = '<tr><th class="p-3 border-r dark:border-gray-700 bg-gray-100 dark:bg-gray-900 w-10 text-[10px] font-black text-gray-400">#</th>';
+  for (let c = 0; c < activeTableData.cols; c++) { headHtml += `<th class="p-3 border-r dark:border-gray-700 text-left text-[10px] font-black uppercase text-gray-500 tracking-widest">Колонка ${c + 1}</th>`; }
+  thead.innerHTML = headHtml + '</tr>';
+  let bodyHtml = '';
+  for (let r = 0; r < activeTableData.rows; r++) {
+    bodyHtml += `<tr class="border-b dark:border-gray-700 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">`;
+    bodyHtml += `<td class="p-3 border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 text-center text-[10px] font-bold text-gray-400">${r + 1}</td>`;
+    for (let c = 0; c < activeTableData.cols; c++) {
+      const val = activeTableData.tableData[r][c] || "";
+      bodyHtml += `<td class="p-0 border-r dark:border-gray-700"><input type="text" value="${val}" oninput="updateTableCell(${r}, ${c}, this.value)" class="w-full h-full p-3 bg-transparent outline-none text-sm dark:text-white focus:bg-white dark:focus:bg-gray-700 transition-all border-2 border-transparent focus:border-blue-500" /></td>`;
+    }
+    bodyHtml += `</tr>`;
+  }
+  tbody.innerHTML = bodyHtml;
+}
+
+function updateTableCell(r, c, val) { activeTableData.tableData[r][c] = val; }
+
+function closeTableEditor() {
+  const editor = document.getElementById('tableFullEditor');
+  editor.classList.add('opacity-0');
+  setTimeout(() => { editor.classList.add('hidden'); activeTableData = null; }, 300);
+}
+
+function commitTableToDb() {
+  columns = columns.map(col => {
+    if (col.id == activeTableData.colId) {
+      col.cards = col.cards.map(c => {
+        if (c.id == activeTableData.cardId) { return { ...c, tableData: activeTableData.tableData }; }
+        return c;
+      });
+    }
+    return col;
+  });
+  persist();
+  showSystemToast('Таблица сохранена', 'Данные успешно синхронизированы.', 'check-circle', 'text-blue-500', 'bg-blue-50');
+  closeTableEditor();
+}
+
+// --- ЛОГИКА КАСТОМНЫХ ПОДТВЕРЖДЕНИЙ ---
+function executeConfirm() {
+  if (confirmCallback) confirmCallback();
+  AppEvents.emit('ui:modal:closed', 'customConfirmModal');
+}
+
+function fireConfetti() {
+  confetti({ particleCount: 150, spread: 100, origin: { y: 0 }, zIndex: 9999, colors: ['#3b82f6', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6'] });
+}
 </script>
 </body>
 </html>
