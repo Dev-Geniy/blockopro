@@ -112,23 +112,23 @@
 </header>
 
 <div id="mobileMenuDropdown" class="hidden md:hidden absolute top-[72px] left-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 flex flex-col gap-4 z-40 shadow-xl origin-top">
-  <div onclick="copyShareLink(); toggleMobileMenu()" class="flex items-center bg-blue-50 dark:bg-blue-900/30 rounded-xl px-4 py-3 cursor-pointer border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-400">
+  <div data-action="ui:mobile_menu:share" class="flex items-center bg-blue-50 dark:bg-blue-900/30 rounded-xl px-4 py-3 cursor-pointer border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors">
     <i data-lucide="link" class="w-4 h-4 mr-3"></i>
     <div class="flex-1 truncate text-xs font-bold">Скопировать инвайт</div>
   </div>
   <div class="relative">
     <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-    <input type="text" oninput="document.getElementById('boardSearch').value=this.value; handleSearchAndFilter()" placeholder="Поиск задач..." class="w-full pl-10 pr-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm outline-none dark:text-white">
+    <input type="text" data-input-action="ui:mobile_menu:search" placeholder="Поиск задач..." class="w-full pl-10 pr-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm outline-none dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow">
   </div>
-  <button onclick="window.location.href='archive.html?b=' + BOARD_ID" class="w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-900/30 rounded-xl flex justify-center items-center gap-2 text-sm text-gray-700 dark:text-gray-300 font-bold transition-colors">
+  <button data-action="ui:mobile_menu:archive" class="w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-900/30 rounded-xl flex justify-center items-center gap-2 text-sm text-gray-700 dark:text-gray-300 font-bold transition-colors">
     <i data-lucide="archive" class="w-4 h-4"></i> Архив проекта
   </button>
   <div class="flex gap-2">
-    <button onclick="toggleMembers(); toggleMobileMenu()" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl flex justify-center items-center gap-2 text-sm text-gray-700 dark:text-gray-300 font-bold"><i data-lucide="users" class="w-4 h-4"></i> Команда</button>
-    <button onclick="toggleSettings(); toggleMobileMenu()" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl flex justify-center items-center gap-2 text-sm text-gray-700 dark:text-gray-300 font-bold"><i data-lucide="settings" class="w-4 h-4"></i> Настройки</button>
+    <button data-action="ui:mobile_menu:team" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl flex justify-center items-center gap-2 text-sm text-gray-700 dark:text-gray-300 font-bold transition-colors"><i data-lucide="users" class="w-4 h-4"></i> Команда</button>
+    <button data-action="ui:mobile_menu:settings" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl flex justify-center items-center gap-2 text-sm text-gray-700 dark:text-gray-300 font-bold transition-colors"><i data-lucide="settings" class="w-4 h-4"></i> Настройки</button>
   </div>
 </div>
-
+  
 <div class="flex flex-1 overflow-hidden relative">
   <main id="mainScroll" class="flex-1 overflow-x-auto overflow-y-hidden p-6 h-full cursor-grab active:cursor-grabbing w-full">
     <div id="board" class="flex gap-6 h-full items-start pb-4 min-w-max"></div>
@@ -137,7 +137,7 @@
   <aside id="chatSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-30 shadow-2xl">
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="message-circle" class="w-4 h-4 text-blue-500"></i> Чат проекта</h3>
-      <button onclick="toggleChat()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <button data-action="ui:chat:toggled" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     <div id="chatMessages" class="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 text-sm flex flex-col"></div>
     <div class="p-3 border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 flex gap-2 items-center">
@@ -150,15 +150,13 @@
     </div>
   </aside>
   
-<aside id="settingsSidebar" class="fixed right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-[60] shadow-2xl">
-    
+  <aside id="settingsSidebar" class="fixed right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-[60] shadow-2xl">
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="settings" class="w-4 h-4 text-blue-500"></i> Настройки доски</h3>
-      <button onclick="toggleSettings()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <button data-action="ui:settings:toggled" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     
     <div class="flex-1 overflow-y-auto p-6 space-y-8 hide-scroll">
-      
       <div>
         <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Обои проекта</h4>
         <div class="flex gap-3 mb-2">
@@ -170,32 +168,31 @@
             <input type="file" id="boardBgUpload" class="hidden" accept="image/*" />
           </label>
           
-          <button onclick="setRandomBackground()" class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-2xl cursor-pointer h-24 transition-all group bg-gray-50/50 dark:bg-gray-900/30">
+          <button data-action="board:bg_random" class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-2xl cursor-pointer h-24 transition-all group bg-gray-50/50 dark:bg-gray-900/30">
             <i data-lucide="shuffle" class="w-6 h-6 text-purple-500 mb-1 group-hover:scale-110 transition-transform"></i>
             <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400 group-hover:text-purple-500 transition-colors">Случайный</span>
           </button>
         </div>
         <div id="bgUploadStatus" class="text-[10px] font-bold text-blue-500 text-center h-4 mb-2 transition-all"></div>
-        <button onclick="resetBoardBackground()" class="w-full py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-xs font-bold transition-colors">Сбросить фон</button>
+        <button data-action="board:bg_reset" class="w-full py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-xs font-bold transition-colors">Сбросить фон</button>
       </div>
 
       <div>
         <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Теги доски</h4>
         <div id="settingsTagsList" class="space-y-2 mb-4 max-h-48 overflow-y-auto hide-scroll"></div>
         <div id="newTagForm" class="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-gray-100 dark:border-gray-800 hidden">
-          <input id="newTagName" placeholder="Название тега..." class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none text-sm dark:text-white mb-3 focus:ring-2 focus:ring-blue-500 transition-shadow" />
+          <input id="newTagName" data-enter-action="board:tag_add" placeholder="Название тега..." class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none text-sm dark:text-white mb-3 focus:ring-2 focus:ring-blue-500 transition-shadow" />
           <div class="flex items-center gap-2 mb-3 overflow-x-auto hide-scroll pb-1" id="newTagColorPicker"></div>
-          <button onclick="addNewCustomTag()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-colors active:scale-95 shadow-md">Создать тег</button>
+          <button data-action="board:tag_add" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-colors active:scale-95 shadow-md">Создать тег</button>
         </div>
       </div>
-
     </div>
   </aside>
   
   <aside id="membersSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl">
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="users" class="w-4 h-4 text-blue-500"></i> Команда проекта</h3>
-      <button onclick="toggleMembers()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <button data-action="ui:members:toggled" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     <div class="p-4 bg-blue-50 dark:bg-blue-900/20 text-xs text-blue-600 dark:text-blue-400 border-b border-blue-100 dark:border-blue-800/50">Только владелец доски может изменять роли.</div>
     <div id="membersList" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
@@ -204,28 +201,35 @@
 
 <div id="viewCardModal" class="hidden fixed inset-0 z-50 flex justify-center bg-gray-900/40 dark:bg-black/60 glass-modal overflow-y-auto pt-10 pb-10 opacity-0 transition-opacity duration-200">
   <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-2xl shadow-2xl relative my-auto border border-gray-200 dark:border-gray-700">
-    <button onclick="closeViewModal()" class="absolute top-6 right-6 text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 p-2 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <button data-action="ui:modal:closed" data-modal="viewCardModal" class="absolute top-6 right-6 text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
     <div class="flex items-center gap-2 mb-4 text-xs font-medium text-gray-500 dark:text-gray-400"><img id="viewAuthorAvatar" src="" class="w-6 h-6 rounded-full bg-gray-200 shadow-sm" /><span id="viewAuthorName" class="text-gray-800 dark:text-gray-200">User</span> создал(а) задачу</div>
     <div id="viewTags" class="flex gap-2 mb-3 flex-wrap"></div>
     <h2 id="viewTitle" class="text-3xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"></h2>
     <img id="viewImage" src="" class="w-full rounded-xl mb-6 hidden object-cover max-h-96 border border-gray-200 dark:border-gray-700 shadow-sm" />
     <div class="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-6 mb-8 border border-gray-100 dark:border-gray-800"><div id="viewDescription" class="md-content text-sm text-gray-700 dark:text-gray-300 leading-relaxed"></div></div>
     <div id="viewChecklistContainer" class="mb-8"></div>
+    
+    <div id="cvActionsPanel" class="flex justify-between items-center mb-6 pb-6 border-b border-gray-100 dark:border-gray-700/50">
+       <div class="flex gap-2">
+         <button data-action="card:view_delete" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-2 rounded-xl text-xs font-bold transition-colors"><i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>Удалить</button>
+         <button data-action="card:view_archive" class="text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-3 py-2 rounded-xl text-xs font-bold transition-colors"><i data-lucide="archive" class="w-4 h-4 inline mr-1"></i>В архив</button>
+       </div>
+       <button data-action="card:view_edit" id="cvEditBtn" class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl text-xs font-bold transition-colors"><i data-lucide="edit-3" class="w-4 h-4 inline mr-1"></i>Редактировать</button>
+    </div>
+
     <div id="viewChatContainer">
       <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><i data-lucide="message-square" class="w-4 h-4 text-blue-500"></i> Обсуждение</h3>
       <div id="viewCommentsList" class="space-y-4 mb-4 text-sm"></div>
       <div class="flex gap-3 pt-2">
         <img id="commentMyAvatar" src="" class="w-10 h-10 rounded-full flex-shrink-0 shadow-sm" />
         <div class="flex-1 flex gap-2">
-       
-           <input id="viewCommentInput" data-enter-action="card:comment_added" placeholder="Оставьте комментарий..." class="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500" />
-          <button data-action="card:comment_added" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm transition-colors"><i data-lucide="send" class="w-4 h-4"></i></button>
+          <input id="viewCommentInput" data-enter-action="card:view_comment_add" placeholder="Оставьте комментарий..." class="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500" />
+          <button data-action="card:view_comment_add" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm transition-colors"><i data-lucide="send" class="w-4 h-4"></i></button>
         </div>
       </div>
     </div>
   </div>
 </div>
-
 <div id="editCardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200">
   <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700">
     
@@ -1261,8 +1265,20 @@ class SidebarController {
         AppEvents.emit('ui:members:toggled');
       }
     });
-  }
 
+    // 4. Обработка живого ввода текста (data-input-action)
+    document.addEventListener('input', (e) => {
+      const actionEl = e.target.closest('[data-input-action]');
+      if (!actionEl) return;
+      
+      const action = actionEl.getAttribute('data-input-action');
+      const payload = this.extractPayload(actionEl);
+      payload.value = e.target.value; // Автоматически закидываем текст в payload
+      
+      AppEvents.emit(action, payload);
+    });
+  }
+  
   toggleChat() {
     if (!this.chatContainer) return;
     const isHidden = this.chatContainer.classList.contains('translate-x-full');
@@ -1397,10 +1413,10 @@ function renderSingleMessage(msg, container, msgId) {
   `;
   lucide.createIcons();
 }
+
 // ==========================================
-// MODULE: GLOBAL UI & SEARCH CONTROLLER
+// MODULE: GLOBAL UI & SETTINGS CONTROLLER
 // ==========================================
-// Заменяет все глобальные функции шапки и убивает render() при поиске
 class GlobalUIController {
   constructor() {
     this.searchInput = document.getElementById('boardSearch');
@@ -1408,7 +1424,6 @@ class GlobalUIController {
     this.bindEvents();
   }
 
-  // Вспомогательная функция debounce
   debounce(func, timeout = 300) {
     let timer;
     return (...args) => {
@@ -1418,7 +1433,7 @@ class GlobalUIController {
   }
 
   bindEvents() {
-    // 1. Делегирование событий клика для шапки и общих элементов
+    // Делегирование для шапки (остатки)
     document.addEventListener('click', (e) => {
       if (e.target.closest('#boardTitleHeader')) this.renameBoard();
       if (e.target.closest('#shareLinkContainer') || e.target.closest('.copy-share-btn')) this.copyShareLink();
@@ -1427,66 +1442,65 @@ class GlobalUIController {
       if (e.target.closest('#btnMobileMenu')) document.getElementById('mobileMenuDropdown').classList.toggle('hidden');
     });
 
-    // 2. Слушатели инпутов (Поиск без полного рендера!)
+    // Живой поиск
     if (this.searchInput) {
       this.searchInput.addEventListener('input', this.debounce((e) => {
         AppEvents.emit('ui:search:changed', { query: e.target.value, tag: this.tagFilter?.value || 'all' });
       }, 300));
     }
-
     if (this.tagFilter) {
       this.tagFilter.addEventListener('change', (e) => {
         AppEvents.emit('ui:search:changed', { query: this.searchInput?.value || '', tag: e.target.value });
       });
     }
 
-    // 3. Подписка на событие поиска (O(1) DOM Manipulations)
     AppEvents.on('ui:search:changed', (filters) => this.filterCardsGranular(filters.query, filters.tag));
     
-    // 4. Подписка на открытие сайдбаров (закрываем другие)
-    AppEvents.on('ui:settings:toggled', () => {
-      this.closeOtherSidebars('settingsSidebar');
-      document.getElementById('settingsSidebar').classList.toggle('translate-x-full');
+    // Управление сайдбарами
+    AppEvents.on('ui:settings:toggled', () => { this.closeOtherSidebars('settingsSidebar'); document.getElementById('settingsSidebar').classList.toggle('translate-x-full'); });
+    AppEvents.on('ui:members:toggled', () => { this.closeOtherSidebars('membersSidebar'); document.getElementById('membersSidebar').classList.toggle('translate-x-full'); });
+    AppEvents.on('ui:chat:toggled', () => { this.closeOtherSidebars('chatSidebar'); /* Chat Sidebar logic is in SidebarController */ });
+
+    // Мобильное меню
+    AppEvents.on('ui:mobile_menu:toggle', () => this.toggleMobileMenu());
+    AppEvents.on('ui:mobile_menu:share', () => { this.copyShareLink(); this.toggleMobileMenu(); });
+    AppEvents.on('ui:mobile_menu:search', (payload) => {
+      if (this.searchInput) this.searchInput.value = payload.value;
+      AppEvents.emit('ui:search:changed', { query: payload.value, tag: this.tagFilter?.value || 'all' });
     });
-    AppEvents.on('ui:members:toggled', () => {
-      this.closeOtherSidebars('membersSidebar');
-      document.getElementById('membersSidebar').classList.toggle('translate-x-full');
-    });
-    AppEvents.on(EVENTS.CHAT_TOGGLED, () => {
-      this.closeOtherSidebars('chatSidebar');
-      // Класс SidebarController сам откроет/закроет нужный контейнер
-    });
+    AppEvents.on('ui:mobile_menu:archive', () => { window.location.href = 'archive.html?b=' + BOARD_ID; });
+    AppEvents.on('ui:mobile_menu:team', () => { AppEvents.emit('ui:members:toggled'); this.toggleMobileMenu(); });
+    AppEvents.on('ui:mobile_menu:settings', () => { AppEvents.emit('ui:settings:toggled'); this.toggleMobileMenu(); });
+
+    // Настройки доски (Перенесены из глобальных функций)
+    AppEvents.on('board:bg_random', () => this.setRandomBackground());
+    AppEvents.on('board:bg_reset', () => this.resetBoardBackground());
+    AppEvents.on('board:tag_add', () => this.addNewCustomTag());
   }
 
   closeOtherSidebars(excludeId) { 
     ['chatSidebar', 'settingsSidebar', 'membersSidebar'].forEach(id => { 
-      if (id !== excludeId) {
-        const el = document.getElementById(id);
-        if(el) el.classList.add('translate-x-full'); 
-      }
+      const el = document.getElementById(id);
+      if(el && id !== excludeId) el.classList.add('translate-x-full'); 
     });
   }
 
-  // ЭКСПЕРТНЫЙ ПОДХОД: Фильтрация карточек без пересборки DOM
+  toggleMobileMenu() {
+    const menu = document.getElementById('mobileMenuDropdown');
+    if (menu) menu.classList.toggle('hidden');
+  }
+
   filterCardsGranular(queryStr, tagId) {
     const query = queryStr.toLowerCase().trim();
-    
-    // 1. Проходим по закэшированным DOM элементам карточек
     domCache.cards.forEach((el, strId) => {
       const cardData = stateMap.get(strId);
       if (!cardData) return;
-
       const matchesSearch = cardData.title.toLowerCase().includes(query) || (cardData.description || "").toLowerCase().includes(query);
       const matchesTag = tagId === "all" || (cardData.tags && cardData.tags.includes(tagId));
-
-      if (matchesSearch && matchesTag && !cardData.archived) {
-        el.classList.remove('hidden');
-      } else {
-        el.classList.add('hidden');
-      }
+      if (matchesSearch && matchesTag && !cardData.archived) el.classList.remove('hidden');
+      else el.classList.add('hidden');
     });
 
-    // 2. Обновляем счетчики карточек в шапках колонок O(1)
     domCache.columns.forEach((el, colId) => {
       const visibleCount = el.querySelectorAll('.card-item:not(.hidden)').length;
       const countBadge = el.previousElementSibling?.querySelector('.rounded-full.border');
@@ -1508,8 +1522,37 @@ class GlobalUIController {
     navigator.clipboard.writeText(url); 
     showSystemToast('Ссылка скопирована!', 'Отправьте её команде.', 'link', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
   }
-}
 
+  // --- Логика настроек ---
+  async setRandomBackground() {
+    const statusEl = document.getElementById('bgUploadStatus');
+    statusEl.innerText = 'Ищем красоту... ✨';
+    try {
+      const randomUrl = `https://picsum.photos/1920/1080?random=${Date.now()}&blur=2`;
+      updateBoardData({ background: randomUrl });
+      statusEl.innerText = 'Обои обновлены!';
+      setTimeout(() => statusEl.innerText = '', 3000);
+    } catch(e) {
+      statusEl.innerText = 'Ошибка загрузки';
+    }
+  }
+
+  resetBoardBackground() {
+    if(isLocalBoard) { 
+      const local = JSON.parse(localStorage.getItem('blocko_local_boards')); 
+      delete local[BOARD_ID].background; 
+      localStorage.setItem('blocko_local_boards', JSON.stringify(local)); 
+      boardData = local[BOARD_ID]; processBoardData(boardData); 
+    }
+    else { db.collection("boards").doc(BOARD_ID).update({ background: firebase.firestore.FieldValue.delete() }); }
+  }
+
+  addNewCustomTag() {
+    const name = document.getElementById('newTagName').value.trim(); if (!name) return;
+    const updatedTags = [...getBoardTags(), { id: 'tag_' + Date.now(), name, color: newTagSelectedColor }];
+    updateBoardData({ tags: updatedTags }); document.getElementById('newTagName').value = '';
+  }
+}
 // ==========================================
 // MODULE: CHAT CONTROLLER (Decoupled Logic)
 // ==========================================
@@ -2073,12 +2116,10 @@ class CardController {
   }
 
   bindEvents() {
-    // Контроллер слушает приказы от интерфейса
     AppEvents.on('card:save_requested', () => this.saveActiveCard());
     AppEvents.on('card:delete_requested', () => this.deleteActiveCard());
     AppEvents.on('card:archive_requested', () => this.archiveActiveCard());
 
-    // Новые слушатели модалки (Чек-лист, Markdown, AI, Изображения)
     AppEvents.on('card:checklist_item_add', () => this.addChecklistItem());
     AppEvents.on('card:checklist_item_toggle', (payload) => this.toggleChecklist(payload.index));
     AppEvents.on('card:checklist_item_remove', (payload) => this.removeChecklist(payload.index));
@@ -2088,6 +2129,70 @@ class CardController {
       const file = payload.element.files[0];
       if (typeof handleImageSelection === 'function') handleImageSelection(file);
     });
+
+    // Новые слушатели из ViewModal (просмотр карточки)
+    AppEvents.on('card:view_delete', () => this.handleViewDelete());
+    AppEvents.on('card:view_archive', () => this.handleViewArchive());
+    AppEvents.on('card:view_edit', () => this.openEditModalFromView());
+    AppEvents.on('card:view_comment_add', () => this.addCommentToContent());
+  }
+
+  // --- Перенесенные методы просмотра карточки ---
+  handleViewDelete() {
+    if (!viewingCard || !currentColumn) return;
+    deleteCardDirectly(currentColumn, viewingCard.id, 'задачу');
+    AppEvents.emit('ui:modal:closed', 'viewCardModal');
+  }
+
+  handleViewArchive() {
+    if (!viewingCard || !currentColumn) return;
+    openConfirmModal('Отправить в архив?', 'Задача исчезнет с доски, но останется в Архиве проекта.', 'В архив', false, () => {
+      if (isLocalBoard) {
+        columns = columns.map(col => { 
+          if (col.id == currentColumn) { 
+            const updatedCards = (col.cards || []).map(c => c.id == viewingCard.id ? { ...c, archived: true } : c);
+            return { ...col, cards: updatedCards };
+          } 
+          return col; 
+        });
+        persist(); render();
+      } else {
+        db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(viewingCard.id)).update({ archived: true });
+      }
+      AppEvents.emit('ui:modal:closed', 'viewCardModal');
+      showSystemToast('Архивировано', 'Задача перемещена в хранилище.', 'archive', 'text-amber-500', 'bg-amber-50');
+    });
+  }
+
+  openEditModalFromView() {
+    if (!viewingCard || !currentColumn) return;
+    AppEvents.emit('ui:modal:closed', 'viewCardModal');
+    openEditModal(currentColumn, viewingCard.id);
+  }
+
+  addCommentToContent() {
+    const input = document.getElementById('viewCommentInput');
+    const text = input.value.trim();
+    if (!text || !viewingCard || !currentColumn) return;
+
+    columns = columns.map(col => {
+        if (col.id == currentColumn) {
+            col.cards = col.cards.map(c => {
+                if (c.id == viewingCard.id) {
+                    if (!c.comments) c.comments = [];
+                    c.comments.push({ text, user: currentUser, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+                }
+                return c;
+            });
+        }
+        return col;
+    });
+
+    input.value = '';
+    persist();
+    // Обновляем комменты прямо в открытом окне
+    const updatedCard = columns.find(col => col.id == currentColumn).cards.find(c => c.id == viewingCard.id);
+    if (typeof renderContentComments === 'function') renderContentComments(updatedCard.comments);
   }
 
   async saveActiveCard() {
@@ -2635,11 +2740,6 @@ document.getElementById('boardBgUpload').addEventListener('change', async (e) =>
   } catch(err) { statusEl.innerText = 'Ошибка соединения'; } e.target.value = '';
 });
 
-function resetBoardBackground() {
-  if(isLocalBoard) { const local = JSON.parse(localStorage.getItem('blocko_local_boards')); delete local[BOARD_ID].background; localStorage.setItem('blocko_local_boards', JSON.stringify(local)); boardData = local[BOARD_ID]; processBoardData(boardData); }
-  else { db.collection("boards").doc(BOARD_ID).update({ background: firebase.firestore.FieldValue.delete() }); }
-}
-
 const mainScroll = document.getElementById('mainScroll'); let isDown=false, startX, scrollLeft;
 mainScroll.addEventListener('mousedown', e => { if(e.target.closest('.card-item') || e.target.closest('button')) return; isDown=true; mainScroll.style.cursor='grabbing'; startX=e.pageX-mainScroll.offsetLeft; scrollLeft=mainScroll.scrollLeft; });
 mainScroll.addEventListener('mouseleave', () => { isDown=false; mainScroll.style.cursor='grab'; });
@@ -2660,12 +2760,6 @@ function renderSettingsTags() {
   document.getElementById('newTagColorPicker').innerHTML = TAG_PALETTE.map(c => `
     <button onclick="newTagSelectedColor='${c}'; renderSettingsTags()" class="w-6 h-6 flex-shrink-0 rounded-full border-2 transition-transform ${newTagSelectedColor === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'} ${c.split(' ')[0]}"></button>
   `).join(''); lucide.createIcons();
-}
-
-function addNewCustomTag() {
-  const name = document.getElementById('newTagName').value.trim(); if (!name) return;
-  const updatedTags = [...getBoardTags(), { id: 'tag_' + Date.now(), name, color: newTagSelectedColor }];
-  updateBoardData({ tags: updatedTags }); document.getElementById('newTagName').value = '';
 }
 
 // Замена системных окон на кастомные для удаления
@@ -2928,21 +3022,6 @@ function fireConfetti() {
     zIndex: 9999, // Поверх всех модалок
     colors: ['#3b82f6', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6']
   });
-}
-
-// --- СЛУЧАЙНЫЙ ФОН ---
-async function setRandomBackground() {
-  const statusEl = document.getElementById('bgUploadStatus');
-  statusEl.innerText = 'Ищем красоту... ✨';
-  try {
-    // Берем красивую картинку с размытием
-    const randomUrl = `https://picsum.photos/1920/1080?random=${Date.now()}&blur=2`;
-    updateBoardData({ background: randomUrl });
-    statusEl.innerText = 'Обои обновлены!';
-    setTimeout(() => statusEl.innerText = '', 3000);
-  } catch(e) {
-    statusEl.innerText = 'Ошибка загрузки';
-  }
 }
 
 // Система проверки дедлайнов
@@ -3277,77 +3356,11 @@ function renderContentComments(comments = []) {
     }
 }
 
-function addCommentToContent() {
-    const input = document.getElementById('cvCommentInput');
-    const text = input.value.trim();
-    if (!text || !activeContentView) return;
-
-    columns = columns.map(col => {
-        if (col.id == activeContentView.colId) {
-            col.cards = col.cards.map(c => {
-                if (c.id == activeContentView.cardId) {
-                    if (!c.comments) c.comments = [];
-                    c.comments.push({ text, user: currentUser, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
-                }
-                return c;
-            });
-        }
-        return col;
-    });
-
-    input.value = '';
-    persist();
-    const updatedCard = columns.find(col => col.id == activeContentView.colId).cards.find(c => c.id == activeContentView.cardId);
-    renderContentComments(updatedCard.comments);
-}
-
 function closeContentViewModal() {
     if (currentPlayingAudio) { currentPlayingAudio.pause(); }
     toggleModal('contentViewModal', false);
 }
 
-// Умный обработчик удаления из окна просмотра
-function handleViewDelete() {
-  if (!activeContentView) return;
-  deleteCardDirectly(activeContentView.colId, activeContentView.cardId, 'объект');
-  closeContentViewModal();
-}
-
-// Умный обработчик архивации из окна просмотра
-function handleViewArchive() {
-  if (!activeContentView) return;
-  openConfirmModal('Отправить в архив?', 'Объект исчезнет с доски, но останется в Архиве проекта.', 'В архив', false, () => {
-    columns = columns.map(col => { 
-      if (col.id == activeContentView.colId) { 
-        const updatedCards = (col.cards || []).map(c => {
-          if (c.id == activeContentView.cardId) {
-            return { ...c, archived: true };
-          }
-          return c;
-        });
-        return { ...col, cards: updatedCards };
-      } 
-      return col; 
-    });
-    
-    persist(); 
-    render(); 
-    closeContentViewModal(); 
-    showSystemToast('Архивировано', 'Объект перемещен в хранилище.', 'archive', 'text-amber-500', 'bg-amber-50');
-  });
-}
-
-// Умный маршрутизатор редактирования (выбирает нужный редактор по типу контента)
-function openEditModalFromView() {
-  if (!activeContentView) return;
-  if (activeContentView.type === 'task' || !activeContentView.type) {
-    closeContentViewModal();
-    openEditModal(activeContentView.colId, activeContentView.cardId);
-  } else if (activeContentView.type === 'table') {
-    closeContentViewModal();
-    openTableEditor(activeContentView.colId, activeContentView.cardId);
-  }
-}
   
 function renderPollComments() {
   const list = document.getElementById('pollCommentsList');
