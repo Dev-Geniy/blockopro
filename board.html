@@ -612,6 +612,23 @@
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
 
+// --- ENTERPRISE NETWORK OBSERVER (OFFLINE-FIRST) ---
+window.addEventListener('online', () => {
+  showSystemToast('Подключение восстановлено', 'Синхронизация с облаком возобновлена.', 'wifi', 'text-emerald-500', 'bg-emerald-50');
+  if (!isLocalBoard) document.getElementById('localBadge').classList.add('hidden');
+});
+
+window.addEventListener('offline', () => {
+  showSystemToast('Отсутствует интернет', 'Вы работаете в офлайн-режиме. Данные сохранятся локально.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
+  if (!isLocalBoard) {
+    const badge = document.getElementById('localBadge');
+    badge.innerHTML = '<i data-lucide="wifi-off" class="w-3 h-3 inline pb-0.5"></i> ОФЛАЙН';
+    badge.className = 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-[9px] font-bold px-2 py-0.5 rounded-md';
+    badge.classList.remove('hidden');
+    lucide.createIcons();
+  }
+});
+
 // --- 1. ОПТИМИЗАЦИЯ ПОИСКА (Debounce) ---
 function debounce(func, timeout = 300) {
   let timer;
@@ -1077,6 +1094,9 @@ async function confirmFileUpload(retentionType) {
 }
 
 async function uploadImageToImgbb(file) {
+  if (!navigator.onLine) {
+    return showSystemToast('Офлайн', 'Отправка картинок недоступна без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
+  }
   const chatBox = document.getElementById("chatMessages");
   const tempId = 'load_' + Date.now();
   chatBox.innerHTML += `<div id="${tempId}" class="text-xs text-blue-500 text-center animate-pulse py-2">Загрузка изображения...</div>`;
@@ -1568,6 +1588,9 @@ async function saveCard() {
   let imageUrl = editingCard ? editingCard.image : null;
 
   if (pendingImageFile) { 
+    if (!navigator.onLine) {
+      return showSystemToast('Офлайн', 'Загрузка обложек недоступна без интернета. Сохраните задачу без картинки.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
+    }
     showSystemToast('Загрузка', 'Сохраняем обложку...', 'loader-2', 'text-blue-500 animate-spin', 'bg-blue-50');
     try {
       const fd = new FormData(); fd.append('image', pendingImageFile); 
@@ -2091,6 +2114,11 @@ document.getElementById('boardBgUpload').addEventListener('change', async (e) =>
     return showSystemToast('Премиум функция', 'Загрузка своих обоев доступна на тарифах Freelancer и Company.', 'lock', 'text-amber-500', 'bg-amber-50');
   }
 
+  if (!navigator.onLine) {
+    e.target.value = '';
+    return showSystemToast('Офлайн', 'Смена обоев недоступна без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
+  }
+
   const file = e.target.files[0]; if(!file) return;
   const statusEl = document.getElementById('bgUploadStatus'); statusEl.innerText = 'Загрузка обоев...';
   try {
@@ -2187,6 +2215,7 @@ async function checkAILimit() {
 }
   
 async function generateAIDescription() {
+  if (!navigator.onLine) return showSystemToast('Офлайн', 'AI-ассистент недоступен без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
   if (!(await checkAILimit())) return;
   
   // Получаем название задачи прямо из поля ввода
@@ -2215,6 +2244,7 @@ async function generateAIDescription() {
 }
 
 async function generateAIQuickDescription() {
+  if (!navigator.onLine) return showSystemToast('Офлайн', 'AI-ассистент недоступен без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
   if (!(await checkAILimit())) return;
   
   const title = document.getElementById('quickAddInput').value.trim(); 
