@@ -29,6 +29,79 @@ const IMGBB_KEY = "22de10db6eb1f3ec3fca012dcc566961";
 const AI_ENDPOINT = "https://text.pollinations.ai/";
 
 // ==========================================
+// 3.1. CORE ARCHITECTURE: EVENT BUS (PUB/SUB)
+// ==========================================
+// Замена жестким связям. Теперь модули не вызывают друг друга напрямую.
+class BlockoEventBus {
+  constructor() {
+    this.events = {};
+  }
+  
+  // Подписка на событие
+  on(event, listener) {
+    if (!this.events[event]) this.events[event] = [];
+    this.events[event].push(listener);
+    return () => this.off(event, listener); // Возвращает функцию отписки
+  }
+  
+  // Отписка от события
+  off(event, listener) {
+    if (!this.events[event]) return;
+    this.events[event] = this.events[event].filter(l => l !== listener);
+  }
+  
+  // Отправка события всем подписчикам
+  emit(event, data) {
+    if (this.events[event]) {
+      this.events[event].forEach(listener => listener(data));
+    }
+  }
+}
+
+// Глобальная шина событий приложения
+const AppEvents = new BlockoEventBus();
+
+// Список системных событий для стандартизации (Enum)
+const EVENTS = {
+  BOARD_LOADED: 'board:loaded',
+  CARD_ADDED: 'card:added',
+  CARD_UPDATED: 'card:updated',
+  CARD_DELETED: 'card:deleted',
+  CHAT_TOGGLED: 'ui:chat:toggled',
+  MODAL_OPENED: 'ui:modal:opened',
+  DB_SYNC_REQUIRED: 'db:sync_required'
+};
+
+// ==========================================
+// 3.2. CORE ARCHITECTURE: STATE MANAGER (LITE)
+// ==========================================
+// Единый источник правды. Отделяем UI от данных.
+class BlockoStore {
+  constructor() {
+    this.state = {
+      currentUser: JSON.parse(localStorage.getItem('blocko_user')) || null,
+      activeBoard: null,
+      columns: [],
+      cardsMap: new Map(), // O(1) доступ
+      isLocalMode: window.location.href.includes('local=true')
+    };
+  }
+
+  get(key) {
+    return this.state[key];
+  }
+
+  // Обновление стейта с автоматическим триггером событий
+  set(key, value, silent = false) {
+    this.state[key] = value;
+    if (!silent) {
+      AppEvents.emit(`state:changed:${key}`, value);
+    }
+  }
+}
+
+const AppStore = new BlockoStore();
+// ==========================================
 // 4. БИЗНЕС-ЛОГИКА И ТАРИФЫ (Курс: $1 = 100 credits)
 // ==========================================
 const PLANS = {
