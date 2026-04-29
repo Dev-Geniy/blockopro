@@ -513,6 +513,11 @@
           </div>
         </div>
 
+        <div id="badgeSettingsBlock" class="hidden">
+          <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Отображаемый статус (Бейдж)</label>
+          <div class="flex gap-2 overflow-x-auto pb-2 hide-scroll" id="badgeSelector"></div>
+        </div>
+
         <div id="frameSettingsBlock" class="hidden">
           <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Кастомизация рамки</label>
           <div class="flex gap-3 overflow-x-auto pb-2 hide-scroll" id="frameColorPicker"></div>
@@ -2009,11 +2014,12 @@ async function claimReward(tier) {
     await userRef.update({
       plan: planToSet,
       planExpiresAt: expiry,
+      badgeStatus: tier, // ЭНТЕРПРАЙЗ: Автоматическая экипировка бейджа при достижении
       rewardsClaimed: firebase.firestore.FieldValue.arrayUnion(tier)
     });
     
     confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
-    showSystemToast('Бонус активирован!', `Вам начислено ${daysToAdd} дней тарифа ${planToSet.toUpperCase()}`, 'zap', 'text-emerald-500', 'bg-emerald-50');
+    showSystemToast('Бонус активирован!', `Начислено ${daysToAdd} дней тарифа ${planToSet.toUpperCase()} и разблокирован новый бейдж!`, 'zap', 'text-emerald-500', 'bg-emerald-50');
     loadAffiliateStats(); // Обновить UI
   } catch (e) { console.error(e); }
 }
@@ -2083,11 +2089,16 @@ async function openProfileSettings() {
     document.getElementById('profilePlanVal').innerText = planText;
 
     // 1. Смена аватара (уровень Friend+)
-    if (rewards.includes('friend') || rewards.includes('partner') || rewards.includes('ambassador')) {
+    if (rewards.length > 0) {
       document.getElementById('avatarUploadBlock').classList.remove('hidden');
       document.getElementById('customAvatarUrl').value = data.customAvatar || "";
+      
+      // Панель управления бейджами
+      document.getElementById('badgeSettingsBlock').classList.remove('hidden');
+      renderBadgeSelector(data.badgeStatus || 'none', rewards);
     } else {
       document.getElementById('avatarUploadBlock').classList.add('hidden');
+      document.getElementById('badgeSettingsBlock').classList.add('hidden');
     }
     
     // 2. Рамки (уровень Partner+)
@@ -2121,11 +2132,41 @@ async function openProfileSettings() {
   }
 }
 
+function renderBadgeSelector(currentBadge, rewards) {
+  const container = document.getElementById('badgeSelector');
+  let html = `<button onclick="setActiveBadge('none')" class="px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 ${currentBadge === 'none' ? 'border-gray-900 dark:border-white bg-gray-100 dark:bg-gray-800' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}"><i data-lucide="x-circle" class="w-4 h-4"></i> Скрыть</button>`;
+  
+  if (rewards.includes('friend')) {
+    html += `<button onclick="setActiveBadge('friend')" class="px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 ${currentBadge === 'friend' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}"><i data-lucide="shield-check" class="w-4 h-4"></i> Друг</button>`;
+  }
+  if (rewards.includes('partner')) {
+    html += `<button onclick="setActiveBadge('partner')" class="px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 ${currentBadge === 'partner' ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}"><i data-lucide="award" class="w-4 h-4"></i> Партнер</button>`;
+  }
+  if (rewards.includes('ambassador')) {
+     html += `<button onclick="setActiveBadge('ambassador')" class="px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 ${currentBadge === 'ambassador' ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}"><i data-lucide="crown" class="w-4 h-4"></i> Амбассадор</button>`;
+  }
+  container.innerHTML = html;
+  lucide.createIcons();
+}
+
+async function setActiveBadge(badge) {
+  if (!currentUser) return;
+  await db.collection('users').doc(currentUser.id).update({ badgeStatus: badge });
+  const doc = await db.collection('users').doc(currentUser.id).get();
+  updateProfilePreview(doc.data());
+  renderBadgeSelector(badge, doc.data().rewardsClaimed || []);
+  
+  // Сразу обновляем аватар в хедере дашборда
+  document.getElementById('dashAvatar').src = doc.data().customAvatar || doc.data().avatar || currentUser.avatar; 
+  
+  showSystemToast('Сохранено', 'Отображаемый бейдж изменен!', 'check-circle', 'text-green-500', 'bg-green-50');
+}
+
 function updateProfilePreview(data) {
   document.getElementById('profilePreviewArea').innerHTML = renderUserAvatar(data, "w-32 h-32");
   lucide.createIcons();
 }
-
+  
 async function updateProfileAvatar() {
   const url = document.getElementById('customAvatarUrl').value.trim();
   await db.collection('users').doc(currentUser.id).update({ customAvatar: url });
