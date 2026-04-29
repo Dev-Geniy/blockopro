@@ -740,11 +740,23 @@ auth.onAuthStateChanged(async (user) => {
   if (user) {
     const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
     
-    // Получаем статус бейджа из профиля
     let badgeStatus = 'none';
     try {
-      const userDoc = await db.collection('users').doc(user.uid).get();
-      if (userDoc.exists) badgeStatus = userDoc.data().badgeStatus || 'none';
+      const userRef = db.collection('users').doc(user.uid);
+      const userDoc = await userRef.get();
+      if (userDoc.exists) {
+        const data = userDoc.data();
+        badgeStatus = data.badgeStatus || 'none';
+        
+        // ЭНТЕРПРАЙЗ: Синхронизация тарифа и проверка истечения
+        let currentPlan = data.plan || 'free';
+        if (data.planExpiresAt && Date.now() > data.planExpiresAt) {
+          currentPlan = 'free';
+          await userRef.update({ plan: 'free', planExpiresAt: firebase.firestore.FieldValue.delete() });
+        }
+        userPlan = currentPlan;
+        localStorage.setItem('blocko_user_plan', currentPlan);
+      }
     } catch(e) {}
 
     currentUser = { id: user.uid, name: user.displayName, avatar: safeAvatar, badge: badgeStatus };
