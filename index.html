@@ -850,13 +850,25 @@ auth.onAuthStateChanged(async (user) => {
         
         userPlan = currentPlan;
         localStorage.setItem('blocko_user_plan', currentPlan);
+
+        // Обогащаем глобальный объект текущего пользователя всеми кастомными настройками
+        currentUser.customAvatar = data.customAvatar;
+        currentUser.badgeStatus = data.badgeStatus;
+        currentUser.badgeConfig = data.badgeConfig;
       }
     } catch(e) { console.error("Plan sync error:", e); }
 
     authScreen.classList.add('hidden');
     dashScreen.classList.remove('hidden');
     dashScreen.classList.add('flex');
-    document.getElementById('dashAvatar').src = currentUser.avatar;
+    
+    // ЭНТЕРПРАЙЗ: Внедряем динамический аватар в шапку профиля
+    const dashAvatarEl = document.getElementById('dashAvatar');
+    if(dashAvatarEl) {
+        dashAvatarEl.outerHTML = renderUserAvatar(currentUser, 'w-11 h-11', 'dashAvatar', 'openProfileSettings()');
+        lucide.createIcons();
+    }
+
     document.getElementById('dashUserName').innerText = currentUser.name;
     subscribeToBoards(user.uid);
 
@@ -1102,8 +1114,8 @@ grid.innerHTML = filtered.map(data => {
       </div>
 
       <h3 class="text-2xl font-extrabold mb-4 text-gray-900 dark:text-white line-clamp-1 group-hover:text-blue-600 transition-colors tracking-tight relative z-10">${data.title || 'Без названия'}</h3>
-      <div class="flex items-center gap-3 mb-8 bg-gray-50/50 dark:bg-gray-800/30 p-3 rounded-2xl border border-gray-100 dark:border-gray-700/50 relative z-10 group-hover:bg-white dark:group-hover:bg-gray-800 transition-colors">
-         <img src="${ownerInfo.avatar}" class="w-9 h-9 rounded-full border-2 border-white dark:border-gray-700 shadow-sm">
+<div class="flex items-center gap-3 mb-8 bg-gray-50/50 dark:bg-gray-800/30 p-3 rounded-2xl border border-gray-100 dark:border-gray-700/50 relative z-10 group-hover:bg-white dark:group-hover:bg-gray-800 transition-colors">
+         ${renderUserAvatar(ownerInfo, 'w-9 h-9')}
          <div class="flex flex-col">
            <span class="text-[9px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none mb-1">Владелец</span>
            <span class="text-sm font-bold text-gray-700 dark:text-gray-200 leading-tight">${ownerInfo.name}</span>
@@ -1112,8 +1124,11 @@ grid.innerHTML = filtered.map(data => {
       <div class="flex items-center justify-between mt-auto pt-6 border-t border-gray-100 dark:border-gray-800/50 relative z-10">
         <div class="flex gap-2">${actionButtons}</div>
         <div class="flex -space-x-3 hover:space-x-1 transition-all duration-300">
-           ${isLocal ? `<img src="${currentUser.avatar}" class="w-9 h-9 rounded-full border-2 border-white dark:border-gray-900 shadow-sm" />` : 
-             (data.members || []).slice(0,4).map(uid => `<img src="${generateAvatarById(uid)}" class="w-9 h-9 rounded-full border-2 border-white dark:border-gray-900 shadow-sm hover:z-10 transition-transform hover:scale-110" />`).join('')
+           ${isLocal ? renderUserAvatar(currentUser, 'w-9 h-9 hover:z-10 transition-transform hover:scale-110') : 
+             (data.members || []).slice(0,4).map(uid => {
+                const memberData = data.users && data.users[uid] ? data.users[uid] : { name: 'User', avatar: generateAvatarById(uid) };
+                return renderUserAvatar(memberData, 'w-9 h-9 hover:z-10 transition-transform hover:scale-110');
+             }).join('')
            }
         </div>
       </div>
@@ -1303,7 +1318,15 @@ async function confirmCreateBoard() {
     password, // СОХРАНЯЕМ ПАРОЛЬ
     owner: currentUser.id, 
     members: [currentUser.id],
-    users: { [currentUser.id]: { name: currentUser.name, avatar: currentUser.avatar, role: 'owner' } },
+    // ЭНТЕРПРАЙЗ: Сохраняем все премиальные настройки создателя для отображения на доске
+    users: { [currentUser.id]: { 
+      name: currentUser.name, 
+      avatar: currentUser.avatar, 
+      role: 'owner',
+      customAvatar: currentUser.customAvatar || null,
+      badgeStatus: currentUser.badgeStatus || null,
+      badgeConfig: currentUser.badgeConfig || null
+    } },
     columns: [
       { id: Date.now(), name: "Бэклог", color: 'default', cards: [] },
       { id: Date.now()+1, name: "В работе", color: 'blue', cards: [] },
@@ -1459,9 +1482,17 @@ async function joinBoardById(id) {
           return showSystemToast('Лимит достигнут', 'Владелец доски исчерпал лимит участников для своего тарифа.', 'users', 'text-red-500', 'bg-red-50');
         }
 
+        // ЭНТЕРПРАЙЗ: Сохраняем все премиальные настройки привязанного пользователя
         await docRef.update({
           members: firebase.firestore.FieldValue.arrayUnion(currentUser.id),
-          [`users.${currentUser.id}`]: { name: currentUser.name, avatar: currentUser.avatar, role: 'editor' }
+          [`users.${currentUser.id}`]: { 
+            name: currentUser.name, 
+            avatar: currentUser.avatar, 
+            role: 'editor',
+            customAvatar: currentUser.customAvatar || null,
+            badgeStatus: currentUser.badgeStatus || null,
+            badgeConfig: currentUser.badgeConfig || null
+          }
         });
         showSystemToast('Успех', 'Проект добавлен в ваше рабочее пространство!', 'check-circle', 'text-green-500', 'bg-green-50');
       }
@@ -1957,11 +1988,11 @@ window.addEventListener('appinstalled', () => {
   showSystemToast('Готово! 🎉', 'Blocko Pro успешно установлено на ваше устройство.', 'smartphone', 'text-green-500', 'bg-green-50');
 });
 
-// Функция для генерации HTML аватара с учетом всех наград и бейджей статуса
-function renderUserAvatar(userConfig, sizeClass = "w-11 h-11") {
+// ЭНТЕРПРАЙЗ: Усовершенствованный рендер аватара (с поддержкой ID и OnClick для шапки)
+function renderUserAvatar(userConfig, sizeClass = "w-11 h-11", idAttr = '', onclickAttr = '') {
   const config = userConfig.badgeConfig || { frameColor: 'transparent', glowColor: 'transparent', animation: 'none' };
-  const avatarUrl = userConfig.customAvatar || userConfig.avatar || `https://ui-avatars.com/api/?name=${userConfig.name}`;
-  const badge = userConfig.badgeStatus || 'none';
+  const avatarUrl = userConfig.customAvatar || userConfig.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userConfig.name || 'User')}`;
+  const badge = userConfig.badgeStatus || userConfig.badge || 'none'; // Поддержка обоих форматов
   
   let animationClass = "";
   if (config.animation === 'pulse') animationClass = "animate-pulse";
@@ -1969,21 +2000,28 @@ function renderUserAvatar(userConfig, sizeClass = "w-11 h-11") {
   if (config.animation === 'flicker') animationClass = "animate-bounce"; 
   
   let badgeIconHtml = '';
-  // Распределяем иконки геймификации для профиля
+  // Распределяем иконки геймификации для профиля и карточек
   if (badge === 'ambassador') {
-    badgeIconHtml = `<div class="absolute -top-2 -right-1 bg-white dark:bg-gray-900 rounded-full p-1 transform rotate-12 shadow-md z-10 border border-gray-200 dark:border-gray-700"><i data-lucide="crown" class="w-4 h-4 text-amber-500 fill-current"></i></div>`;
+    badgeIconHtml = `<div class="absolute -top-1.5 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 transform rotate-12 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="crown" class="w-3.5 h-3.5 text-amber-500 fill-current"></i></div>`;
   } else if (badge === 'partner') {
-    badgeIconHtml = `<div class="absolute -bottom-1 -right-1 bg-white dark:bg-gray-900 rounded-full p-1 shadow-md z-10 border border-gray-200 dark:border-gray-700"><i data-lucide="award" class="w-3 h-3 text-amber-500 fill-current"></i></div>`;
+    badgeIconHtml = `<div class="absolute -bottom-1 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="award" class="w-3 h-3 text-amber-500 fill-current"></i></div>`;
   } else if (badge === 'friend') {
-    badgeIconHtml = `<div class="absolute -bottom-1 -right-1 bg-white dark:bg-gray-900 rounded-full p-1 shadow-md z-10 border border-gray-200 dark:border-gray-700"><i data-lucide="shield-check" class="w-3 h-3 text-blue-500 fill-current"></i></div>`;
+    badgeIconHtml = `<div class="absolute -bottom-1 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="shield-check" class="w-3 h-3 text-blue-500 fill-current"></i></div>`;
+  }
+
+  const idString = idAttr ? `id="${idAttr}"` : '';
+  const clickString = onclickAttr ? `onclick="${onclickAttr}" class="cursor-pointer relative inline-block flex-shrink-0"` : `class="relative inline-block flex-shrink-0"`;
+
+  if (config.frameColor === 'transparent' || !config.frameColor) {
+     return `<div ${idString} ${clickString}><img src="${avatarUrl}" class="${sizeClass} rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm ${animationClass}" title="${userConfig.name}" />${badgeIconHtml}</div>`;
   }
 
   // Создаем контейнер с рамкой, свечением и иконкой статуса
   return `
-    <div class="relative inline-block flex-shrink-0">
+    <div ${idString} ${clickString}>
       <div class="relative ${sizeClass} rounded-full transition-all duration-500" 
            style="padding: 3px; background: ${config.frameColor}; box-shadow: 0 0 15px ${config.glowColor};">
-        <img src="${avatarUrl}" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-gray-950 ${animationClass}" />
+        <img src="${avatarUrl}" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-gray-950 ${animationClass}" title="${userConfig.name}" />
         ${config.animation === 'rainbow' ? '<div class="absolute inset-0 rounded-full border-2 border-white/20 animate-spin"></div>' : ''}
       </div>
       ${badgeIconHtml}
@@ -2153,11 +2191,17 @@ async function setActiveBadge(badge) {
   if (!currentUser) return;
   await db.collection('users').doc(currentUser.id).update({ badgeStatus: badge });
   const doc = await db.collection('users').doc(currentUser.id).get();
+  
+  currentUser.badgeStatus = badge; // Обновляем локально
   updateProfilePreview(doc.data());
   renderBadgeSelector(badge, doc.data().rewardsClaimed || []);
   
-  // Сразу обновляем аватар в хедере дашборда
-  document.getElementById('dashAvatar').src = doc.data().customAvatar || doc.data().avatar || currentUser.avatar; 
+  // ЭНТЕРПРАЙЗ: Корректное обновление динамического компонента аватара
+  const dashAvatarEl = document.getElementById('dashAvatar');
+  if(dashAvatarEl) {
+      dashAvatarEl.outerHTML = renderUserAvatar(doc.data(), 'w-11 h-11', 'dashAvatar', 'openProfileSettings()');
+      lucide.createIcons();
+  }
   
   showSystemToast('Сохранено', 'Отображаемый бейдж изменен!', 'check-circle', 'text-green-500', 'bg-green-50');
 }
@@ -2166,15 +2210,19 @@ function updateProfilePreview(data) {
   document.getElementById('profilePreviewArea').innerHTML = renderUserAvatar(data, "w-32 h-32");
   lucide.createIcons();
 }
-  
+
 async function updateProfileAvatar() {
   const url = document.getElementById('customAvatarUrl').value.trim();
   await db.collection('users').doc(currentUser.id).update({ customAvatar: url });
+  
+  currentUser.customAvatar = url; // Обновляем локально
+  const dashAvatarEl = document.getElementById('dashAvatar');
+  if(dashAvatarEl) {
+      dashAvatarEl.outerHTML = renderUserAvatar(currentUser, 'w-11 h-11', 'dashAvatar', 'openProfileSettings()');
+      lucide.createIcons();
+  }
   showSystemToast('Обновлено', 'Ваше фото профиля изменено!', 'image', 'text-blue-500', 'bg-blue-50');
-  location.reload(); // Перегрузим для обновления везде
 }
-
-// --- НЕДОСТАЮЩИЕ ФУНКЦИИ ДЛЯ МОДАЛКИ ПРОФИЛЯ ---
 
 // 1. Функция закрытия окна
 function closeProfileModal() {
