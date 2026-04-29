@@ -1127,6 +1127,23 @@ function processBoardData(data) {
     document.body.style.backgroundAttachment = 'fixed';
   } else { document.body.style.backgroundImage = 'none'; }
   
+  // ЭНТЕРПРАЙЗ: Динамическое SEO & SMO (Social Media Optimization)
+  document.title = `${data.title || 'Проект'} — Blocko Pro`;
+  
+  let ogTitle = document.querySelector('meta[property="og:title"]');
+  if (!ogTitle) { ogTitle = document.createElement('meta'); ogTitle.setAttribute('property', 'og:title'); document.head.appendChild(ogTitle); }
+  ogTitle.setAttribute('content', `${data.title || 'Проект'} — Blocko Pro`);
+
+  let ogDesc = document.querySelector('meta[property="og:description"]');
+  if (!ogDesc) { ogDesc = document.createElement('meta'); ogDesc.setAttribute('property', 'og:description'); document.head.appendChild(ogDesc); }
+  ogDesc.setAttribute('content', `Защищенное рабочее пространство. Владелец: ${data.users && data.users[data.owner] ? data.users[data.owner].name : 'Пользователь'}`);
+
+  if (data.background) {
+      let ogImage = document.querySelector('meta[property="og:image"]');
+      if (!ogImage) { ogImage = document.createElement('meta'); ogImage.setAttribute('property', 'og:image'); document.head.appendChild(ogImage); }
+      ogImage.setAttribute('content', data.background);
+  }
+  
   // ЭНТЕРПРАЙЗ ПАТТЕРН: Защита стейта. 
   // Убрали columns = data.columns, так как теперь карточки живут в подколлекции
   // и стейт собирается в функции syncAndRender(). Больше метаданные не затирают задачи!
