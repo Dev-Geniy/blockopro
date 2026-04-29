@@ -45,12 +45,6 @@
     .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     @keyframes deadline-pulse { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 70% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
     .deadline-overdue { border-color: #ef4444 !important; animation: deadline-pulse 2s infinite; }
-    
-    /* Стили для рамок достижений */
-    @keyframes rainbow-border { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-    .ambassador-frame { padding: 3px; background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: rainbow-border 3s linear infinite; border-radius: 50%; display: inline-flex; }
-    .partner-frame { padding: 3px; background: linear-gradient(45deg, #6366f1, #a855f7, #ec4899); border-radius: 50%; display: inline-flex; }
-    .friend-frame { padding: 3px; background: linear-gradient(45deg, #3b82f6, #06b6d4); border-radius: 50%; display: inline-flex; }
   </style>
 
   <script>
@@ -199,15 +193,15 @@
   </aside>
 </div>
 
-<div id="viewCardModal" class="hidden fixed inset-0 z-50 flex justify-center bg-gray-900/40 dark:bg-black/60 glass-modal overflow-y-auto pt-10 pb-10 opacity-0 transition-opacity duration-200">
-  <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-2xl shadow-2xl relative my-auto border border-gray-200 dark:border-gray-700">
-    <button data-action="ui:modal:closed" data-modal="viewCardModal" class="absolute top-6 right-6 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2.5 rounded-2xl transition-colors z-20 border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
+<!-- Модалка просмотра карточки/опроса/аудио -->
+<div id="contentViewModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 px-4">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700 relative overflow-hidden">
+    <button data-action="ui:modal:closed" data-modal="contentViewModal" class="absolute top-6 right-6 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2.5 rounded-2xl transition-colors z-20 border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
       <i data-lucide="x" class="w-6 h-6"></i>
     </button>
 
     <div class="flex-1 overflow-y-auto pr-2 hide-scroll">
       <div id="cvHeader" class="mb-6"></div>
-      <div class="flex items-center gap-2 mb-4 text-xs font-medium text-gray-500 dark:text-gray-400"><img id="viewAuthorAvatar" src="" class="w-6 h-6 rounded-full bg-gray-200 shadow-sm" /><span id="viewAuthorName" class="text-gray-800 dark:text-gray-200">User</span> создал(а) объект</div>
       <h2 id="cvTitle" class="text-3xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"></h2>
       <div id="cvBody" class="mb-8"></div>
 
@@ -363,18 +357,6 @@
         <div class="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-md shadow-blue-500/30 flex-shrink-0"><i data-lucide="table" class="w-5 h-5"></i></div>
         <div><div class="text-sm">Таблица</div><div class="text-[10px] text-blue-500/80 font-medium mt-0.5 leading-tight">Полноценная Excel-таблица с данными</div></div>
       </button>
-      <button onclick="showSystemToast('В разработке', 'Отсчет времени до важного релиза.', 'timer', 'text-gray-400', 'bg-gray-100 dark:bg-gray-800')" class="w-full p-3 flex items-start gap-3 bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-gray-200 dark:border-gray-700/50 opacity-60 hover:opacity-100 transition-opacity text-left grayscale hover:grayscale-0">
-        <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 text-gray-500 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"><i data-lucide="timer" class="w-4 h-4"></i></div>
-        <div><div class="font-bold text-gray-600 dark:text-gray-300 text-sm">Таймер (Countdown)</div><div class="text-[9px] text-gray-500 leading-tight mt-1">Отсчитывает время до запуска фичи или релиза.</div></div>
-      </button>
-      <button onclick="showSystemToast('В разработке', 'Карточка в виде списка дел с прогрессом.', 'list-todo', 'text-gray-400', 'bg-gray-100 dark:bg-gray-800')" class="w-full p-3 flex items-start gap-3 bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-gray-200 dark:border-gray-700/50 opacity-60 hover:opacity-100 transition-opacity text-left grayscale hover:grayscale-0">
-        <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 text-gray-500 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"><i data-lucide="list-todo" class="w-4 h-4"></i></div>
-        <div><div class="font-bold text-gray-600 dark:text-gray-300 text-sm">Быстрый Чек-лист</div><div class="text-[9px] text-gray-500 leading-tight mt-1">Прогресс-бар и список дел (без захода внутрь).</div></div>
-      </button>
-      <button onclick="showSystemToast('В разработке', 'Карточка-плитка с предпросмотром внешнего ресурса.', 'link', 'text-gray-400', 'bg-gray-100 dark:bg-gray-800')" class="w-full p-3 flex items-start gap-3 bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-gray-200 dark:border-gray-700/50 opacity-60 hover:opacity-100 transition-opacity text-left grayscale hover:grayscale-0">
-        <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 text-gray-500 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"><i data-lucide="link" class="w-4 h-4"></i></div>
-        <div><div class="font-bold text-gray-600 dark:text-gray-300 text-sm">Закрепить ссылку</div><div class="text-[9px] text-gray-500 leading-tight mt-1">Предпросмотр (OG Image) Figma, Google Docs и т.д.</div></div>
-      </button>
     </div>
     <div class="pt-4 border-t border-gray-100 dark:border-gray-800 mt-2 flex-shrink-0">
       <button data-action="ui:modal:closed" data-modal="moreAddModal" class="w-full py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-sm rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Закрыть</button>
@@ -382,30 +364,29 @@
   </div>
 </div>
 
-<div id="voiceMemoModal" class="hidden fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform" id="voiceMemoContent">
-    <div class="flex items-center gap-3 mb-6">
-      <div class="p-2.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl"><i data-lucide="mic" class="w-5 h-5"></i></div>
-      <h3 class="text-xl font-black dark:text-white">Аудио-задача</h3>
-    </div>
-    <div class="space-y-6">
-      <input type="text" id="voiceMemoTitle" placeholder="Короткое название (Опционально)" class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-bold dark:text-white">
-      <div class="flex flex-col items-center justify-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700">
-        <button id="recordBtn" onclick="startRecording()" class="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 rounded-full flex items-center justify-center hover:scale-110 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 transition-all shadow-lg shadow-emerald-500/20"><i data-lucide="mic" class="w-10 h-10"></i></button>
-        <button id="stopRecordBtn" onclick="stopRecording()" class="hidden w-24 h-24 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center hover:scale-110 hover:bg-red-200 dark:hover:bg-red-800/50 transition-all shadow-lg shadow-red-500/20 animate-pulse"><i data-lucide="square" class="w-8 h-8 fill-current"></i></button>
-        <p id="recordStatus" class="mt-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Нажмите для записи</p>
-      </div>
-      <div id="audioPreviewContainer" class="hidden w-full bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-800">
-         <audio id="audioPreview" controls class="w-full h-10 outline-none"></audio>
-      </div>
-    </div>
-    <div class="flex gap-3 mt-8">
-      <button data-action="ui:modal:closed" data-modal="voiceMemoModal" class="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold rounded-2xl transition-colors">Отмена</button>
-      <button id="saveAudioBtn" onclick="saveVoiceMemo()" disabled class="flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/30 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">Добавить на доску</button>
+<div id="fileTypeModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center">
+    <button data-action="ui:modal:closed" data-modal="fileTypeModal" class="absolute top-5 right-5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div class="mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-2xl flex items-center justify-center mb-4 shadow-sm"><i data-lucide="zap" class="w-8 h-8"></i></div>
+    <h2 class="text-xl font-bold mb-2 text-gray-900 dark:text-white">Быстрый обмен файлами</h2>
+    <p class="text-xs text-gray-500 mb-6 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-gray-100 dark:border-gray-800">Файлы до <b>1 МБ</b> передаются мгновенно. Выберите срок хранения.</p>
+    <div class="flex flex-col gap-3">
+      <button onclick="confirmFileUpload('burn')" class="p-4 border border-orange-200 dark:border-orange-900/50 hover:border-orange-400 dark:hover:border-orange-500 rounded-xl flex items-center gap-4 group transition-all text-left bg-orange-50/50 dark:bg-orange-900/10">
+        <div class="p-2 bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="flame" class="w-5 h-5"></i></div>
+        <div><div class="font-bold text-gray-900 dark:text-white text-sm">Сжечь после прочтения</div><div class="text-[10px] text-gray-500 mt-0.5">Уничтожится после 1-го скачивания.</div></div>
+      </button>
+      <button onclick="confirmFileUpload('1day')" class="p-4 border border-blue-200 dark:border-blue-900/50 hover:border-blue-400 dark:hover:border-blue-500 rounded-xl flex items-center gap-4 group transition-all text-left bg-blue-50/50 dark:bg-blue-900/10">
+        <div class="p-2 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="clock" class="w-5 h-5"></i></div>
+        <div><div class="font-bold text-gray-900 dark:text-white text-sm">Хранить 24 часа</div><div class="text-[10px] text-gray-500 mt-0.5">Доступен всем ровно 1 день.</div></div>
+      </button>
+      <button onclick="confirmFileUpload('7days')" class="p-4 border border-emerald-200 dark:border-emerald-900/50 hover:border-emerald-400 dark:hover:border-emerald-500 rounded-xl flex items-center gap-4 group transition-all text-left bg-emerald-50/50 dark:bg-emerald-900/10">
+        <div class="p-2 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="calendar" class="w-5 h-5"></i></div>
+        <div><div class="font-bold text-gray-900 dark:text-white text-sm">Хранить 7 дней</div><div class="text-[10px] text-gray-500 mt-0.5">Удаляется через неделю.</div></div>
+      </button>
     </div>
   </div>
 </div>
-  
+
 <div id="pollConstructorModal" class="hidden fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
   <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform" id="pollConstructorContent">
     <div class="flex items-center gap-3 mb-6">
@@ -433,29 +414,6 @@
     <div class="flex gap-3 mt-8">
       <button data-action="ui:modal:closed" data-modal="pollConstructorModal" class="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl transition-colors">Отмена</button>
       <button onclick="savePoll()" class="flex-1 py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-2xl shadow-lg shadow-purple-500/30 active:scale-95 transition-all">Создать</button>
-    </div>
-  </div>
-</div>
-
-<div id="fileTypeModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center">
-    <button data-action="ui:modal:closed" data-modal="fileTypeModal" class="absolute top-5 right-5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
-    <div class="mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-2xl flex items-center justify-center mb-4 shadow-sm"><i data-lucide="zap" class="w-8 h-8"></i></div>
-    <h2 class="text-xl font-bold mb-2 text-gray-900 dark:text-white">Быстрый обмен файлами</h2>
-    <p class="text-xs text-gray-500 mb-6 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-gray-100 dark:border-gray-800">Файлы до <b>1 МБ</b> передаются мгновенно. Выберите срок хранения.</p>
-    <div class="flex flex-col gap-3">
-      <button onclick="confirmFileUpload('burn')" class="p-4 border border-orange-200 dark:border-orange-900/50 hover:border-orange-400 dark:hover:border-orange-500 rounded-xl flex items-center gap-4 group transition-all text-left bg-orange-50/50 dark:bg-orange-900/10">
-        <div class="p-2 bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="flame" class="w-5 h-5"></i></div>
-        <div><div class="font-bold text-gray-900 dark:text-white text-sm">Сжечь после прочтения</div><div class="text-[10px] text-gray-500 mt-0.5">Уничтожится после 1-го скачивания.</div></div>
-      </button>
-      <button onclick="confirmFileUpload('1day')" class="p-4 border border-blue-200 dark:border-blue-900/50 hover:border-blue-400 dark:hover:border-blue-500 rounded-xl flex items-center gap-4 group transition-all text-left bg-blue-50/50 dark:bg-blue-900/10">
-        <div class="p-2 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="clock" class="w-5 h-5"></i></div>
-        <div><div class="font-bold text-gray-900 dark:text-white text-sm">Хранить 24 часа</div><div class="text-[10px] text-gray-500 mt-0.5">Доступен всем ровно 1 день.</div></div>
-      </button>
-      <button onclick="confirmFileUpload('7days')" class="p-4 border border-emerald-200 dark:border-emerald-900/50 hover:border-emerald-400 dark:hover:border-emerald-500 rounded-xl flex items-center gap-4 group transition-all text-left bg-emerald-50/50 dark:bg-emerald-900/10">
-        <div class="p-2 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="calendar" class="w-5 h-5"></i></div>
-        <div><div class="font-bold text-gray-900 dark:text-white text-sm">Хранить 7 дней</div><div class="text-[10px] text-gray-500 mt-0.5">Удаляется через неделю.</div></div>
-      </button>
     </div>
   </div>
 </div>
@@ -572,15 +530,6 @@ let activeTags = [], pendingImageFile = null, activeChecklist = [];
 let selectedColColor = 'default';
 let boardData = {};
 let isFirstChatLoad = true;
-let cardsUnsubscribe = null;
-let allCards = [];
-let isInitialRender = true;
-
-const domCache = { cards: new Map(), columns: new Map(), nodes: new Map() };
-const stateMap = new Map();
-const colIndex = new Map();
-let pendingDOMUpdates = new Map();
-let rafId = null;
 
 const BOARD_UI_COLORS = {
   'default': { hex: '#94a3b8', border: 'border-gray-200 dark:border-gray-700' },
@@ -769,7 +718,7 @@ class GlobalUIController {
         AppEvents.emit('ui:search:changed', { query: this.searchInput?.value || '', tag: e.target.value });
       });
     }
-    AppEvents.on('ui:search:changed', (filters) => this.filterCardsGranular(filters.query, filters.tag));
+    AppEvents.on('ui:search:changed', (filters) => this.filterCards(filters.query, filters.tag));
     AppEvents.on('ui:mobile_menu:toggle', () => this.toggleMobileMenu());
     AppEvents.on('ui:mobile_menu:share', () => { this.copyShareLink(); this.toggleMobileMenu(); });
     AppEvents.on('ui:mobile_menu:search', (payload) => {
@@ -787,17 +736,24 @@ class GlobalUIController {
     const menu = document.getElementById('mobileMenuDropdown');
     if (menu) menu.classList.toggle('hidden');
   }
-  filterCardsGranular(queryStr, tagId) {
+  filterCards(queryStr, tagId) {
     const query = queryStr.toLowerCase().trim();
-    domCache.cards.forEach((el, strId) => {
-      const cardData = stateMap.get(strId);
+    document.querySelectorAll('.card-item').forEach(el => {
+      // Find the card data in columns
+      let cardData = null;
+      columns.forEach(c => {
+         const fCard = c.cards.find(card => String(card.id) === String(el.dataset.id));
+         if(fCard) cardData = fCard;
+      });
       if (!cardData) return;
+
       const matchesSearch = cardData.title.toLowerCase().includes(query) || (cardData.description || "").toLowerCase().includes(query);
       const matchesTag = tagId === "all" || (cardData.tags && cardData.tags.includes(tagId));
       if (matchesSearch && matchesTag && !cardData.archived) el.classList.remove('hidden');
       else el.classList.add('hidden');
     });
-    domCache.columns.forEach((el, colId) => {
+
+    document.querySelectorAll('[id^="cards-"]').forEach(el => {
       const visibleCount = el.querySelectorAll('.card-item:not(.hidden)').length;
       const countBadge = el.previousElementSibling?.querySelector('.rounded-full.border');
       if (countBadge) countBadge.innerText = visibleCount;
@@ -882,7 +838,7 @@ class ColumnController {
   }
   addColumn() {
     columns.push({ id: Date.now(), name: "Новая колонка", color: 'default', cards: [] });
-    persist(); 
+    persist(); render();
     showSystemToast('Колонка создана', 'Вы можете изменить её название и цвет.', 'plus-square', 'text-emerald-500', 'bg-emerald-50');
   }
   openColModal(id) {
@@ -911,13 +867,13 @@ class ColumnController {
   saveColumn() {
     const nameVal = document.getElementById('colNameInput').value.trim() || 'Без названия';
     columns = columns.map(c => c.id == this.editingColId ? { ...c, name: nameVal, color: this.selectedColColor } : c);
-    persist();
+    persist(); render();
     AppEvents.emit('ui:modal:closed', 'colModal');
   }
   deleteColumn() {
     openConfirmModal('Удалить колонку?', 'Все задачи внутри колонки также будут удалены навсегда!', 'Удалить', true, () => {
       columns = columns.filter(c => c.id != this.editingColId); 
-      persist();
+      persist(); render();
       AppEvents.emit('ui:modal:closed', 'colModal');
     });
   }
@@ -955,18 +911,14 @@ class CardController {
   handleViewArchive() {
     if (!viewingCard || !currentColumn) return;
     openConfirmModal('Отправить в архив?', 'Задача исчезнет с доски, но останется в Архиве проекта.', 'В архив', false, () => {
-      if (isLocalBoard) {
-        columns = columns.map(col => { 
-          if (col.id == currentColumn) { 
-            const updatedCards = (col.cards || []).map(c => c.id == viewingCard.id ? { ...c, archived: true } : c);
-            return { ...col, cards: updatedCards };
-          } 
-          return col; 
-        });
-        persist(); render();
-      } else {
-        db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(viewingCard.id)).update({ archived: true });
-      }
+      columns = columns.map(col => { 
+        if (col.id == currentColumn) { 
+          const updatedCards = (col.cards || []).map(c => c.id == viewingCard.id ? { ...c, archived: true } : c);
+          return { ...col, cards: updatedCards };
+        } 
+        return col; 
+      });
+      persist(); render();
       AppEvents.emit('ui:modal:closed', 'viewCardModal');
       showSystemToast('Архивировано', 'Задача перемещена в хранилище.', 'archive', 'text-amber-500', 'bg-amber-50');
     });
@@ -1019,62 +971,49 @@ class CardController {
     
     const cardId = editingCard ? editingCard.id : 'card_' + Date.now();
     const cardData = { 
+      id: cardId,
       title: titleVal || 'Без названия', description: descVal || "", tags: activeTags || [], image: imageUrl, 
       comments: editingCard ? (editingCard.comments || []) : [], author: editingCard ? editingCard.author : currentUser, 
-      dueDate: dateVal || "", checklist: activeChecklist || [], columnId: currentColumn,
-      order: editingCard ? (editingCard.order || 0) : allCards.length, archived: editingCard ? (editingCard.archived || false) : false,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      dueDate: dateVal || "", checklist: activeChecklist || [], type: editingCard ? (editingCard.type || 'task') : 'task'
     };
     
-    if (isLocalBoard) {
-      columns = columns.map(col => {
-        if (col.id == currentColumn) {
-          const cards = col.cards || [];
-          const updated = editingCard ? cards.map(c => c.id == cardId ? {id: cardId, ...cardData} : c) : [...cards, {id: cardId, ...cardData}];
-          return {...col, cards: updated};
-        }
-        return col;
-      });
-      persist();
-    } else {
-      await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).set(cardData, { merge: true });
-    }
-
+    columns = columns.map(col => {
+      if (col.id == currentColumn) {
+        const cards = col.cards || [];
+        const updated = editingCard ? cards.map(c => c.id == cardId ? {...c, ...cardData} : c) : [...cards, cardData];
+        return {...col, cards: updated};
+      }
+      return col;
+    });
+    
+    persist(); render();
     AppEvents.emit('ui:modal:closed', 'editCardModal');
-    showSystemToast('Сохранено', 'Карточка обновлена точечно.', 'zap', 'text-blue-500', 'bg-blue-50');
+    showSystemToast('Сохранено', 'Карточка обновлена.', 'zap', 'text-blue-500', 'bg-blue-50');
   }
     
   deleteActiveCard() { 
     if (!editingCard) return;
     openConfirmModal('Удалить навсегда?', 'Карточка будет удалена без возможности восстановления.', 'Удалить задачу', true, () => {
-      if (isLocalBoard) {
-        columns = columns.map(col => { 
-          if (col.id == currentColumn) return { ...col, cards: (col.cards || []).filter(c => c.id != editingCard.id) };
-          return col; 
-        }); 
-        persist();
-      } else {
-        db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(editingCard.id)).delete();
-      }
+      columns = columns.map(col => { 
+        if (col.id == currentColumn) return { ...col, cards: (col.cards || []).filter(c => c.id != editingCard.id) };
+        return col; 
+      }); 
+      persist(); render();
       AppEvents.emit('ui:modal:closed', 'editCardModal');
-      showSystemToast('Удалено', 'Карточка стерта из базы.', 'trash-2', 'text-red-500', 'bg-red-50');
+      showSystemToast('Удалено', 'Карточка стерта.', 'trash-2', 'text-red-500', 'bg-red-50');
     });
   }
     
   archiveActiveCard() {
     if (!editingCard) return;
     openConfirmModal('Отправить в архив?', 'Задача исчезнет с доски, но останется в разделе "Архив".', 'В архив', false, () => {
-      if (isLocalBoard) {
-        columns = columns.map(col => { 
-          if (col.id == currentColumn) { 
-            return { ...col, cards: (col.cards || []).map(c => c.id == editingCard.id ? { ...c, archived: true } : c) };
-          } 
-          return col; 
-        });
-        persist(); 
-      } else {
-        db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(editingCard.id)).update({ archived: true });
-      }
+      columns = columns.map(col => { 
+        if (col.id == currentColumn) { 
+          return { ...col, cards: (col.cards || []).map(c => c.id == editingCard.id ? { ...c, archived: true } : c) };
+        } 
+        return col; 
+      });
+      persist(); render();
       AppEvents.emit('ui:modal:closed', 'editCardModal');
       showSystemToast('Архивировано', 'Задача перемещена в хранилище.', 'archive', 'text-amber-500', 'bg-amber-50');
     });
@@ -1146,7 +1085,7 @@ function deleteCustomTag(tagId) {
     columns = columns.map(col => {
       return { ...col, cards: (col.cards || []).map(card => { if (card.tags && card.tags.includes(tagId)) return { ...card, tags: card.tags.filter(id => id !== tagId) }; return card; }) };
     }); 
-    persist();
+    persist(); render();
   });
 }
 
@@ -1214,6 +1153,7 @@ function render() {
   const searchQuery = document.getElementById('boardSearch')?.value.toLowerCase() || "";
   const filterTag = document.getElementById('tagFilter')?.value || "all";
   const todayStr = new Date().toISOString().split('T')[0];
+  
   const myRole = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role : 'editor';
   const isViewer = myRole === 'viewer' && !isLocalBoard;
   const addColBtn = document.getElementById('addColumnBtn');
@@ -1280,24 +1220,22 @@ function render() {
     const colEl = document.getElementById(`cards-${col.id}`);
     sortableInstances.push(new Sortable(colEl, { 
       group: 'shared', animation: 150, disabled: isViewer,
-      onEnd: async function (evt) { 
-        const cardId = String(evt.item.dataset.id);
+      onEnd: function (evt) { 
+        let mCard; 
+        const fromColId = evt.from.id.replace('cards-','');
         const toColId = evt.to.id.replace('cards-','');
-        const prevEl = evt.item.previousElementSibling;
-        const nextEl = evt.item.nextElementSibling;
-        const prevOrder = prevEl ? (stateMap.get(String(prevEl.dataset.id))?.order || 0) : null;
-        const nextOrder = nextEl ? (stateMap.get(String(nextEl.dataset.id))?.order || 0) : null;
-        let newOrder = 0;
-        if (prevOrder !== null && nextOrder !== null) newOrder = (prevOrder + nextOrder) / 2;
-        else if (prevOrder !== null) newOrder = prevOrder + 65536;
-        else if (nextOrder !== null) newOrder = nextOrder - 65536;
-        else newOrder = 65536;
-        if (isLocalBoard) {
-           const cardData = stateMap.get(cardId);
-           if(cardData) { cardData.columnId = toColId; cardData.order = newOrder; updateLocalState('modified', cardData); persist(); }
-        } else {
-          await db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).update({ columnId: toColId, order: newOrder, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-        }
+        const fromCol = columns.find(c => c.id == fromColId);
+        const toCol = columns.find(c => c.id == toColId);
+        
+        if(!fromCol || !toCol) return;
+        
+        fromCol.cards = fromCol.cards.filter(card => { 
+          if(card.id == evt.item.dataset.id){
+            mCard = card; return false; 
+          } return true; 
+        }); 
+        if(mCard) toCol.cards.splice(evt.newIndex, 0, mCard); 
+        persist(); 
       } 
     }));
   });
