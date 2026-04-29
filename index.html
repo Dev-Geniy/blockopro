@@ -572,7 +572,8 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
       
-      <div class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 relative overflow-hidden hover:-translate-y-1">
+      <div id="planCard_free" class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 relative overflow-hidden hover:-translate-y-1">
+        <div id="planBadge_free" class="hidden absolute -top-5 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-full shadow-lg">Текущий план</div>
         <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
         <div class="mb-8 flex flex-col items-center">
           <div class="relative w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100 dark:border-emerald-900 transition-transform duration-500 group-hover:scale-110 shadow-inner">
@@ -592,13 +593,13 @@
           <li class="flex items-start gap-3 text-sm text-gray-400"><i data-lucide="alert-circle" class="w-5 h-5 mt-0.5"></i> Ограниченный AI ассистент</li>
         </ul>
         <div class="space-y-3 mt-auto relative z-10 w-full">
-          <button onclick="closePricingModal()" class="w-full py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors active:scale-95">Текущий план</button>
+          <button id="btnUpgrade_free" onclick="upgradeTo('free')" class="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl">Активировать план</button>
           <button onclick="openPlanDetails('free')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-emerald-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
         </div>
       </div>
 
-      <div class="group bg-white dark:bg-gray-900 border-2 border-blue-500 p-10 rounded-[2.5rem] flex flex-col shadow-2xl shadow-blue-500/10 scale-105 z-10 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/20">
-        <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-full shadow-lg">Most Popular</div>
+      <div id="planCard_freelancer" class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 relative overflow-hidden hover:-translate-y-1">
+        <div id="planBadge_freelancer" class="hidden absolute -top-5 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-full shadow-lg">Текущий план</div>
         <div class="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
         <div class="mb-8 mt-4 flex flex-col items-center">
           <div class="relative w-16 h-16 bg-blue-500 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30 transition-transform duration-500 group-hover:scale-110">
@@ -618,12 +619,13 @@
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> Увеличенный лимит AI</li>
         </ul>
         <div class="space-y-3 mt-auto relative z-10 w-full">
-          <button onclick="upgradeTo('freelancer')" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all">Активировать план</button>
+          <button id="btnUpgrade_freelancer" onclick="upgradeTo('freelancer')" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all">Активировать план</button>
           <button onclick="openPlanDetails('freelancer')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-blue-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
         </div>
       </div>
 
-      <div class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-500 relative overflow-hidden hover:-translate-y-1">
+      <div id="planCard_pro" class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-500 relative overflow-hidden hover:-translate-y-1">
+        <div id="planBadge_pro" class="hidden absolute -top-5 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-full shadow-lg">Текущий план</div>
         <div class="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
         <div class="mb-8 flex flex-col items-center">
           <div class="relative w-16 h-16 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-500 group-hover:scale-110 shadow-inner">
@@ -643,7 +645,7 @@
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-amber-500 mt-0.5"></i> Сгорающие файлы в чате</li>
         </ul>
         <div class="space-y-3 mt-auto relative z-10 w-full">
-          <button onclick="upgradeTo('pro')" class="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl">Активировать план</button>
+          <button id="btnUpgrade_pro" onclick="upgradeTo('pro')" class="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl">Активировать план</button>
           <button onclick="openPlanDetails('pro')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-amber-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
         </div>
       </div>
@@ -1200,6 +1202,37 @@ function openPricingModal() {
   const modal = document.getElementById('pricingModal');
   const content = document.getElementById('pricingContent');
   if (!modal) return;
+  
+  // ЭНТЕРПРАЙЗ: Динамическое выделение активного тарифа (Single Source of Truth)
+  const plans = ['free', 'freelancer', 'pro'];
+  plans.forEach(p => {
+    const card = document.getElementById('planCard_' + p);
+    const btn = document.getElementById('btnUpgrade_' + p);
+    const badge = document.getElementById('planBadge_' + p);
+    
+    if (card && btn && badge) {
+      if (p === userPlan) {
+        // Активный тариф: синяя рамка, scale-105, кнопка заблокирована
+        card.className = "group bg-white dark:bg-gray-900 border-2 border-blue-500 p-10 rounded-[2.5rem] flex flex-col shadow-2xl shadow-blue-500/10 scale-105 z-10 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/20";
+        badge.classList.remove('hidden');
+        
+        btn.innerText = "Ваш тариф";
+        btn.className = "w-full py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-400 font-bold rounded-2xl cursor-default transition-colors";
+        btn.onclick = null;
+      } else {
+        // Неактивный тариф: обычная рамка, стандартный hover
+        card.className = "group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 relative overflow-hidden hover:-translate-y-1";
+        badge.classList.add('hidden');
+        
+        btn.innerText = "Активировать план";
+        btn.className = p === 'freelancer' 
+          ? "w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all"
+          : "w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl";
+        btn.onclick = () => upgradeTo(p);
+      }
+    }
+  });
+
   modal.classList.remove('hidden');
   setTimeout(() => {
     modal.classList.remove('opacity-0');
@@ -1979,7 +2012,7 @@ async function loadAffiliateStats() {
         btn.classList.remove('hidden');
         rewardText.classList.remove('hidden');
       } else {
-        // ЭНТЕРПРАЙЗ: Премиальный дизайн статуса вместо обычного текста со смайликом
+        // ЭНТЕРПРАЙЗ: Премиальный дизайн статуса вместо обычного текста со смайликом[cite: 8]
         rewardText.innerHTML = `<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-lg shadow-sm"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Активировано</span>`;
         rewardText.classList.remove('hidden');
         lucide.createIcons();
