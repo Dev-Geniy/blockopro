@@ -158,6 +158,11 @@
        document.getElementById('localBadge').classList.remove('hidden');
        const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
        if (localBoards[BOARD_ID]) {
+          // ЭНТЕРПРАЙЗ: Защита локального архива паролем
+          if (localBoards[BOARD_ID].password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== localBoards[BOARD_ID].password) {
+            window.location.href = 'index.html';
+            return;
+          }
           currentBoardData = localBoards[BOARD_ID];
           setupArchiveUI();
           renderArchive();
@@ -168,6 +173,14 @@
       db.collection("boards").doc(BOARD_ID).onSnapshot(doc => {
         if (!doc.exists) return window.location.href = 'index.html';
         currentBoardData = doc.data();
+        
+        // ЭНТЕРПРАЙЗ: Проверка пароля и статуса владельца для облачного архива
+        const isOwner = currentBoardData.owner === currentUser.uid;
+        if (!isOwner && currentBoardData.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== currentBoardData.password) {
+          window.location.href = 'index.html';
+          return;
+        }
+
         setupArchiveUI();
         renderArchive();
       });
