@@ -822,11 +822,32 @@ let onlineBoards = [];
 let savedBoardOrder = JSON.parse(localStorage.getItem('blocko_boards_order')) || [];
 let sortableInstance = null;
 
-auth.onAuthStateChanged((user) => {
+auth.onAuthStateChanged(async (user) => {
   const authScreen = document.getElementById('authScreen');
   const dashScreen = document.getElementById('dashboardScreen');
   if (user) {
     currentUser = { id: user.uid, name: user.displayName, avatar: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}` };
+    
+    // ЭНТЕРПРАЙЗ: Синхронизация тарифа и проверка истечения (Expiration Engine)
+    try {
+      const userRef = db.collection('users').doc(user.uid);
+      const userDoc = await userRef.get();
+      if (userDoc.exists) {
+        const data = userDoc.data();
+        let currentPlan = data.plan || 'free';
+        
+        // Проверка на истечение подарочного/временного тарифа
+        if (data.planExpiresAt && Date.now() > data.planExpiresAt) {
+          currentPlan = 'free';
+          await userRef.update({ plan: 'free', planExpiresAt: firebase.firestore.FieldValue.delete() });
+          showSystemToast('Тариф изменен', 'Срок действия вашего премиум-статуса истек.', 'info', 'text-blue-500', 'bg-blue-50');
+        }
+        
+        userPlan = currentPlan;
+        localStorage.setItem('blocko_user_plan', currentPlan);
+      }
+    } catch(e) { console.error("Plan sync error:", e); }
+
     authScreen.classList.add('hidden');
     dashScreen.classList.remove('hidden');
     dashScreen.classList.add('flex');
@@ -837,9 +858,7 @@ auth.onAuthStateChanged((user) => {
     // --- ПЕРЕХВАТ ИНВАЙТ-ССЫЛКИ ПРИ ВХОДЕ ---
     const joinId = new URLSearchParams(window.location.search).get('join');
     if (joinId) {
-      // Очищаем URL, чтобы при обновлении страницы скрипт не срабатывал дважды
       window.history.replaceState({}, document.title, window.location.pathname);
-      // Даем доскам секунду на загрузку и запускаем логику добавления
       setTimeout(() => joinBoardById(joinId), 500); 
     }
   } else {
@@ -847,7 +866,7 @@ auth.onAuthStateChanged((user) => {
     dashScreen.classList.add('hidden');
   }
 });
-
+  
 async function loginWithGoogle() { 
   try {
     const result = await auth.signInWithPopup(googleProvider);
