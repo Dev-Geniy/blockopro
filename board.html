@@ -741,12 +741,17 @@ auth.onAuthStateChanged(async (user) => {
     const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
     
     let badgeStatus = 'none';
+    let customAvatar = null;
+    let badgeConfig = null;
+
     try {
       const userRef = db.collection('users').doc(user.uid);
       const userDoc = await userRef.get();
       if (userDoc.exists) {
         const data = userDoc.data();
         badgeStatus = data.badgeStatus || 'none';
+        customAvatar = data.customAvatar || null;
+        badgeConfig = data.badgeConfig || null;
         
         // ЭНТЕРПРАЙЗ: Синхронизация тарифа и проверка истечения
         let currentPlan = data.plan || 'free';
@@ -759,8 +764,22 @@ auth.onAuthStateChanged(async (user) => {
       }
     } catch(e) {}
 
-    currentUser = { id: user.uid, name: user.displayName, avatar: safeAvatar, badge: badgeStatus };
-    document.getElementById('commentMyAvatar').src = currentUser.avatar;
+    // Обогащаем currentUser полными данными кастомизации
+    currentUser = { 
+      id: user.uid, 
+      name: user.displayName, 
+      avatar: safeAvatar, 
+      customAvatar: customAvatar,
+      badgeStatus: badgeStatus,
+      badgeConfig: badgeConfig
+    };
+    
+    // Динамически заменяем статичную картинку в инпуте комментов на нашу Enterprise-модель
+    const commentAvatarEl = document.getElementById('commentMyAvatar');
+    if (commentAvatarEl) {
+       commentAvatarEl.outerHTML = getAvatarHTML(currentUser, 'w-10 h-10 flex-shrink-0', 'commentMyAvatar');
+       lucide.createIcons();
+    }
     
     if (!BOARD_ID) window.location.href = 'index.html'; 
     else loadBoard();
@@ -768,29 +787,45 @@ auth.onAuthStateChanged(async (user) => {
     window.location.href = 'index.html'; 
   }
 });
-
-// Глобальная функция для отрисовки аватарки с рамкой и премиальными бейджами статуса
-function getAvatarHTML(userObj, sizeClass) {
-  const badge = userObj.badge || 'none';
-  let wrapClass = '';
-  let badgeIconHtml = '';
   
-  // Определяем классы рамок и иконки геймификации[cite: 12]
+// Глобальная функция для отрисовки аватарки с рамкой, эффектами и бейджами статуса
+function getAvatarHTML(userObj, sizeClass, idAttr = '') {
+  const config = userObj.badgeConfig || { frameColor: 'transparent', glowColor: 'transparent', animation: 'none' };
+  const avatarUrl = userObj.customAvatar || userObj.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userObj.name || 'User')}`;
+  const badge = userObj.badgeStatus || userObj.badge || 'none'; // Поддержка старого формата
+  
+  let animationClass = "";
+  if (config.animation === 'pulse') animationClass = "animate-pulse";
+  if (config.animation === 'rainbow') animationClass = "animate-[spin_4s_linear_infinite] filter hue-rotate-180"; 
+  if (config.animation === 'flicker') animationClass = "animate-bounce"; 
+  
+  let badgeIconHtml = '';
   if (badge === 'ambassador') {
-    wrapClass = 'ambassador-frame';
     badgeIconHtml = `<div class="absolute -top-1.5 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 transform rotate-12 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="crown" class="w-3 h-3 text-amber-500 fill-current"></i></div>`;
   } else if (badge === 'partner') {
-    wrapClass = 'partner-frame';
     badgeIconHtml = `<div class="absolute -bottom-1 -right-1 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="award" class="w-2.5 h-2.5 text-amber-500 fill-current"></i></div>`;
   } else if (badge === 'friend') {
-    wrapClass = 'friend-frame';
     badgeIconHtml = `<div class="absolute -bottom-1 -right-1 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="shield-check" class="w-2.5 h-2.5 text-blue-500 fill-current"></i></div>`;
   }
-  
-  if (wrapClass) {
-    return `<div class="relative inline-block flex-shrink-0"><div class="${wrapClass} shadow-sm"><img src="${userObj.avatar}" class="${sizeClass} rounded-full object-cover border-2 border-white dark:border-gray-900" title="${userObj.name}"/></div>${badgeIconHtml}</div>`;
+
+  const idString = idAttr ? `id="${idAttr}"` : '';
+
+  // Если нет кастомной рамки, отдаем оптимизированный чистый рендер
+  if (config.frameColor === 'transparent' || !config.frameColor) {
+     return `<div class="relative inline-block flex-shrink-0" ${idString}><img src="${avatarUrl}" class="${sizeClass} rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm ${animationClass}" title="${userObj.name}" />${badgeIconHtml}</div>`;
   }
-  return `<div class="relative inline-block flex-shrink-0"><img src="${userObj.avatar}" class="${sizeClass} rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm" title="${userObj.name}" />${badgeIconHtml}</div>`;
+
+  // Энтерпрайз-рендер с неоновым свечением и фоновыми анимациями
+  return `
+    <div class="relative inline-block flex-shrink-0" ${idString}>
+      <div class="relative ${sizeClass} rounded-full transition-all duration-500" 
+           style="padding: 3px; background: ${config.frameColor}; box-shadow: 0 0 15px ${config.glowColor};">
+        <img src="${avatarUrl}" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-gray-900 ${animationClass}" title="${userObj.name}" />
+        ${config.animation === 'rainbow' ? '<div class="absolute inset-0 rounded-full border-2 border-white/20 animate-spin"></div>' : ''}
+      </div>
+      ${badgeIconHtml}
+    </div>
+  `;
 }
 
 function updateBoardData(updates) {
