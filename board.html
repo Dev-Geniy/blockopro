@@ -757,18 +757,28 @@ auth.onAuthStateChanged(async (user) => {
   }
 });
 
-// Глобальная функция для отрисовки аватарки с рамкой
+// Глобальная функция для отрисовки аватарки с рамкой и премиальными бейджами статуса
 function getAvatarHTML(userObj, sizeClass) {
   const badge = userObj.badge || 'none';
   let wrapClass = '';
-  if (badge === 'ambassador') wrapClass = 'ambassador-frame';
-  else if (badge === 'partner') wrapClass = 'partner-frame';
-  else if (badge === 'friend') wrapClass = 'friend-frame';
+  let badgeIconHtml = '';
+  
+  // Определяем классы рамок и иконки геймификации
+  if (badge === 'ambassador') {
+    wrapClass = 'ambassador-frame';
+    badgeIconHtml = `<div class="absolute -top-1.5 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 transform rotate-12 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="crown" class="w-3 h-3 text-amber-500 fill-current"></i></div>`;
+  } else if (badge === 'partner') {
+    wrapClass = 'partner-frame';
+    badgeIconHtml = `<div class="absolute -bottom-1 -right-1 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="award" class="w-2.5 h-2.5 text-amber-500 fill-current"></i></div>`;
+  } else if (badge === 'friend') {
+    wrapClass = 'friend-frame';
+    badgeIconHtml = `<div class="absolute -bottom-1 -right-1 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="shield-check" class="w-2.5 h-2.5 text-blue-500 fill-current"></i></div>`;
+  }
   
   if (wrapClass) {
-    return `<div class="${wrapClass} shadow-sm flex-shrink-0"><img src="${userObj.avatar}" class="${sizeClass} rounded-full object-cover border-2 border-gray-900" title="${userObj.name}"/></div>`;
+    return `<div class="relative inline-block flex-shrink-0"><div class="${wrapClass} shadow-sm"><img src="${userObj.avatar}" class="${sizeClass} rounded-full object-cover border-2 border-white dark:border-gray-900" title="${userObj.name}"/></div>${badgeIconHtml}</div>`;
   }
-  return `<img src="${userObj.avatar}" class="${sizeClass} rounded-full flex-shrink-0 object-cover border border-gray-200 dark:border-gray-700 shadow-sm" title="${userObj.name}" />`;
+  return `<div class="relative inline-block flex-shrink-0"><img src="${userObj.avatar}" class="${sizeClass} rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm" title="${userObj.name}" />${badgeIconHtml}</div>`;
 }
 
 function updateBoardData(updates) {
