@@ -803,10 +803,6 @@ function ensureUserTag(data) {
   }
 }
 
-// ENTERPRISE SYNC ENGINE: Subcollections Edition
-let cardsUnsubscribe = null;
-let allCards = [];
-
 // ENTERPRISE SYNC ENGINE: Granular UI Edition
 let cardsUnsubscribe = null;
 let allCards = [];
@@ -1247,22 +1243,76 @@ function updateTagFilterDropdown() {
   if ([...select.options].some(o => o.value === savedValue)) select.value = savedValue;
 }
 
-function toggleChat() { 
-  closeOtherSidebars('chatSidebar'); 
-  const sidebar = document.getElementById('chatSidebar');
-  sidebar.classList.toggle('translate-x-full'); 
-  
-  if (!sidebar.classList.contains('translate-x-full')) {
-    const badge = document.getElementById('chatBadge');
-    if(badge) {
-        badge.classList.add('hidden');
-        badge.innerText = '0';
+// ==========================================
+// MODULE: UI SIDEBAR CONTROLLER (Decoupled)
+// ==========================================
+class SidebarController {
+  constructor() {
+    this.chatContainer = document.getElementById('viewChatContainer');
+    this.membersContainer = document.getElementById('membersSidebar');
+    this.chatBadge = document.getElementById('unreadBadge');
+    this.chatInput = document.getElementById('chatInput');
+    
+    this.bindEvents();
+  }
+
+  bindEvents() {
+    // 1. Подписка на глобальную шину событий (Никаких прямых вызовов из других файлов!)
+    AppEvents.on(EVENTS.CHAT_TOGGLED, () => this.toggleChat());
+    AppEvents.on('ui:members:toggled', () => this.toggleMembers());
+    
+    // 2. Event Delegation (Слушаем клики глобально, готовимся к удалению onclick из HTML)
+    document.addEventListener('click', (e) => {
+      // Кнопки Чата
+      if (e.target.closest('#btnChat') || e.target.closest('.close-chat-btn')) {
+        e.preventDefault();
+        AppEvents.emit(EVENTS.CHAT_TOGGLED);
+      }
+      // Кнопки Участников
+      if (e.target.closest('#btnTeam') || e.target.closest('.close-members-btn')) {
+        e.preventDefault();
+        AppEvents.emit('ui:members:toggled');
+      }
+    });
+  }
+
+  toggleChat() {
+    if (!this.chatContainer) return;
+    const isHidden = this.chatContainer.classList.contains('translate-x-full');
+    
+    if (isHidden) {
+      this.chatContainer.classList.remove('translate-x-full');
+      if (this.chatBadge) this.chatBadge.classList.add('hidden');
+      
+      if (this.chatInput) {
+        setTimeout(() => {
+          this.chatInput.focus();
+          if (typeof scrollChatToBottom === 'function') scrollChatToBottom();
+        }, 300);
+      }
+    } else {
+      this.chatContainer.classList.add('translate-x-full');
     }
-    const chatBox = document.getElementById("chatMessages");
-    setTimeout(() => chatBox.scrollTop = chatBox.scrollHeight, 50);
+  }
+
+  toggleMembers() {
+    if (!this.membersContainer) return;
+    this.membersContainer.classList.toggle('translate-x-full');
   }
 }
-  
+
+// Инициализируем контроллер при загрузке DOM
+document.addEventListener('DOMContentLoaded', () => {
+  window.AppSidebars = new SidebarController();
+});
+
+// 🌉 МОСТ ОБРАТНОЙ СОВМЕСТИМОСТИ (Graceful Migration)
+// Перехватываем старые вызовы из HTML и направляем их в Event Bus.
+// Это гарантирует, что интерфейс не сломается, пока мы не вычистим все inline-события.
+window.toggleChat = () => AppEvents.emit(EVENTS.CHAT_TOGGLED);
+window.toggleMembers = () => AppEvents.emit('ui:members:toggled');
+window.toggleMembersSidebar = () => AppEvents.emit('ui:members:toggled');
+
 function toggleSettings() { closeOtherSidebars('settingsSidebar'); document.getElementById('settingsSidebar').classList.toggle('translate-x-full'); }
 function toggleMembers() { closeOtherSidebars('membersSidebar'); document.getElementById('membersSidebar').classList.toggle('translate-x-full'); }
 function closeOtherSidebars(excludeId) { ['chatSidebar', 'settingsSidebar', 'membersSidebar'].forEach(id => { if (id !== excludeId) document.getElementById(id).classList.add('translate-x-full'); }); }
@@ -1368,11 +1418,105 @@ function sendChatMessage() {
   document.getElementById('chatInput').value = '';
 }
 
-function toggleModal(modalId, show) {
-  const el = document.getElementById(modalId);
-  if (show) { el.classList.remove('hidden'); setTimeout(() => el.classList.remove('opacity-0'), 10); } 
-  else { el.classList.add('opacity-0'); setTimeout(() => el.classList.add('hidden'), 200); }
+// ==========================================
+// MODULE: UI MODAL CONTROLLER (Decoupled)
+// ==========================================
+class ModalController {
+  constructor() {
+    this.activeModals = new Set();
+    this.bindEvents();
+  }
+
+  bindEvents() {
+    // 1. Слушаем глобальную шину событий
+    AppEvents.on(EVENTS.MODAL_OPENED, (modalId) => this.open(modalId));
+    AppEvents.on('ui:modal:closed', (modalId) => this.close(modalId));
+
+    // 2. Event Delegation для ВСЕХ модалок (Крестики, Кнопки Отмена, Клик по фону)
+    document.addEventListener('click', (e) => {
+      // Закрытие по кнопке с data-атрибутом или классом
+      const closeBtn = e.target.closest('.close-modal-btn') || e.target.closest('[data-close-modal]');
+      if (closeBtn) {
+        e.preventDefault();
+        const modal = closeBtn.closest('.fixed.inset-0'); // Ищем родительскую модалку
+        if (modal) AppEvents.emit('ui:modal:closed', modal.id);
+      }
+
+      // Закрытие по клику на затемненный фон (Backdrop)
+      if (e.target.classList.contains('fixed') && e.target.classList.contains('inset-0')) {
+        AppEvents.emit('ui:modal:closed', e.target.id);
+      }
+    });
+
+    // 3. Закрытие по клавише ESC (Стандарт UX)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.activeModals.size > 0) {
+        const lastModal = Array.from(this.activeModals).pop();
+        AppEvents.emit('ui:modal:closed', lastModal);
+      }
+    });
+  }
+
+  open(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    
+    modal.classList.remove('hidden');
+    // Запускаем анимацию в следующем кадре (GPU Acceleration)
+    requestAnimationFrame(() => {
+      const content = modal.querySelector('div.transform') || modal.firstElementChild;
+      if (content) {
+        content.classList.remove('opacity-0', 'scale-95', 'translate-y-4');
+        content.classList.add('opacity-100', 'scale-100', 'translate-y-0');
+      }
+    });
+    
+    this.activeModals.add(modalId);
+    document.body.style.overflow = 'hidden'; // Блокируем скролл страницы
+  }
+
+  close(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    const content = modal.querySelector('div.transform') || modal.firstElementChild;
+    if (content) {
+      content.classList.remove('opacity-100', 'scale-100', 'translate-y-0');
+      content.classList.add('opacity-0', 'scale-95', 'translate-y-4');
+    }
+
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      this.activeModals.delete(modalId);
+      if (this.activeModals.size === 0) document.body.style.overflow = '';
+    }, 200); // Синхронизировано с длительностью CSS-перехода
+  }
 }
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', () => {
+  window.AppModals = new ModalController();
+});
+
+// 🌉 МОСТ ОБРАТНОЙ СОВМЕСТИМОСТИ (Graceful Migration)
+// Мы перехватываем старые вызовы из бизнес-логики и проксируем их в контроллер.
+// В будущем мы вычистим эти функции, когда перенесем логику карточек в CardController.
+window.toggleModal = (id, show) => show ? AppEvents.emit(EVENTS.MODAL_OPENED, id) : AppEvents.emit('ui:modal:closed', id);
+
+window.closeEditModal = () => { 
+  AppEvents.emit('ui:modal:closed', 'editCardModal'); 
+  editingCard = null; 
+  pendingImageFile = null; 
+};
+window.closeConfirmModal = () => AppEvents.emit('ui:modal:closed', 'confirmModal');
+window.closeVoiceMemoModal = () => {
+  AppEvents.emit('ui:modal:closed', 'voiceMemoModal');
+  if (typeof stopRecording === 'function') stopRecording();
+};
+window.closeContentViewModal = () => {
+  AppEvents.emit('ui:modal:closed', 'contentViewModal');
+  if (typeof currentPlayingAudio !== 'undefined' && currentPlayingAudio) currentPlayingAudio.pause();
+};
 
 // ЭКСПЕРТНОЕ РЕШЕНИЕ: УНИФИЦИРОВАННЫЙ КОНТРОЛЛЕР МОДАЛЬНЫХ ОКОН
 function openViewModal(colId, cardId) {
@@ -1446,10 +1590,7 @@ function renderContentComments(comments = []) {
     lucide.createIcons();
 }
 
-function closeContentViewModal() {
-    if (currentPlayingAudio) currentPlayingAudio.pause();
-    toggleModal('contentViewModal', false);
-}
+
 
 async function addCommentToContent() {
     const input = document.getElementById('cvCommentInput');
@@ -1525,8 +1666,8 @@ function openEditModal(colId, cardId = null) {
   renderChecklistEdit(); 
   toggleModal('editCardModal', true);
 }
-  
-function closeEditModal() { toggleModal('editCardModal', false); }
+
+
 
 const dropzone = document.getElementById('dropzoneLabel');
 dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20'); };
@@ -1546,98 +1687,121 @@ function handleImageSelection(file) {
 function renderTagsPicker() { document.getElementById('editTagsContainer').innerHTML = getBoardTags().map(t => `<button onclick="toggleTag('${t.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTags.includes(t.id) ? 'border-transparent shadow-sm ' + t.color : 'border-gray-200 dark:border-gray-700 text-gray-500'}">${t.name}</button>`).join(''); }
 function toggleTag(tagId) { activeTags.includes(tagId) ? activeTags = activeTags.filter(t => t !== tagId) : activeTags.push(tagId); renderTagsPicker(); }
 
-// ПОЛНОСТЬЮ ПЕРЕРАБОТАННАЯ ЛОГИКА КАРТОЧЕК (FIX: Дублирование, Удаление, Архив)
-// GRANULAR WRITE: Сохранение отдельного документа в подколлекцию
-async function saveCard() {
-  const titleVal = document.getElementById('editTitle').value.trim();
-  const descVal = document.getElementById('editDescription').value;
-  const dateVal = document.getElementById('editDueDate').value;
-  let imageUrl = editingCard ? editingCard.image : null;
-
-  if (pendingImageFile) { 
-    try {
-      const fd = new FormData(); fd.append('image', pendingImageFile); 
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd }); 
-      const data = await res.json(); 
-      imageUrl = data.data.url;
-    } catch(e) { return alert("Ошибка загрузки картинки"); }
-  }
-  
-  const cardId = editingCard ? editingCard.id : 'card_' + Date.now();
-  const cardData = { 
-    title: titleVal || 'Без названия', 
-    description: descVal || "", 
-    tags: activeTags || [], 
-    image: imageUrl, 
-    comments: editingCard ? (editingCard.comments || []) : [], 
-    author: editingCard ? editingCard.author : currentUser, 
-    dueDate: dateVal || "", 
-    checklist: activeChecklist || [],
-    columnId: currentColumn,
-    order: editingCard ? (editingCard.order || 0) : allCards.length,
-    archived: editingCard ? (editingCard.archived || false) : false,
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  
-  if (isLocalBoard) {
-    // Для офлайн режима продолжаем работать с монолитным объектом в localStorage
-    columns = columns.map(col => {
-      if (col.id == currentColumn) {
-        const cards = col.cards || [];
-        const updated = editingCard ? cards.map(c => c.id == cardId ? {id: cardId, ...cardData} : c) : [...cards, {id: cardId, ...cardData}];
-        return {...col, cards: updated};
-      }
-      return col;
-    });
-    persist();
-  } else {
-    // ВНИМАНИЕ: Пишем только в карточку! Документ доски не перезаписывается.
-    await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).set(cardData, { merge: true });
+// ==========================================
+// MODULE: CARD CONTROLLER (Business Logic)
+// ==========================================
+class CardController {
+  constructor() {
+    this.bindEvents();
   }
 
-  closeEditModal();
-  showSystemToast('Сохранено', 'Карточка обновлена точечно.', 'zap', 'text-blue-500', 'bg-blue-50');
-}
-  
-function deleteCard() { 
-  if (!editingCard) return;
-  openConfirmModal('Удалить навсегда?', 'Карточка будет удалена без возможности восстановления.', 'Удалить задачу', true, () => {
-    // FIX: Используем == для обработки разных типов ID (string/number)
-    columns = columns.map(col => { 
-      if (col.id == currentColumn) {
-        const filtered = (col.cards || []).filter(c => c.id != editingCard.id);
-        return { ...col, cards: filtered };
+  bindEvents() {
+    // Контроллер слушает приказы от интерфейса
+    AppEvents.on('card:save_requested', () => this.saveActiveCard());
+    AppEvents.on('card:delete_requested', () => this.deleteActiveCard());
+    AppEvents.on('card:archive_requested', () => this.archiveActiveCard());
+  }
+
+  async saveActiveCard() {
+    const titleVal = document.getElementById('editTitle').value.trim();
+    const descVal = document.getElementById('editDescription').value;
+    const dateVal = document.getElementById('editDueDate').value;
+    let imageUrl = editingCard ? editingCard.image : null;
+
+    if (pendingImageFile) { 
+      try {
+        const fd = new FormData(); 
+        fd.append('image', pendingImageFile); 
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd }); 
+        const data = await res.json();
+        imageUrl = data.data.url;
+      } catch(e) { 
+        return showSystemToast('Ошибка', 'Не удалось загрузить картинку.', 'image-off', 'text-red-500', 'bg-red-50'); 
       }
-      return col; 
-    }); 
+    }
     
-    persist(); 
-    closeEditModal();
-    showSystemToast('Удалено', 'Карточка стерта из базы.', 'trash-2', 'text-red-500', 'bg-red-50');
-  });
-}
-  
-function archiveCard() {
-  if (!editingCard) return;
-  openConfirmModal('Отправить в архив?', 'Задача исчезнет с доски, но останется в разделе "Архив".', 'В архив', false, () => {
-    columns = columns.map(col => { 
-      if (col.id == currentColumn) { 
-        const updatedCards = (col.cards || []).map(c => {
-          if (c.id == editingCard.id) {
-            return { ...c, archived: true };
-          }
-          return c;
+    const cardId = editingCard ? editingCard.id : 'card_' + Date.now();
+    const cardData = { 
+      title: titleVal || 'Без названия', 
+      description: descVal || "", 
+      tags: activeTags || [], 
+      image: imageUrl, 
+      comments: editingCard ? (editingCard.comments || []) : [], 
+      author: editingCard ? editingCard.author : currentUser, 
+      dueDate: dateVal || "", 
+      checklist: activeChecklist || [],
+      columnId: currentColumn,
+      order: editingCard ? (editingCard.order || 0) : allCards.length,
+      archived: editingCard ? (editingCard.archived || false) : false,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    
+    if (isLocalBoard) {
+      columns = columns.map(col => {
+        if (col.id == currentColumn) {
+          const cards = col.cards || [];
+          const updated = editingCard ? cards.map(c => c.id == cardId ? {id: cardId, ...cardData} : c) : [...cards, {id: cardId, ...cardData}];
+          return {...col, cards: updated};
+        }
+        return col;
+      });
+      persist();
+    } else {
+      await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).set(cardData, { merge: true });
+    }
+
+    AppEvents.emit('ui:modal:closed', 'editCardModal');
+    showSystemToast('Сохранено', 'Карточка обновлена точечно.', 'zap', 'text-blue-500', 'bg-blue-50');
+  }
+    
+  deleteActiveCard() { 
+    if (!editingCard) return;
+    openConfirmModal('Удалить навсегда?', 'Карточка будет удалена без возможности восстановления.', 'Удалить задачу', true, () => {
+      if (isLocalBoard) {
+        columns = columns.map(col => { 
+          if (col.id == currentColumn) return { ...col, cards: (col.cards || []).filter(c => c.id != editingCard.id) };
+          return col; 
+        }); 
+        persist();
+      } else {
+        db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(editingCard.id)).delete();
+      }
+      
+      AppEvents.emit('ui:modal:closed', 'editCardModal');
+      showSystemToast('Удалено', 'Карточка стерта из базы.', 'trash-2', 'text-red-500', 'bg-red-50');
+    });
+  }
+    
+  archiveActiveCard() {
+    if (!editingCard) return;
+    openConfirmModal('Отправить в архив?', 'Задача исчезнет с доски, но останется в разделе "Архив".', 'В архив', false, () => {
+      if (isLocalBoard) {
+        columns = columns.map(col => { 
+          if (col.id == currentColumn) { 
+            return { ...col, cards: (col.cards || []).map(c => c.id == editingCard.id ? { ...c, archived: true } : c) };
+          } 
+          return col; 
         });
-        return { ...col, cards: updatedCards };
-      } 
-      return col; 
+        persist(); 
+      } else {
+        db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(editingCard.id)).update({ archived: true });
+      }
+      
+      AppEvents.emit('ui:modal:closed', 'editCardModal');
+      showSystemToast('Архивировано', 'Задача перемещена в хранилище.', 'archive', 'text-amber-500', 'bg-amber-50');
     });
-    
-    persist(); 
-    closeEditModal(); 
-    showSystemToast('Архивировано', 'Задача перемещена в хранилище.', 'archive', 'text-amber-500', 'bg-amber-50');
-  });
+  }
 }
+
+// Инициализируем контроллер
+document.addEventListener('DOMContentLoaded', () => {
+  window.AppCardsLogic = new CardController();
+});
+
+// 🌉 МОСТ ОБРАТНОЙ СОВМЕСТИМОСТИ
+window.saveCard = () => AppEvents.emit('card:save_requested');
+window.deleteCard = () => AppEvents.emit('card:delete_requested');
+window.archiveCard = () => AppEvents.emit('card:archive_requested');
 
 function renderChecklistEdit() {
   const container = document.getElementById('editChecklistContainer');
@@ -2273,13 +2437,6 @@ function openConfirmModal(title, desc, confirmText, isDanger, callback) {
   setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
 }
 
-function closeConfirmModal() {
-  const modal = document.getElementById('customConfirmModal');
-  const content = document.getElementById('confirmModalContent');
-  modal.classList.add('opacity-0');
-  content.classList.remove('scale-100'); content.classList.add('scale-95');
-  setTimeout(() => { modal.classList.add('hidden'); confirmCallback = null; }, 300);
-}
 
 function executeConfirm() {
   if (confirmCallback) confirmCallback();
@@ -2806,14 +2963,7 @@ function prepareVoiceMemoCreation() {
   lucide.createIcons();
 }
 
-function closeVoiceMemoModal() {
-  if(isRecording) stopRecording();
-  const modal = document.getElementById('voiceMemoModal');
-  const content = document.getElementById('voiceMemoContent');
-  modal.classList.add('opacity-0');
-  content.classList.add('scale-95');
-  setTimeout(() => modal.classList.add('hidden'), 300);
-}
+
 
 async function startRecording() {
   try {
