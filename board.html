@@ -1085,10 +1085,53 @@ function handleChatAttachment(e) {
 }
 
 function persist() { 
-  updateBoardData({ columns });
+  if (isLocalBoard) {
+    updateBoardData({ columns });
+  } else {
+    // ЭНТЕРПРАЙЗ: Duplicate state forbidden! В документ доски пишем только мету колонок.
+    // Карточки живут в своей подколлекции. Исключаем дублирование стейта.
+    const columnsMeta = columns.map(c => ({ id: c.id, name: c.name, color: c.color }));
+    updateBoardData({ columns: columnsMeta });
+  }
+}
+
+// --- STORE DISPATCHERS (UI → Event → Controller → Store → UI) ---
+// Единый метод обновления карточки (Single Source of Truth)
+async function dispatchCardUpdate(cardId, colId, updatePayload) {
+  if (isLocalBoard) {
+    columns = columns.map(col => {
+      if (col.id == colId) {
+        col.cards = col.cards.map(c => c.id == cardId ? { ...c, ...updatePayload } : c);
+      }
+      return col;
+    });
+    persist();
+    render(); // Локально рендерим руками
+  } else {
+    // Отправляем точечное обновление в Firebase. 
+    // onSnapshot сам обновит UI (реактивность) без ручного вызова render()!
+    await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).update({
+      ...updatePayload,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+}
+
+// Единый метод удаления карточки
+async function dispatchCardDelete(cardId, colId) {
+  if (isLocalBoard) {
+    columns = columns.map(col => {
+      if (col.id == colId) col.cards = col.cards.filter(c => c.id != cardId);
+      return col;
+    });
+    persist();
+    render();
+  } else {
+    await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).delete();
+  }
 }
   
-function copyShareLink() { 
+function copyShareLink() {
   // Формируем ссылку на index с параметром join, даже находясь на странице board.html
   const url = window.location.origin + window.location.pathname.replace('board.html', '').replace('index.html', '') + '?join=' + BOARD_ID;
   navigator.clipboard.writeText(url); 
@@ -1593,18 +1636,11 @@ function toggleChecklistView(index) {
   viewingCard.checklist[index].isCompleted = !viewingCard.checklist[index].isCompleted;
   if (viewingCard.checklist[index].isCompleted) fireConfetti(); 
   
-  columns = columns.map(col => { 
-    // FIX: Используем нестрогое сравнение (==), так как currentColumn может быть строкой
-    if (col.id == currentColumn) { 
-      const updatedCards = col.cards.map(c => c.id == viewingCard.id ? viewingCard : c);
-      return { ...col, cards: updatedCards };
-    } 
-    return col; 
-  });
+  // Отправляем точечное обновление в Store
+  dispatchCardUpdate(viewingCard.id, currentColumn, { checklist: viewingCard.checklist });
   
-  persist(); 
+  // Обновляем визуал внутри модалки до прилета snapshot'а для мгновенного отклика
   renderChecklistView(); 
-  render(); // Обновляем саму доску, чтобы прогресс-бар снаружи карточки тоже изменился
 }
 
 let renderRAF = null;
@@ -2341,41 +2377,27 @@ function savePoll() {
   closePollConstructor();
 }
 
-// Оптимизированная логика голосования: предотвращает дублирование голосов и баги обновления массива
+// Оптимизированная логика голосования через Store Dispatcher
 function votePoll(colId, cardId, optionIndex) {
   if (!currentUser || !currentUser.id) return;
   
-  let voted = false;
   const uid = currentUser.id;
+  const col = columns.find(c => c.id == colId);
+  const card = col?.cards.find(c => c.id == cardId);
+  if (!card || card.type !== 'poll') return;
 
-  columns = columns.map(col => {
-    if (col.id == colId) {
-      const updatedCards = col.cards.map(card => {
-        if (card.id == cardId && card.type === 'poll') {
-          // Чистим все старые голоса пользователя в этом опросе
-          card.options = card.options.map((opt, idx) => {
-            const cleanVotes = (opt.votes || []).filter(v => v !== uid);
-            // Если это выбранный индекс, и пользователь там раньше не был — добавляем
-            if (idx === optionIndex) {
-              const wasAlreadyVoted = opt.votes && opt.votes.includes(uid);
-              if (!wasAlreadyVoted) {
-                cleanVotes.push(uid);
-                voted = true;
-              }
-            }
-            return { ...opt, votes: cleanVotes };
-          });
-        }
-        return card;
-      });
-      return { ...col, cards: updatedCards };
+  let voted = false;
+  const updatedOptions = card.options.map((opt, idx) => {
+    const cleanVotes = (opt.votes || []).filter(v => v !== uid);
+    if (idx === optionIndex && !(opt.votes && opt.votes.includes(uid))) {
+      cleanVotes.push(uid);
+      voted = true;
     }
-    return col;
+    return { ...opt, votes: cleanVotes };
   });
 
   if (voted) fireConfetti();
-  persist();
-  render(); // Обновляем прогресс-бары в реальном времени
+  dispatchCardUpdate(cardId, colId, { options: updatedOptions });
 }
 
 // Глобальное управление кастомным плеером
@@ -2446,24 +2468,13 @@ function toggleAudioPlayer(btn, colId, cardId) {
   }
 }
 
-// Исправленная функция: теперь корректно обрабатывает типы данных (число/строка) и принудительно перерисовывает UI
+// Делегируем удаление через единый диспетчер
 function deleteCardDirectly(colId, cardId, typeLabel = 'контент') {
   openConfirmModal(`Удалить ${typeLabel}?`, 'Это действие нельзя отменить, данные будут стерты из облака.', 'Удалить навсегда', true, () => {
-    columns = columns.map(col => {
-      // Используем нестрогое сравнение == так как ID могут приходить как string из DOM
-      if (col.id == colId) {
-        const filteredCards = (col.cards || []).filter(c => c.id != cardId);
-        return { ...col, cards: filteredCards };
-      }
-      return col;
-    });
-    
-    persist();
-    render(); // Принудительный рендер для мгновенного визуального обновления
+    dispatchCardDelete(cardId, colId);
     showSystemToast('Удалено', 'Объект успешно удален из проекта.', 'trash-2', 'text-red-500', 'bg-red-50');
   });
 }
-
 let activeContentView = null; // { colId, cardId, type }
 
 function openPollStatsModal(colId, cardId) {
@@ -2551,23 +2562,19 @@ function addCommentToContent() {
     const text = input.value.trim();
     if (!text || !activeContentView) return;
 
-    columns = columns.map(col => {
-        if (col.id == activeContentView.colId) {
-            col.cards = col.cards.map(c => {
-                if (c.id == activeContentView.cardId) {
-                    if (!c.comments) c.comments = [];
-                    c.comments.push({ text, user: currentUser, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
-                }
-                return c;
-            });
-        }
-        return col;
-    });
+    const col = columns.find(c => c.id == activeContentView.colId);
+    const card = col?.cards.find(c => c.id == activeContentView.cardId);
+    if (!card) return;
+
+    const newComment = { text, user: currentUser, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
+    const updatedComments = [...(card.comments || []), newComment];
 
     input.value = '';
-    persist();
-    const updatedCard = columns.find(col => col.id == activeContentView.colId).cards.find(c => c.id == activeContentView.cardId);
-    renderContentComments(updatedCard.comments);
+    dispatchCardUpdate(card.id, activeContentView.colId, { comments: updatedComments });
+    
+    // Временно обновляем локально для UI
+    card.comments = updatedComments;
+    renderContentComments(updatedComments);
 }
 
 function closeContentViewModal() {
