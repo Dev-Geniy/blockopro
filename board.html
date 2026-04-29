@@ -1616,26 +1616,97 @@ async function addCommentToContent() {
     renderContentComments(updatedCard.comments);
 }
 
-function addColumn(){ columns.push({ id: Date.now(), name: "Новая колонка", color: 'default', cards: [] }); persist(); }
-function openColModal(id){ editingColId = id; const col = columns.find(c => c.id === id); selectedColColor = col.color || 'default'; document.getElementById('colNameInput').value = col.name; renderColorPicker(); toggleModal('colModal', true); }
-function closeColModal(){ toggleModal('colModal', false); }
-function saveColumn() { columns = columns.map(c => c.id === editingColId ? {...c, name: document.getElementById('colNameInput').value, color: selectedColColor} : c); persist(); closeColModal(); }
+// ==========================================
+// MODULE: COLUMN CONTROLLER (Business Logic)
+// ==========================================
+class ColumnController {
+  constructor() {
+    this.editingColId = null;
+    this.selectedColColor = 'default';
+    this.bindEvents();
+  }
 
-function deleteColumn() { 
-  openConfirmModal('Удалить колонку?', 'Все задачи внутри колонки также будут удалены навсегда!', 'Удалить', true, () => {
-    columns = columns.filter(c => c.id !== editingColId); 
-    persist(); closeColModal(); 
-  });
+  bindEvents() {
+    AppEvents.on('column:add_requested', () => this.addColumn());
+    AppEvents.on('column:edit_requested', (id) => this.openColModal(id));
+    AppEvents.on('column:save_requested', () => this.saveColumn());
+    AppEvents.on('column:delete_requested', () => this.deleteColumn());
+    AppEvents.on('column:color_selected', (color) => this.selectColor(color));
+  }
+
+  addColumn() {
+    // В будущем мы перенесем работу с базой в слой сервисов, пока мутируем columns
+    columns.push({ id: Date.now(), name: "Новая колонка", color: 'default', cards: [] });
+    persist(); 
+    showSystemToast('Колонка создана', 'Вы можете изменить её название и цвет.', 'plus-square', 'text-emerald-500', 'bg-emerald-50');
+  }
+
+  openColModal(id) {
+    this.editingColId = id;
+    const col = columns.find(c => c.id == id);
+    if (!col) return;
+    
+    this.selectedColColor = col.color || 'default';
+    document.getElementById('colNameInput').value = col.name;
+    
+    this.renderColorPicker();
+    AppEvents.emit(EVENTS.MODAL_OPENED, 'colModal');
+  }
+
+  selectColor(color) {
+    this.selectedColColor = color;
+    this.renderColorPicker();
+  }
+
+  renderColorPicker() {
+    const container = document.getElementById('colorPicker');
+    if (!container) return;
+    // Отрисовываем палитру, отправляя событие при клике вместо прямого вызова
+    container.innerHTML = Object.entries(BOARD_UI_COLORS).map(([key, data]) => `
+      <button onclick="AppEvents.emit('column:color_selected', '${key}')" 
+              class="w-10 h-10 rounded-full border-4 transition-all shadow-sm ${this.selectedColColor === key ? 'border-gray-900 dark:border-white scale-110 shadow-md' : 'border-transparent'}" 
+              style="background-color: ${data.hex};">
+      </button>
+    `).join('');
+  }
+
+  saveColumn() {
+    const nameVal = document.getElementById('colNameInput').value.trim() || 'Без названия';
+    
+    columns = columns.map(c => c.id == this.editingColId ? { ...c, name: nameVal, color: this.selectedColColor } : c);
+    
+    persist();
+    AppEvents.emit('ui:modal:closed', 'colModal');
+  }
+
+  deleteColumn() {
+    openConfirmModal('Удалить колонку?', 'Все задачи внутри колонки также будут удалены навсегда!', 'Удалить', true, () => {
+      columns = columns.filter(c => c.id != this.editingColId); 
+      persist();
+      AppEvents.emit('ui:modal:closed', 'colModal');
+    });
+  }
 }
 
+// Инициализация контроллера колонок
+document.addEventListener('DOMContentLoaded', () => {
+  window.AppColumnsLogic = new ColumnController();
+});
+
+// 🌉 МОСТ ОБРАТНОЙ СОВМЕСТИМОСТИ
+window.addColumn = () => AppEvents.emit('column:add_requested');
+window.openColModal = (id) => AppEvents.emit('column:edit_requested', id);
+window.saveColumn = () => AppEvents.emit('column:save_requested');
+window.deleteColumn = () => AppEvents.emit('column:delete_requested');
+window.closeColModal = () => AppEvents.emit('ui:modal:closed', 'colModal');
+
+// (Оставляем функцию чек-листа нетронутой, мы перенесем её в CardController позже)
 function toggleChecklistItemEdit(index) { 
   activeChecklist[index].isCompleted = !activeChecklist[index].isCompleted; 
-  if (activeChecklist[index].isCompleted) fireConfetti(); // Вызываем конфетти
-  renderChecklistEdit(); 
+  if (activeChecklist[index].isCompleted) fireConfetti();
+  renderChecklistEdit();
 }
-
-function renderColorPicker() { document.getElementById('colorPicker').innerHTML = Object.entries(BOARD_UI_COLORS).map(([key, data]) => `<button onclick="selectedColColor='${key}'; renderColorPicker()" class="w-10 h-10 rounded-full border-4 transition-all shadow-sm ${selectedColColor === key ? 'border-gray-900 dark:border-white scale-110 shadow-md' : 'border-transparent'}" style="background-color: ${data.hex};"></button>`).join(''); }
-
+  
 function openEditModal(colId, cardId = null) {
   currentColumn = colId; 
   
