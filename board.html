@@ -1895,7 +1895,7 @@ function render() {
           </div>
           ${isViewer ? '' : `<button data-action="editCol" data-col="${col.id}" class="text-gray-400 hover:text-blue-500 p-1 rounded transition-colors"><i data-lucide="more-horizontal" class="w-5 h-5 pointer-events-none"></i></button>`}
         </div>
-        <div id="cards-${col.id}" ${isViewer ? '' : `data-dblaction="quickAdd" data-col="${col.id}"`} class="p-3 flex-1 overflow-y-auto hide-scroll space-y-3 min-h-[50px] ${isViewer ? '' : 'cursor-pointer'} relative">
+        <div id="cards-${col.id}" ${isViewer ? '' : `data-dblaction="quickAdd" data-col="${col.id}"`} class="p-3 flex-1 overflow-y-auto hide-scroll space-y-3 min-h-[120px] ${isViewer ? '' : 'cursor-pointer'} relative">
           ${cardsHtml}
           ${emptyStateHtml}
         </div>
