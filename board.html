@@ -1303,17 +1303,12 @@ function renderMembersSidebar() {
   
   container.innerHTML = Object.entries(boardData.users).map(([uid, user]) => {
     const isMe = uid === currentUser.id;
-    const roleBadge = user.role === 'owner' ? '<span class="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 px-2 py-0.5 rounded-md font-bold">Владелец</span>' : '';
+    const roleBadge = user.role === 'owner' ? '<span class="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 px-2 py-0.5 rounded-md font-bold uppercase tracking-widest">Владелец</span>' : '';
     
-    // ЭНТЕРПРАЙЗ: Индикатор онлайна. Вы (isMe) всегда онлайн с пульсирующей точкой.
-    // Остальные участники будут подсвечиваться серым (offline), пока мы не внедрим WebSocket Presence.
-    const onlineIndicator = isMe 
-        ? `<div class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-gray-800 rounded-full z-20 shadow-sm"><div class="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-75"></div></div>`
-        : `<div class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-gray-300 dark:bg-gray-600 border-2 border-white dark:border-gray-800 rounded-full z-20 shadow-sm" title="Офлайн"></div>`;
-
     let roleSelect = '';
     let deleteBtn = '';
     
+    // ЭНТЕРПРАЙЗ: Селектор ролей и кнопка удаления (только для владельца)
     if (isOwner && user.role !== 'owner') {
       roleSelect = `
         <select onchange="changeUserRole('${uid}', this.value)" class="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1.5 outline-none cursor-pointer hover:border-blue-400 transition-colors">
@@ -1332,9 +1327,8 @@ function renderMembersSidebar() {
 
     return `
       <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800 transition-colors group">
-        <div class="relative">
+        <div class="relative isolate">
             ${getAvatarHTML(user, 'w-10 h-10')}
-            ${onlineIndicator}
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1"><span class="font-bold text-sm text-gray-900 dark:text-white truncate">${user.name} ${isMe ? '<span class="text-xs font-normal text-gray-400">(Вы)</span>' : ''}</span></div>
@@ -1367,7 +1361,7 @@ function removeMember(uid, name) {
     }
   });
 }
-
+  
 function renderSingleMessage(msg, container, msgId) {
   const isMe = msg.user.id === currentUser.id;
   const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
