@@ -1044,7 +1044,10 @@ function processBoardData(data) {
     document.body.style.backgroundAttachment = 'fixed';
   } else { document.body.style.backgroundImage = 'none'; }
   
-  columns = data.columns || []; 
+  // ЭНТЕРПРАЙЗ ПАТТЕРН: Защита стейта. 
+  // Убрали columns = data.columns, так как теперь карточки живут в подколлекции
+  // и стейт собирается в функции syncAndRender(). Больше метаданные не затирают задачи!
+  
   updateTagFilterDropdown();
   render(); 
   renderSettingsTags();
@@ -1466,12 +1469,13 @@ async function saveCard() {
   let imageUrl = editingCard ? editingCard.image : null;
 
   if (pendingImageFile) { 
+    showSystemToast('Загрузка', 'Сохраняем обложку...', 'loader-2', 'text-blue-500 animate-spin', 'bg-blue-50');
     try {
       const fd = new FormData(); fd.append('image', pendingImageFile); 
       const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd }); 
       const data = await res.json(); 
       imageUrl = data.data.url;
-    } catch(e) { return alert("Ошибка загрузки картинки"); }
+    } catch(e) { return showSystemToast('Ошибка', 'Сбой загрузки обложки', 'x-circle', 'text-red-500', 'bg-red-50'); }
   }
   
   const cardId = editingCard ? editingCard.id : 'card_' + Date.now();
@@ -1486,12 +1490,10 @@ async function saveCard() {
     checklist: activeChecklist || [],
     columnId: currentColumn,
     order: editingCard ? (editingCard.order || 0) : allCards.length,
-    archived: editingCard ? (editingCard.archived || false) : false,
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    archived: editingCard ? (editingCard.archived || false) : false
   };
   
   if (isLocalBoard) {
-    // Для офлайн режима продолжаем работать с монолитным объектом в localStorage
     columns = columns.map(col => {
       if (col.id == currentColumn) {
         const cards = col.cards || [];
@@ -1501,28 +1503,22 @@ async function saveCard() {
       return col;
     });
     persist();
+    render();
   } else {
-    // ВНИМАНИЕ: Пишем только в карточку! Документ доски не перезаписывается.
-    await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).set(cardData, { merge: true });
+    await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).set({
+      ...cardData,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
   }
 
   closeEditModal();
-  showSystemToast('Сохранено', 'Карточка обновлена точечно.', 'zap', 'text-blue-500', 'bg-blue-50');
+  showSystemToast('Сохранено', 'Данные успешно обновлены.', 'check', 'text-green-500', 'bg-green-50');
 }
   
 function deleteCard() { 
   if (!editingCard) return;
   openConfirmModal('Удалить навсегда?', 'Карточка будет удалена без возможности восстановления.', 'Удалить задачу', true, () => {
-    // FIX: Используем == для обработки разных типов ID (string/number)
-    columns = columns.map(col => { 
-      if (col.id == currentColumn) {
-        const filtered = (col.cards || []).filter(c => c.id != editingCard.id);
-        return { ...col, cards: filtered };
-      }
-      return col; 
-    }); 
-    
-    persist(); 
+    dispatchCardDelete(editingCard.id, currentColumn);
     closeEditModal();
     showSystemToast('Удалено', 'Карточка стерта из базы.', 'trash-2', 'text-red-500', 'bg-red-50');
   });
@@ -1531,20 +1527,7 @@ function deleteCard() {
 function archiveCard() {
   if (!editingCard) return;
   openConfirmModal('Отправить в архив?', 'Задача исчезнет с доски, но останется в разделе "Архив".', 'В архив', false, () => {
-    columns = columns.map(col => { 
-      if (col.id == currentColumn) { 
-        const updatedCards = (col.cards || []).map(c => {
-          if (c.id == editingCard.id) {
-            return { ...c, archived: true };
-          }
-          return c;
-        });
-        return { ...col, cards: updatedCards };
-      } 
-      return col; 
-    });
-    
-    persist(); 
+    dispatchCardUpdate(editingCard.id, currentColumn, { archived: true });
     closeEditModal(); 
     showSystemToast('Архивировано', 'Задача перемещена в хранилище.', 'archive', 'text-amber-500', 'bg-amber-50');
   });
@@ -1958,15 +1941,31 @@ let quickAddTargetColId = null;
 function quickAddCard(colId) { quickAddTargetColId = colId; toggleModal('quickAddModal', true); setTimeout(() => document.getElementById('quickAddInput').focus(), 10); }
 function closeQuickAdd() { toggleModal('quickAddModal', false); setTimeout(() => { document.getElementById('quickAddInput').value = ''; document.getElementById('quickAddDesc').value = ''; quickAddTargetColId = null; }, 300); }
 function confirmQuickAdd() {
-  const title = document.getElementById('quickAddInput').value.trim(); const description = document.getElementById('quickAddDesc').value.trim();
+  const title = document.getElementById('quickAddInput').value.trim(); 
+  const description = document.getElementById('quickAddDesc').value.trim();
   if (!title || !quickAddTargetColId) return;
-  const newCard = { id: Date.now(), title, description, tags: ['tag_urg'], comments: [], author: currentUser, dueDate: "" };
-  const col = columns.find(c => c.id === quickAddTargetColId);
-  if (col) { 
-      if(!col.cards) col.cards = [];
-      col.cards.push(newCard); 
-      persist(); 
-  } 
+  
+  const cardId = 'card_' + Date.now();
+  const newCard = { 
+    id: cardId, title, description, tags: ['tag_urg'], 
+    comments: [], author: currentUser, dueDate: "", 
+    columnId: quickAddTargetColId, archived: false, order: allCards.length 
+  };
+  
+  if (isLocalBoard) {
+    const col = columns.find(c => c.id == quickAddTargetColId);
+    if (col) { 
+        if(!col.cards) col.cards = [];
+        col.cards.push(newCard); 
+        persist(); 
+        render();
+    } 
+  } else {
+    db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({
+      ...newCard,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
   closeQuickAdd();
 }
 
