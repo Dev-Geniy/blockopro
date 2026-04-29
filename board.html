@@ -803,100 +803,60 @@ function ensureUserTag(data) {
   }
 }
 
+// ENTERPRISE SYNC ENGINE: Subcollections Edition
+let cardsUnsubscribe = null;
+let allCards = [];
+
 function loadBoard() {
   if (isLocalBoard) {
     document.getElementById('localBadge').classList.remove('hidden');
-    document.getElementById('shareLinkContainer').style.display = 'none';
-    document.getElementById('btnTeam').style.display = 'none';
-    document.getElementById('btnChat').style.display = 'none';
-    document.getElementById('viewChatContainer').style.display = 'none';
-    
     const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
     const data = localBoards[BOARD_ID];
-
     if (data) {
-      // --- ПРОВЕРКА ПАРОЛЯ ДЛЯ ОФЛАЙН (ВСЕГДА ДЛЯ ВСЕХ) ---
       if (data.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== data.password) {
-        alert("Доступ к офлайн доске защищен паролем."); 
-        window.location.href = 'index.html'; 
-        return;
+        window.location.href = 'index.html'; return;
       }
-
       boardData = data;
-      ensureUserTag(boardData);
+      columns = data.columns || [];
       processBoardData(boardData);
-    } else {
-      alert("Локальная доска не найдена!"); window.location.href = 'index.html';
     }
   } else {
     document.getElementById('shareUrlText').innerText = window.location.href;
     const docRef = db.collection("boards").doc(BOARD_ID);
     
+    // 1. Слушаем метаданные доски (названия колонок, теги, фон)
     docRef.onSnapshot((doc) => {
-      if (doc.exists) {
-        let data = doc.data();
-        const isOwner = data.owner === currentUser.id;
+      if (!doc.exists) return;
+      boardData = doc.data();
+      const isOwner = boardData.owner === currentUser.id;
 
-        // --- 1. ЛОГИКА АВТО-ДОБАВЛЕНИЯ В ПРОЕКТЫ (ПЕРЕД ПРОВЕРКОЙ ПАРОЛЯ) ---
-        // Мы обновляем членство в проекте СРАЗУ, чтобы доска закрепилась в Dashboard
-        let updates = {};
-        let needsUpdate = false;
-
-        if (!data.users || !data.users[currentUser.id]) {
-           updates[`users.${currentUser.id}`] = { 
-               name: currentUser.name || "User", 
-               avatar: currentUser.avatar || "", 
-               role: isOwner ? 'owner' : 'editor' 
-           };
-           needsUpdate = true;
-        }
-        
-        if (!data.members || !data.members.includes(currentUser.id)) {
-            updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
-            needsUpdate = true;
-        }
-        
-        // Если пользователя нет в проекте — записываем его в Firebase
-        if (needsUpdate) { 
-          docRef.update(updates).catch(console.error); 
-        }
-
-        // --- 2. ПРОВЕРКА ПАРОЛЯ (ДЛЯ ВСЕХ, КРОМЕ ВЛАДЕЛЬЦА) ---
-        // Если пароль не введен, мы выкидываем на индекс, но пользователь уже добавлен в участники
-        if (!isOwner && data.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== data.password) {
-          alert("Проект защищен. Доска добавлена в ваше рабочее пространство. Введите пароль для входа.");
-          window.location.href = 'index.html';
-          return;
-        }
-
-        // --- 3. ЗАГРУЗКА ДАННЫХ (ЕСЛИ ВСЁ ОК) ---
-        boardData = data;
-        ensureUserTag(boardData);
-        processBoardData(boardData);
-        renderMembersSidebar();
-        
-        if (isFirstChatLoad) initChatListener(docRef);
-
-      } else {
-        // Состояние ожидания/синхронизации
-        document.getElementById('boardTitleHeader').innerText = "Синхронизация...";
-        document.getElementById('board').innerHTML = `
-          <div class="w-full text-center py-20 flex flex-col items-center">
-            <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-full flex items-center justify-center mb-4 border border-blue-100 dark:border-blue-800">
-              <i data-lucide="loader-2" class="w-8 h-8 animate-spin"></i>
-            </div>
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Получаем данные...</h2>
-            <p class="text-gray-50 text-sm mb-6 max-w-md">Проверяем доступ и синхронизируем данные.</p>
-            <button onclick="window.location.href='index.html'" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm">Вернуться на главную</button>
-          </div>
-        `;
-        lucide.createIcons();
+      if (!isOwner && boardData.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== boardData.password) {
+        window.location.href = 'index.html'; return;
       }
-    }, (error) => { 
-      console.error("Ошибка Firebase:", error); 
-      showSystemToast('Ошибка сети', 'Не удалось связаться с облаком.', 'wifi-off', 'text-red-500', 'bg-red-50');
+
+      // 2. Если поток карточек еще не запущен — запускаем (Granular Updates)
+      if (!cardsUnsubscribe) {
+        cardsUnsubscribe = docRef.collection("cards").onSnapshot((querySnapshot) => {
+          allCards = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+          syncAndRender();
+        });
+      } else {
+        syncAndRender(); // Пересобираем при изменении метаданных
+      }
+
+      renderMembersSidebar();
+      if (isFirstChatLoad) initChatListener(docRef);
     });
   }
+}
+
+// Склеиваем структуру колонок с карточками из подколлекции
+function syncAndRender() {
+  columns = (boardData.columns || []).map(col => ({
+    ...col,
+    cards: allCards.filter(c => c.columnId == col.id).sort((a, b) => (a.order || 0) - (b.order || 0))
+  }));
+  processBoardData(boardData);
 }
 
 function initChatListener(docRef) {
@@ -1434,68 +1394,56 @@ function renderTagsPicker() { document.getElementById('editTagsContainer').inner
 function toggleTag(tagId) { activeTags.includes(tagId) ? activeTags = activeTags.filter(t => t !== tagId) : activeTags.push(tagId); renderTagsPicker(); }
 
 // ПОЛНОСТЬЮ ПЕРЕРАБОТАННАЯ ЛОГИКА КАРТОЧЕК (FIX: Дублирование, Удаление, Архив)
+// GRANULAR WRITE: Сохранение отдельного документа в подколлекцию
 async function saveCard() {
-  const statusEl = document.getElementById('uploadStatus');
   const titleVal = document.getElementById('editTitle').value.trim();
   const descVal = document.getElementById('editDescription').value;
   const dateVal = document.getElementById('editDueDate').value;
-
   let imageUrl = editingCard ? editingCard.image : null;
 
-  // 1. Обработка изображения через ImgBB
   if (pendingImageFile) { 
-    statusEl.innerText = 'Загрузка обложки...'; 
     try {
-      const fd = new FormData(); 
-      fd.append('image', pendingImageFile); 
+      const fd = new FormData(); fd.append('image', pendingImageFile); 
       const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd }); 
       const data = await res.json(); 
-      if (data.success) {
-        imageUrl = data.data.url; 
-      } else {
-        throw new Error("API Error");
-      }
-    } catch(e) { 
-      statusEl.innerText = 'Ошибка загрузки изображения!'; 
-      showSystemToast('Ошибка обложки', 'Не удалось сохранить картинку.', 'image-off', 'text-red-500', 'bg-red-50');
-      return; 
-    }
+      imageUrl = data.data.url;
+    } catch(e) { return alert("Ошибка загрузки картинки"); }
   }
   
-  // 2. Формируем объект карточки (сохраняем ID если редактируем)
-  const cardObj = { 
-    id: editingCard ? editingCard.id : Date.now(), 
+  const cardId = editingCard ? editingCard.id : 'card_' + Date.now();
+  const cardData = { 
     title: titleVal || 'Без названия', 
     description: descVal || "", 
     tags: activeTags || [], 
     image: imageUrl, 
     comments: editingCard ? (editingCard.comments || []) : [], 
-    author: editingCard ? (editingCard.author || currentUser) : currentUser, 
+    author: editingCard ? editingCard.author : currentUser, 
     dueDate: dateVal || "", 
     checklist: activeChecklist || [],
+    columnId: currentColumn,
+    order: editingCard ? (editingCard.order || 0) : allCards.length,
     archived: editingCard ? (editingCard.archived || false) : false,
-    updatedAt: new Date().toISOString()
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   
-  // 3. Обновляем массив колонок (FIX: нестрогое сравнение и глубокая замена)
-  columns = columns.map(col => { 
-    if (col.id == currentColumn) { 
-      let updatedCards = col.cards || [];
-      // Если мы редактируем существующую
-      if (editingCard) {
-        updatedCards = updatedCards.map(c => c.id == editingCard.id ? cardObj : c);
-      } else {
-        // Если создаем новую
-        updatedCards.push(cardObj);
+  if (isLocalBoard) {
+    // Для офлайн режима продолжаем работать с монолитным объектом в localStorage
+    columns = columns.map(col => {
+      if (col.id == currentColumn) {
+        const cards = col.cards || [];
+        const updated = editingCard ? cards.map(c => c.id == cardId ? {id: cardId, ...cardData} : c) : [...cards, {id: cardId, ...cardData}];
+        return {...col, cards: updated};
       }
-      return { ...col, cards: updatedCards };
-    } 
-    return col; 
-  });
+      return col;
+    });
+    persist();
+  } else {
+    // ВНИМАНИЕ: Пишем только в карточку! Документ доски не перезаписывается.
+    await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).set(cardData, { merge: true });
+  }
 
-  persist(); 
   closeEditModal();
-  showSystemToast('Сохранено', 'Задача успешно обновлена в облаке.', 'check-circle', 'text-emerald-500', 'bg-emerald-50');
+  showSystemToast('Сохранено', 'Карточка обновлена точечно.', 'zap', 'text-blue-500', 'bg-blue-50');
 }
   
 function deleteCard() { 
@@ -1847,32 +1795,33 @@ function render() {
     
     // 3. Инициализация SortableJS для каждой колонки
     const colEl = document.getElementById(`cards-${col.id}`);
+    // Оптимизированный Drag & Drop для подколлекций
     sortableInstances.push(new Sortable(colEl, { 
-      group: 'shared', 
-      animation: 150, 
-      delay: 100, 
-      delayOnTouchOnly: true, 
-      ghostClass: 'sortable-ghost', 
-      dragClass: 'sortable-drag', 
-      forceFallback: true, 
-      fallbackTolerance: 5, 
-      disabled: isViewer,
-      onEnd: function (evt) { 
-        let mCard; 
-        const fromColId = Number(evt.from.id.replace('cards-',''));
-        const toColId = Number(evt.to.id.replace('cards-',''));
-        const fromCol = columns.find(c => c.id === fromColId);
-        const toCol = columns.find(c => c.id === toColId);
+      group: 'shared', animation: 150, disabled: isViewer,
+      onEnd: async function (evt) { 
+        const cardId = evt.item.dataset.id;
+        const toColId = evt.to.id.replace('cards-','');
         
-        if(!fromCol || !toCol) return;
-        
-        fromCol.cards = fromCol.cards.filter(card => { 
-          if(card.id === Number(evt.item.dataset.id) || card.id === evt.item.dataset.id){
-            mCard = card; return false; 
-          } return true; 
-        }); 
-        if(mCard) toCol.cards.splice(evt.newIndex, 0, mCard); 
-        persist(); 
+        if (isLocalBoard) {
+          // Локальная логика остается прежней (массив)
+          let mCard;
+          columns.forEach(c => {
+             const found = c.cards.find(card => card.id == cardId);
+             if(found) { mCard = found; c.cards = c.cards.filter(card => card.id != cardId); }
+          });
+          const targetCol = columns.find(c => c.id == toColId);
+          targetCol.cards.splice(evt.newIndex, 0, mCard);
+          persist();
+        } else {
+          // ENTERPRISE MOVE: Обновляем только ОДИН документ в Firebase
+          // Указываем новый ColumnID и высчитываем Order (в данном случае индекс в DOM)
+          await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).update({
+            columnId: toColId,
+            order: evt.newIndex,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          // Остальные карточки в колонке подтянутся через onSnapshot автоматически
+        }
       } 
     }));
   });
