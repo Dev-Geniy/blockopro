@@ -106,7 +106,7 @@
       <i data-lucide="message-square" class="w-4 h-4"></i>
       <span id="chatBadge" class="hidden absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse border-2 border-white dark:border-gray-900 shadow-sm">0</span>
     </button>
-    <button id="addColumnBtn" onclick="addColumn()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
+    <button id="addColumnBtn" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
       <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden sm:inline">Колонку</span>
     </button>
   </div>
@@ -278,14 +278,19 @@
 
 <div id="colModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-200">
   <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-sm shadow-2xl border border-gray-200 dark:border-gray-700">
-    <div class="flex justify-between items-center mb-5"><h2 class="text-xl font-bold dark:text-white">Настройки колонки</h2><button onclick="closeColModal()" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button></div>
+    <div class="flex justify-between items-center mb-5">
+      <h2 class="text-xl font-bold dark:text-white">Настройки колонки</h2>
+      <button data-close-modal class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+      </button>
+    </div>
     <span class="text-xs font-bold text-gray-500 uppercase block mb-2">Название</span>
-    <input id="colNameInput" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none mb-6 dark:text-white focus:ring-2 focus:ring-blue-500" />
+    <input id="colNameInput" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none mb-6 dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
     <span class="text-xs font-bold text-gray-500 uppercase block mb-3">Цвет шапки</span>
     <div class="flex justify-between mb-8 px-1" id="colorPicker"></div>
     <div class="flex justify-between items-center pt-5 border-t border-gray-100 dark:border-gray-700/50">
-      <button onclick="deleteColumn()" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-2 rounded-xl text-sm font-bold">Удалить</button>
-      <button onclick="saveColumn()" class="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-6 py-2.5 rounded-xl text-sm font-bold hover:scale-105 shadow-md">Сохранить</button>
+      <button id="btnColModalDelete" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-2 rounded-xl text-sm font-bold transition-colors">Удалить</button>
+      <button id="btnColModalSave" class="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-6 py-2.5 rounded-xl text-sm font-bold hover:scale-105 shadow-md transition-transform">Сохранить</button>
     </div>
   </div>
 </div>
@@ -1700,6 +1705,167 @@ window.saveColumn = () => AppEvents.emit('column:save_requested');
 window.deleteColumn = () => AppEvents.emit('column:delete_requested');
 window.closeColModal = () => AppEvents.emit('ui:modal:closed', 'colModal');
 
+// ==========================================
+// MODULE: COLUMN CONTROLLER (Business Logic)
+// ==========================================
+class ColumnController {
+  constructor() {
+    this.editingColId = null;
+    this.selectedColColor = 'default';
+    this.bindUI();
+    this.bindEvents();
+  }
+
+  bindUI() {
+    // Event delegation: UI триггерит события, никаких inline onclick!
+    document.addEventListener('click', (e) => {
+      // Кнопка добавления колонки
+      if (e.target.closest('#addColumnBtn')) {
+        e.preventDefault();
+        AppEvents.emit('ui:column:add_requested');
+      }
+      // Кнопка настройки колонки (внутри шапки колонки)
+      const editBtn = e.target.closest('.edit-col-btn');
+      if (editBtn) {
+        e.preventDefault();
+        AppEvents.emit('ui:column:edit_requested', editBtn.dataset.colId);
+      }
+      // Сохранить настройки
+      if (e.target.closest('#btnColModalSave')) {
+        e.preventDefault();
+        const name = document.getElementById('colNameInput').value.trim();
+        AppEvents.emit('ui:column:save_requested', { name });
+      }
+      // Удалить колонку
+      if (e.target.closest('#btnColModalDelete')) {
+        e.preventDefault();
+        AppEvents.emit('ui:column:delete_requested');
+      }
+      // Выбор цвета
+      const colorBtn = e.target.closest('.col-color-btn');
+      if (colorBtn) {
+        e.preventDefault();
+        AppEvents.emit('ui:column:color_selected', colorBtn.dataset.color);
+      }
+    });
+  }
+
+  bindEvents() {
+    // Логика контроллера: слушает приказы от UI
+    AppEvents.on('ui:column:add_requested', () => this.handleAddColumn());
+    AppEvents.on('ui:column:edit_requested', (id) => this.handleEditColumn(id));
+    AppEvents.on('ui:column:save_requested', (data) => this.handleSaveColumn(data));
+    AppEvents.on('ui:column:delete_requested', () => this.handleDeleteColumn());
+    AppEvents.on('ui:column:color_selected', (color) => this.handleSelectColor(color));
+  }
+
+  handleAddColumn() {
+    const newCol = { id: Date.now(), name: "Новая колонка", color: 'default', cards: [] };
+    
+    // Читаем из Store (Единственный источник правды)
+    const currentCols = AppStore.get('columns') || window.columns || []; 
+    const updatedCols = [...currentCols, newCol];
+    
+    AppStore.set('columns', updatedCols);
+    AppEvents.emit(EVENTS.DB_SYNC_REQUIRED);
+    
+    showSystemToast('Колонка создана', 'Вы можете изменить её название и цвет.', 'plus-square', 'text-emerald-500', 'bg-emerald-50');
+  }
+
+  handleEditColumn(id) {
+    const currentCols = AppStore.get('columns') || window.columns || [];
+    const col = currentCols.find(c => c.id == id);
+    if (!col) return;
+    
+    // Изолированный state контроллера
+    this.editingColId = id;
+    this.selectedColColor = col.color || 'default';
+    
+    // Контроллер приказывает View обновить данные, не трогая DOM напрямую
+    AppEvents.emit('ui:column_modal:render_data', {
+      name: col.name,
+      color: this.selectedColColor
+    });
+    
+    AppEvents.emit(EVENTS.MODAL_OPENED, 'colModal');
+  }
+
+  handleSelectColor(color) {
+    this.selectedColColor = color;
+    // Контроллер приказывает View перерисовать палитру
+    AppEvents.emit('ui:column_modal:render_palette', this.selectedColColor);
+  }
+
+  handleSaveColumn({ name }) {
+    const currentCols = AppStore.get('columns') || window.columns || [];
+    const updatedCols = currentCols.map(c => 
+      c.id == this.editingColId ? { ...c, name: name || 'Без названия', color: this.selectedColColor } : c
+    );
+    
+    AppStore.set('columns', updatedCols);
+    AppEvents.emit(EVENTS.DB_SYNC_REQUIRED);
+    AppEvents.emit('ui:modal:closed', 'colModal');
+  }
+
+  handleDeleteColumn() {
+    openConfirmModal('Удалить колонку?', 'Все задачи внутри колонки также будут удалены навсегда!', 'Удалить', true, () => {
+      const currentCols = AppStore.get('columns') || window.columns || [];
+      const updatedCols = currentCols.filter(c => c.id != this.editingColId); 
+      
+      AppStore.set('columns', updatedCols);
+      AppEvents.emit(EVENTS.DB_SYNC_REQUIRED);
+      AppEvents.emit('ui:modal:closed', 'colModal');
+    });
+  }
+}
+
+// ==========================================
+// MODULE: COLUMN VIEW (UI Updater)
+// ==========================================
+class ColumnView {
+  constructor() {
+    this.nameInput = document.getElementById('colNameInput');
+    this.colorPickerContainer = document.getElementById('colorPicker');
+    this.bindEvents();
+  }
+
+  bindEvents() {
+    AppEvents.on('ui:column_modal:render_data', (data) => this.renderModalData(data));
+    AppEvents.on('ui:column_modal:render_palette', (activeColor) => this.renderPalette(activeColor));
+    
+    // Реакция на изменение стейта в Store -> Синхронизация legacy массива и рендер
+    AppEvents.on('state:changed:columns', (newCols) => {
+       window.columns = newCols; 
+       if (typeof render === 'function') render();
+    });
+    
+    AppEvents.on(EVENTS.DB_SYNC_REQUIRED, () => {
+       if (typeof persist === 'function') persist(); // В будущем вынесем в DBService
+    });
+  }
+
+  renderModalData(data) {
+    if (this.nameInput) this.nameInput.value = data.name;
+    this.renderPalette(data.color);
+  }
+
+  renderPalette(activeColor) {
+    if (!this.colorPickerContainer) return;
+    this.colorPickerContainer.innerHTML = Object.entries(BOARD_UI_COLORS).map(([key, data]) => `
+      <button data-color="${key}" 
+              class="col-color-btn w-10 h-10 rounded-full border-4 transition-all shadow-sm ${activeColor === key ? 'border-gray-900 dark:border-white scale-110 shadow-md' : 'border-transparent'}" 
+              style="background-color: ${data.hex};">
+      </button>
+    `).join('');
+  }
+}
+
+// Инициализация модулей
+document.addEventListener('DOMContentLoaded', () => {
+  window.AppColumnsLogic = new ColumnController();
+  window.AppColumnsView = new ColumnView();
+});
+
 // (Оставляем функцию чек-листа нетронутой, мы перенесем её в CardController позже)
 function toggleChecklistItemEdit(index) { 
   activeChecklist[index].isCompleted = !activeChecklist[index].isCompleted; 
@@ -2163,7 +2329,8 @@ function render() {
           <h2 class="font-bold text-sm text-gray-900 dark:text-white">${col.name}</h2>
           <span class="text-xs font-bold px-2 py-0.5 rounded-full border bg-white/50 dark:bg-black/20 text-gray-600 dark:text-gray-400 border-gray-200/50 dark:border-gray-700/50">${filteredCards.length}</span>
         </div>
-        ${isViewer ? '' : `<button onclick="openColModal(${col.id})" class="text-gray-400 hover:text-blue-500 p-1 rounded transition-colors"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>`}
+       
+         ${isViewer ? '' : `<button data-col-id="${col.id}" class="edit-col-btn text-gray-400 hover:text-blue-500 p-1 rounded transition-colors"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>`}
       </div>
       <div id="cards-${col.id}" ${isViewer ? '' : `ondblclick="quickAddCard(${col.id})"`} class="p-3 flex-1 overflow-y-auto hide-scroll space-y-3 min-h-[50px] ${isViewer ? '' : 'cursor-pointer'}">
         ${cardsHtml}
