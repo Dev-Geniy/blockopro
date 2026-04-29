@@ -855,68 +855,154 @@ function loadBoard() {
   }
 }
 
-// РЕАКТИВНАЯ СИНХРОНИЗАЦИЯ
-function syncAndRender(docChanges = []) {
-  // 1. "Тихое" обновление состояния данных (State) в фоне
-  columns = (boardData.columns || []).map(col => ({
-    ...col,
-    cards: allCards.filter(c => c.columnId == col.id).sort((a, b) => (a.order || 0) - (b.order || 0))
-  }));
+// === DOM CACHE: O(1) ДОСТУП ===
+const domCache = {
+  cards: new Map(),
+  columns: new Map()
+};
 
-  // 2. Если это первая загрузка — рендерим доску целиком (Full Render)
+// РЕАКТИВНАЯ СИНХРОНИЗАЦИЯ (TRELLO LEVEL)
+function syncAndRender(docChanges = []) {
   if (isInitialRender) {
-    processBoardData(boardData);
+    // O(N) Сборка состояния только 1 раз при загрузке
+    columns = (boardData.columns || []).map(col => ({
+      ...col,
+      cards: allCards.filter(c => c.columnId == col.id).sort((a, b) => (a.order || 0) - (b.order || 0))
+    }));
+    
+    processBoardData(boardData); // Единоразовый полный рендер
     isInitialRender = false;
+    
+    // Прогреваем DOM кэш
+    document.querySelectorAll('.card-item').forEach(el => domCache.cards.set(String(el.dataset.id), el));
+    document.querySelectorAll('[id^="cards-"]').forEach(el => domCache.columns.set(el.id.replace('cards-', ''), el));
     return;
   }
 
-  // 3. ГРАНУЛЯРНОЕ ОБНОВЛЕНИЕ (Granular Updates)
-  if (docChanges.length > 0) {
-    let needsFullRender = false;
+  // O(1) ОБРАБОТКА СОБЫТИЙ (БЕЗ ПЕРЕСБОРКИ МИРА)
+  docChanges.forEach(change => {
+     const cardData = { id: change.doc.id, ...change.doc.data() };
+     
+     // Инкрементально обновляем State в памяти
+     updateLocalState(change.type, cardData);
 
-    docChanges.forEach(change => {
-       const cardData = { id: change.doc.id, ...change.doc.data() };
-       
-       if (change.type === "added") {
-         // Для новых карточек пока перерисовываем целевую колонку
-         needsFullRender = true; 
-       }
-       if (change.type === "modified") {
-         updateCardUI(cardData.id, cardData);
-       }
-       if (change.type === "removed") {
-         const el = document.querySelector(`[data-id="${cardData.id}"]`);
-         if (el) el.remove(); // Ювелирное удаление узла из DOM
+     // Инкрементально обновляем DOM
+     if (change.type === "added") addCardToDOM(cardData);
+     if (change.type === "modified") updateCardUI(cardData.id, cardData);
+     if (change.type === "removed") removeCardFromDOM(cardData.id);
+  });
+}
+
+// ИНКРЕМЕНТАЛЬНЫЙ STATE (Избегаем O(n²) фильтрации)
+function updateLocalState(type, card) {
+  if (type === 'removed') {
+    columns.forEach(col => {
+       const idx = col.cards.findIndex(c => c.id == card.id);
+       if (idx !== -1) col.cards.splice(idx, 1);
+    });
+    return;
+  }
+  
+  const targetCol = columns.find(c => c.id == card.columnId);
+  if (!targetCol) return;
+
+  if (type === 'added') {
+    if (!targetCol.cards.find(c => c.id == card.id)) targetCol.cards.push(card);
+  }
+  
+  if (type === 'modified') {
+    // Если карточка перемещена — удаляем из старой колонки
+    columns.forEach(col => {
+       if (col.id != card.columnId) {
+         const idx = col.cards.findIndex(c => c.id == card.id);
+         if (idx !== -1) col.cards.splice(idx, 1);
        }
     });
-
-    if (needsFullRender) {
-      render(); // В будущем заменим на renderColumn(colId)
-    }
+    // Обновляем в целевой
+    const idx = targetCol.cards.findIndex(c => c.id == card.id);
+    if (idx !== -1) targetCol.cards[idx] = card;
+    else targetCol.cards.push(card);
+    
+    // Принудительно сортируем целевую колонку по order (быстрая локальная сортировка)
+    targetCol.cards.sort((a, b) => (a.order || 0) - (b.order || 0));
   }
 }
 
-// КОНТРОЛЛЕР ТОЧЕЧНОГО ОБНОВЛЕНИЯ КАРТОЧКИ (Без полного рендера)
-function updateCardUI(cardId, data) {
-  const el = document.querySelector(`.card-item[data-id="${cardId}"]`);
-  if (!el) return;
+// === PURE DOM INJECTION (Никаких render() ===
+function addCardToDOM(cardData) {
+  if (domCache.cards.has(String(cardData.id))) return; // Защита от дублей Optimistic UI
 
-  // Если карточка поменяла колонку (Drag & Drop другим пользователем), 
-  // точечного обновления мало, нужен ререндер колонок.
-  // Optimistic UI: Если мы сами её перетащили, DOM уже обновлен Sortable.js
-  const currentParentCol = el.closest('[id^="cards-"]')?.id.replace('cards-', '');
-  if (currentParentCol && currentParentCol !== data.columnId) {
-     render(); 
-     return;
+  let colContainer = domCache.columns.get(String(cardData.columnId));
+  if (!colContainer) {
+    colContainer = document.getElementById(`cards-${cardData.columnId}`);
+    if (colContainer) domCache.columns.set(String(cardData.columnId), colContainer);
+    else return;
   }
 
-  // Точечно обновляем заголовок
+  // Рендерим HTML только ОДНОЙ карточки
+  const isViewer = boardData.users && boardData.users[currentUser.id] && boardData.users[currentUser.id].role === 'viewer';
+  const tempDiv = document.createElement('div');
+  
+  // Вызываем твой генератор карточки (взял базовую разметку для безопасной интеграции)
+  // В идеале: вынести шаблон из главного render() в отдельную функцию generateCardHTML()
+  tempDiv.innerHTML = `
+    <div data-id="${cardData.id}" onclick="openEditModal(${cardData.columnId}, '${cardData.id}')" 
+         class="card-item bg-white dark:bg-gray-800 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-grab relative group select-none">
+      <div class="font-bold text-sm text-gray-900 dark:text-white mb-2 pr-6 break-words">${cardData.title}</div>
+    </div>
+  `.trim();
+
+  const newCardEl = tempDiv.firstElementChild;
+  
+  // Учитываем Order: вставляем в нужную позицию, а не просто в конец
+  const siblingCards = Array.from(colContainer.children);
+  const insertBeforeEl = siblingCards.find(el => {
+     const siblingId = el.dataset.id;
+     const siblingData = columns.find(c => c.id == cardData.columnId)?.cards.find(c => c.id == siblingId);
+     return siblingData && (siblingData.order || 0) > (cardData.order || 0);
+  });
+
+  if (insertBeforeEl) {
+    colContainer.insertBefore(newCardEl, insertBeforeEl);
+  } else {
+    colContainer.appendChild(newCardEl);
+  }
+  
+  // Сохраняем в кэш
+  domCache.cards.set(String(cardData.id), newCardEl);
+  if (window.lucide) lucide.createIcons({ root: newCardEl });
+}
+
+function removeCardFromDOM(cardId) {
+  const el = domCache.cards.get(String(cardId));
+  if (el) {
+    el.remove();
+    domCache.cards.delete(String(cardId));
+  }
+}
+
+// КОНТРОЛЛЕР ТОЧЕЧНОГО ОБНОВЛЕНИЯ (O(1))
+function updateCardUI(cardId, data) {
+  const el = domCache.cards.get(String(cardId));
+  if (!el) return;
+
+  // 1. D&D: Обработка смены колонки (без кувалды)
+  const currentParentCol = el.closest('.column-container')?.id.replace('cards-', '');
+  if (currentParentCol && currentParentCol !== String(data.columnId)) {
+     let newColContainer = domCache.columns.get(String(data.columnId)) || document.getElementById(`cards-${data.columnId}`);
+     if (newColContainer) {
+       // Если перетаскивал не ты, визуально перемещаем ноду
+       newColContainer.appendChild(el); 
+     }
+  }
+
+  // 2. Гранулярное обновление текста (напрямую)
   const titleEl = el.querySelector('.font-bold.text-sm');
   if (titleEl && titleEl.innerText !== data.title) {
     titleEl.innerText = data.title;
   }
 
-  // Точечно обновляем прогресс-бар чек-листа (если он есть)
+  // 3. Гранулярное обновление прогресса
   if (data.checklist && data.checklist.length > 0) {
     const done = data.checklist.filter(i => i.isCompleted).length;
     const percent = Math.round((done / data.checklist.length) * 100);
