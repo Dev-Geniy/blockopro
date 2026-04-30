@@ -1540,19 +1540,58 @@ function openViewModal(colId, cardId) {
     }
 
     if (card.type === 'poll') {
-        header.innerHTML = `<div class="flex items-center gap-2 text-purple-500 mb-2"><i data-lucide="bar-chart-3" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Результаты опроса</span></div>`;
-        body.innerHTML = renderPollResults(card);
-    } else if (card.type === 'audio') {
-        header.innerHTML = `<div class="flex items-center gap-2 text-emerald-500 mb-2"><i data-lucide="mic" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Голосовая заметка</span></div>`;
-        body.innerHTML = `<div class="bg-emerald-50/50 dark:bg-emerald-900/20 p-8 rounded-[2rem] border border-emerald-100 dark:border-emerald-800/50 flex flex-col items-center">
-            <button onclick="toggleAudioPlayer(this, ${colId}, '${card.id}')" class="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform mb-4">
-                <i data-lucide="play" class="w-10 h-10 fill-current ml-1 btn-icon"></i>
-            </button>
-            <div class="w-full h-2 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden"><div class="audio-progress bg-emerald-500 h-full w-0"></div></div>
-        </div>`;
-    } else {
-        header.innerHTML = `<div class="flex items-center gap-2 text-blue-500 mb-2"><i data-lucide="layers" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Задача проекта</span></div>`;
-        let taskHtml = '';
+            header.innerHTML = `<div class="flex items-center gap-2 text-purple-500 mb-2"><i data-lucide="bar-chart-3" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Результаты опроса</span></div>`;
+            body.innerHTML = renderPollResults(card);
+        } else if (card.type === 'audio') {
+            header.innerHTML = `<div class="flex items-center gap-2 text-emerald-500 mb-2"><i data-lucide="mic" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Голосовая заметка</span></div>`;
+            body.innerHTML = `<div class="bg-emerald-50/50 dark:bg-emerald-900/20 p-8 rounded-[2rem] border border-emerald-100 dark:border-emerald-800/50 flex flex-col items-center">
+                <button onclick="toggleAudioPlayer(this, ${colId}, '${card.id}')" class="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform mb-4">
+                    <i data-lucide="play" class="w-10 h-10 fill-current ml-1 btn-icon"></i>
+                </button>
+                <div class="w-full h-2 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden"><div class="audio-progress bg-emerald-500 h-full w-0"></div></div>
+            </div>`;
+        } else if (card.type === 'timer') {
+            header.innerHTML = `<div class="flex items-center gap-2 text-rose-500 mb-2"><i data-lucide="timer" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Таймер</span></div>`;
+            const target = new Date(card.targetDate).getTime();
+            const now = new Date().getTime();
+            const diff = target - now;
+            let timeHtml = '';
+            if (diff > 0) {
+                const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                timeHtml = `<div class="text-4xl font-black text-rose-500 mb-2">${d}д ${h}ч ${m}м</div>`;
+            } else {
+                timeHtml = `<div class="text-2xl font-black text-gray-500 uppercase tracking-widest mb-2">Время вышло</div>`;
+            }
+            body.innerHTML = `<div class="bg-rose-50/50 dark:bg-rose-900/20 p-8 rounded-[2rem] border border-rose-100 dark:border-rose-800/50 flex flex-col items-center text-center">
+                ${timeHtml}
+                <div class="text-sm font-bold text-gray-600 dark:text-gray-300">Окончание: ${new Date(card.targetDate).toLocaleString('ru-RU')}</div>
+            </div>`;
+        } else if (card.type === 'todo') {
+            header.innerHTML = `<div class="flex items-center gap-2 text-cyan-500 mb-2"><i data-lucide="list-todo" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Быстрый чек-лист</span></div>`;
+            const doneCount = card.checklist.filter(i => i.isCompleted).length;
+            const percent = Math.round((doneCount / card.checklist.length) * 100) || 0;
+            const itemsHtml = card.checklist.map((item, idx) => `
+                <label class="flex items-start gap-3 p-4 bg-white dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 transition-colors hover:border-cyan-300 dark:hover:border-cyan-700 shadow-sm cursor-pointer">
+                  <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onclick="event.stopPropagation(); toggleBoardTodo('${colId}', '${card.id}', ${idx}); setTimeout(()=>openViewModal('${colId}', '${card.id}'), 150)" class="w-5 h-5 mt-0.5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer flex-shrink-0">
+                  <span class="text-sm font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'} leading-relaxed select-none">${item.text}</span>
+                </label>
+            `).join('');
+            body.innerHTML = `<div class="bg-cyan-50/50 dark:bg-cyan-900/20 p-6 rounded-[2rem] border border-cyan-100 dark:border-cyan-800/50">
+                <div class="flex justify-between items-center mb-3"><span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Прогресс</span><span class="text-cyan-500 font-black">${percent}%</span></div>
+                <div class="w-full h-2 bg-white dark:bg-gray-800 rounded-full mb-6 overflow-hidden"><div class="bg-cyan-500 h-full transition-all" style="width: ${percent}%"></div></div>
+                <div class="space-y-3">${itemsHtml}</div>
+            </div>`;
+        } else if (card.type === 'link') {
+            header.innerHTML = `<div class="flex items-center gap-2 text-gray-500 mb-2"><i data-lucide="link" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Закладка</span></div>`;
+            body.innerHTML = `<div class="bg-gray-50 dark:bg-gray-800/50 p-8 rounded-[2rem] border border-gray-200 dark:border-gray-700 text-center">
+                <div class="w-20 h-20 bg-white dark:bg-gray-900 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-md border border-gray-100 dark:border-gray-800"><i data-lucide="external-link" class="w-10 h-10 text-gray-400"></i></div>
+                <a href="${card.url}" target="_blank" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 font-black text-xl break-all hover:underline mb-3 block leading-tight">${card.url}</a>
+                <p class="text-sm text-gray-500 font-medium">Нажмите на ссылку, чтобы перейти на сайт.</p>
+            </div>`;
+        } else {
+            header.innerHTML = `<div class="flex items-center gap-2 text-blue-500 mb-2"><i data-lucide="layers" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Задача проекта</span></div>`;        let taskHtml = '';
         if (card.image) taskHtml += `<img src="${card.image}" class="w-full h-64 object-cover rounded-[2rem] mb-6 border border-gray-100 dark:border-gray-700 shadow-sm">`;
         if (card.description) taskHtml += `<div class="prose dark:prose-invert max-w-none mb-6 text-gray-600 dark:text-gray-300 bg-gray-50/50 dark:bg-gray-900/30 p-6 rounded-[2rem] border border-gray-100 dark:border-gray-800/50">${marked.parse(card.description)}</div>`;
         if (card.checklist && card.checklist.length) {
@@ -2827,34 +2866,42 @@ function toggleModalAnimation(modalId, contentId, show) {
 }
 
 // Таймер
-function prepareTimerCreation() { closeMoreAddModal(); toggleModalAnimation('timerConstructorModal', 'timerConstructorContent', true); }
-function closeTimerConstructor() { toggleModalAnimation('timerConstructorModal', 'timerConstructorContent', false); }
+function prepareTimerCreation() { closeMoreAddModal(); editingSpecificCardId = null; toggleModalAnimation('timerConstructorModal', 'timerConstructorContent', true); }
+function closeTimerConstructor() { toggleModalAnimation('timerConstructorModal', 'timerConstructorContent', false); editingSpecificCardId = null; }
 function saveTimer() {
   const title = document.getElementById('timerTitle').value.trim() || 'Таймер';
   const targetDate = document.getElementById('timerTargetDate').value;
   if (!targetDate) return showSystemToast('Ошибка', 'Укажите дату завершения.', 'alert-circle', 'text-red-500', 'bg-red-50');
 
-  const cardId = 'timer_' + Date.now();
-  const cardData = { id: cardId, title, type: 'timer', targetDate, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
-  if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
-  else { db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+  if (editingSpecificCardId) {
+    dispatchCardUpdate(editingSpecificCardId, activeColForMore, { title, targetDate });
+  } else {
+    const cardId = 'timer_' + Date.now();
+    const cardData = { id: cardId, title, type: 'timer', targetDate, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
+    if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
+    else { db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+  }
   closeTimerConstructor();
 }
 
 // Быстрый Чек-лист
-function prepareTodoCreation() { closeMoreAddModal(); toggleModalAnimation('todoConstructorModal', 'todoConstructorContent', true); }
-function closeTodoConstructor() { toggleModalAnimation('todoConstructorModal', 'todoConstructorContent', false); }
+function prepareTodoCreation() { closeMoreAddModal(); editingSpecificCardId = null; toggleModalAnimation('todoConstructorModal', 'todoConstructorContent', true); }
+function closeTodoConstructor() { toggleModalAnimation('todoConstructorModal', 'todoConstructorContent', false); editingSpecificCardId = null; }
 function saveTodoFast() {
   const title = document.getElementById('todoFastTitle').value.trim() || 'Чек-лист';
   const itemsText = document.getElementById('todoFastItems').value.trim();
   if (!itemsText) return showSystemToast('Ошибка', 'Введите хотя бы один пункт.', 'alert-circle', 'text-red-500', 'bg-red-50');
 
   const checklist = itemsText.split('\n').filter(t => t.trim() !== '').map(text => ({ text: text.trim(), isCompleted: false }));
-  const cardId = 'todo_' + Date.now();
-  const cardData = { id: cardId, title, type: 'todo', checklist, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
   
-  if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
-  else { db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+  if (editingSpecificCardId) {
+    dispatchCardUpdate(editingSpecificCardId, activeColForMore, { title, checklist });
+  } else {
+    const cardId = 'todo_' + Date.now();
+    const cardData = { id: cardId, title, type: 'todo', checklist, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
+    if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
+    else { db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+  }
   closeTodoConstructor();
 }
 
@@ -2868,23 +2915,25 @@ function toggleBoardTodo(colId, cardId, idx) {
   if (card.checklist[idx].isCompleted) fireConfetti();
 
   dispatchCardUpdate(cardId, colId, { checklist: card.checklist });
-  // render() сработает автоматически через Store/onSnapshot
 }
 
 // Закладка (Ссылка)
-function prepareLinkCreation() { closeMoreAddModal(); toggleModalAnimation('linkConstructorModal', 'linkConstructorContent', true); }
-function closeLinkConstructor() { toggleModalAnimation('linkConstructorModal', 'linkConstructorContent', false); }
+function prepareLinkCreation() { closeMoreAddModal(); editingSpecificCardId = null; toggleModalAnimation('linkConstructorModal', 'linkConstructorContent', true); }
+function closeLinkConstructor() { toggleModalAnimation('linkConstructorModal', 'linkConstructorContent', false); editingSpecificCardId = null; }
 function saveLink() {
   const title = document.getElementById('linkTitle').value.trim() || 'Ссылка';
   let url = document.getElementById('linkUrl').value.trim();
   if (!url) return showSystemToast('Ошибка', 'Вставьте ссылку.', 'alert-circle', 'text-red-500', 'bg-red-50');
   if (!/^https?:\/\//i.test(url)) url = 'http://' + url;
 
-  const cardId = 'link_' + Date.now();
-  const cardData = { id: cardId, title, type: 'link', url, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
-  
-  if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
-  else { db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+  if (editingSpecificCardId) {
+    dispatchCardUpdate(editingSpecificCardId, activeColForMore, { title, url });
+  } else {
+    const cardId = 'link_' + Date.now();
+    const cardData = { id: cardId, title, type: 'link', url, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
+    if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
+    else { db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+  }
   closeLinkConstructor();
 }
 
@@ -3041,7 +3090,8 @@ function renderContentComments(comments = []) {
       actionsPanel.style.display = isViewer ? 'none' : 'flex';
     }
     if (editBtn && activeContentView) {
-      editBtn.style.display = (activeContentView.type === 'task' || activeContentView.type === 'table' || !activeContentView.type) ? 'flex' : 'none';
+      const editableTypes = ['task', 'table', 'timer', 'todo', 'link'];
+      editBtn.style.display = (editableTypes.includes(activeContentView.type) || !activeContentView.type) ? 'flex' : 'none';
     }
 }
 
@@ -3070,6 +3120,34 @@ function closeContentViewModal() {
     toggleModal('contentViewModal', false);
 }
 
+// Переменная для отслеживания редактируемого объекта (для Таймера, ToDo и Ссылок)
+let editingSpecificCardId = null;
+
+// Функции-редакторы для новых компонентов
+function openTimerEditor(colId, cardId) {
+  const card = columns.find(c => c.id == colId).cards.find(c => c.id == cardId);
+  activeColForMore = colId; editingSpecificCardId = cardId;
+  document.getElementById('timerTitle').value = card.title;
+  document.getElementById('timerTargetDate').value = card.targetDate || '';
+  toggleModalAnimation('timerConstructorModal', 'timerConstructorContent', true);
+}
+
+function openTodoEditor(colId, cardId) {
+  const card = columns.find(c => c.id == colId).cards.find(c => c.id == cardId);
+  activeColForMore = colId; editingSpecificCardId = cardId;
+  document.getElementById('todoFastTitle').value = card.title;
+  document.getElementById('todoFastItems').value = card.checklist.map(i => i.text).join('\n');
+  toggleModalAnimation('todoConstructorModal', 'todoConstructorContent', true);
+}
+
+function openLinkEditor(colId, cardId) {
+  const card = columns.find(c => c.id == colId).cards.find(c => c.id == cardId);
+  activeColForMore = colId; editingSpecificCardId = cardId;
+  document.getElementById('linkTitle').value = card.title;
+  document.getElementById('linkUrl').value = card.url;
+  toggleModalAnimation('linkConstructorModal', 'linkConstructorContent', true);
+}
+
 // Умный обработчик удаления из окна просмотра
 function handleViewDelete() {
   if (!activeContentView) return;
@@ -3081,21 +3159,9 @@ function handleViewDelete() {
 function handleViewArchive() {
   if (!activeContentView) return;
   openConfirmModal('Отправить в архив?', 'Объект исчезнет с доски, но останется в Архиве проекта.', 'В архив', false, () => {
-    columns = columns.map(col => { 
-      if (col.id == activeContentView.colId) { 
-        const updatedCards = (col.cards || []).map(c => {
-          if (c.id == activeContentView.cardId) {
-            return { ...c, archived: true };
-          }
-          return c;
-        });
-        return { ...col, cards: updatedCards };
-      } 
-      return col; 
-    });
+    // Используем единый Store Dispatcher для синхронизации как локальных, так и Cloud досок
+    dispatchCardUpdate(activeContentView.cardId, activeContentView.colId, { archived: true });
     
-    persist(); 
-    render(); 
     closeContentViewModal(); 
     showSystemToast('Архивировано', 'Объект перемещен в хранилище.', 'archive', 'text-amber-500', 'bg-amber-50');
   });
@@ -3104,12 +3170,22 @@ function handleViewArchive() {
 // Умный маршрутизатор редактирования (выбирает нужный редактор по типу контента)
 function openEditModalFromView() {
   if (!activeContentView) return;
-  if (activeContentView.type === 'task' || !activeContentView.type) {
-    closeContentViewModal();
-    openEditModal(activeContentView.colId, activeContentView.cardId);
-  } else if (activeContentView.type === 'table') {
-    closeContentViewModal();
-    openTableEditor(activeContentView.colId, activeContentView.cardId);
+  const type = activeContentView.type;
+  const colId = activeContentView.colId;
+  const cardId = activeContentView.cardId;
+  
+  closeContentViewModal();
+
+  if (type === 'task' || !type) {
+    openEditModal(colId, cardId);
+  } else if (type === 'table') {
+    openTableEditor(colId, cardId);
+  } else if (type === 'timer') {
+    openTimerEditor(colId, cardId);
+  } else if (type === 'todo') {
+    openTodoEditor(colId, cardId);
+  } else if (type === 'link') {
+    openLinkEditor(colId, cardId);
   }
 }
   
