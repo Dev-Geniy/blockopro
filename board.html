@@ -205,9 +205,9 @@
     </div>
   </aside>
   
-<aside id="settingsSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl">
+  <aside id="settingsSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl">
     
-    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
+   <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="settings" class="w-4 h-4 text-blue-500"></i> Настройки доски</h3>
       <button onclick="toggleSettings()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
@@ -1461,25 +1461,12 @@ function updateTagFilterDropdown() {
   if ([...select.options].some(o => o.value === savedValue)) select.value = savedValue;
 }
 
-function toggleChat() { 
-  closeOtherSidebars('chatSidebar'); 
-  const sidebar = document.getElementById('chatSidebar');
-  sidebar.classList.toggle('translate-x-full'); 
+
   
-  if (!sidebar.classList.contains('translate-x-full')) {
-    const badge = document.getElementById('chatBadge');
-    if(badge) {
-        badge.classList.add('hidden');
-        badge.innerText = '0';
-    }
-    const chatBox = document.getElementById("chatMessages");
-    setTimeout(() => chatBox.scrollTop = chatBox.scrollHeight, 50);
-  }
-}
-  
-function toggleSettings() { closeOtherSidebars('settingsSidebar'); document.getElementById('settingsSidebar').classList.toggle('translate-x-full'); }
-function toggleMembers() { closeOtherSidebars('membersSidebar'); document.getElementById('membersSidebar').classList.toggle('translate-x-full'); }
+function toggleSettings() { if (window.event) window.event.stopPropagation(); closeOtherSidebars('settingsSidebar'); document.getElementById('settingsSidebar').classList.toggle('translate-x-full'); }
+function toggleMembers() { if (window.event) window.event.stopPropagation(); closeOtherSidebars('membersSidebar'); document.getElementById('membersSidebar').classList.toggle('translate-x-full'); }
 function toggleArchive() { 
+  if (window.event) window.event.stopPropagation();
   closeOtherSidebars('archiveSidebar'); 
   const sidebar = document.getElementById('archiveSidebar');
   sidebar.classList.toggle('translate-x-full'); 
@@ -1515,7 +1502,6 @@ function renderArchiveSidebar() {
   }
 
   archivedCards.sort((a, b) => {
-    // Сортируем: недавно удаленные (по времени обновления) сверху
     const tA = a.updatedAt ? (a.updatedAt.toMillis ? a.updatedAt.toMillis() : new Date(a.updatedAt).getTime()) : 0;
     const tB = b.updatedAt ? (b.updatedAt.toMillis ? b.updatedAt.toMillis() : new Date(b.updatedAt).getTime()) : 0;
     return tB - tA;
@@ -1523,7 +1509,8 @@ function renderArchiveSidebar() {
 
   if (archivedCards.length === 0) {
     container.innerHTML = '<div class="text-center py-10 text-gray-400 text-sm flex flex-col items-center gap-2"><i data-lucide="archive-x" class="w-8 h-8 opacity-50"></i>Архив пуст</div>';
-    lucide.createIcons();
+    // ЭНТЕРПРАЙЗ ОПТИМИЗАЦИЯ: Ограничиваем область перерисовки иконок, чтобы не ломать DOM
+    lucide.createIcons({ root: container });
     return;
   }
 
@@ -1557,7 +1544,9 @@ function renderArchiveSidebar() {
       </div>
     `;
   }).join('');
-  lucide.createIcons();
+  
+  // ЭНТЕРПРАЙЗ ОПТИМИЗАЦИЯ: Исключаем глобальное сканирование DOM, чтобы не убить слушатель кликов на кнопке Архива
+  lucide.createIcons({ root: container });
 }
   
 function changeUserRole(uid, newRole) {
@@ -2897,8 +2886,28 @@ async function generateAIQuickDescription() {
   }
 }
 
+function toggleChat() { 
+  if (window.event) window.event.stopPropagation();
+  closeOtherSidebars('chatSidebar'); 
+  const sidebar = document.getElementById('chatSidebar');
+  sidebar.classList.toggle('translate-x-full'); 
+  
+  if (!sidebar.classList.contains('translate-x-full')) {
+    const badge = document.getElementById('chatBadge');
+    if(badge) {
+        badge.classList.add('hidden');
+        badge.innerText = '0';
+    }
+    const chatBox = document.getElementById("chatMessages");
+    setTimeout(() => chatBox.scrollTop = chatBox.scrollHeight, 50);
+  }
+}
+
 // Закрытие модалок по клику на фон и умное скрытие боковых панелей
 window.addEventListener('click', (e) => {
+  // КРИТИЧЕСКИЙ ФИКС: Игнорируем клики по элементам, которые были удалены из DOM (например, при замене иконок Lucide)
+  if (!document.body.contains(e.target)) return;
+
   // 1. Обработка кликов по фону модальных окон
   if (e.target.id === 'viewCardModal') closeViewModal();
   if (e.target.id === 'editCardModal') closeEditModal();
@@ -2910,8 +2919,6 @@ window.addEventListener('click', (e) => {
   if (e.target.id === 'pollStatsModal') closePollStatsModal();
 
   // 2. ЭНТЕРПРАЙЗ UX: Автоматическое скрытие открытых шторок при клике в рабочую область
-  // Проверяем, что клик был НЕ по самой шторке (aside), НЕ по шапке с кнопками (header),
-  // НЕ по модальному окну (.glass-modal) и НЕ по всплывающему меню
   const isSidebar = e.target.closest('aside');
   const isHeader = e.target.closest('header');
   const isMobileMenu = e.target.closest('#mobileMenuDropdown');
