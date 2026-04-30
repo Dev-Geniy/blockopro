@@ -177,8 +177,7 @@
       </div>
       
       <div class="flex flex-wrap gap-3 w-full md:w-auto">
-        <input type="file" id="importBoardFile" accept=".json" class="hidden" onchange="importLocalBoard(event)">
-        <button onclick="document.getElementById('importBoardFile').click()" class="flex-1 md:flex-none bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white px-4 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
+        <button onclick="openImportModal()" class="flex-1 md:flex-none bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white px-4 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
           <i data-lucide="upload" class="w-4 h-4 text-emerald-500"></i> Загрузить
         </button>
         
@@ -190,7 +189,6 @@
           <i data-lucide="plus" class="w-5 h-5"></i> Создать проект
         </button>
       </div>
-    </div>
     
     <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-10">
       <div class="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700/50 h-48 rounded-[2rem] animate-pulse p-6 flex flex-col justify-between">
@@ -268,9 +266,57 @@
     </div>
   </div>
 
+  <!-- модалка импорта резервной копии -->
+  <div id="importBoardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 px-4">
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform" id="importBoardContent">
+      <button onclick="closeImportModal()" class="absolute top-6 right-6 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+      
+      <div class="flex items-center gap-3 mb-6">
+        <div class="p-2.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-xl"><i data-lucide="upload-cloud" class="w-6 h-6"></i></div>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Импорт проекта</h2>
+      </div>
+
+      <div class="space-y-5">
+        <div>
+          <label class="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-3 block">Куда восстановить проект?</label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="flex flex-col items-center gap-2 p-3 border border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-700 bg-gray-50 dark:bg-gray-800 rounded-xl cursor-pointer hover:shadow-sm transition-all group">
+              <input type="radio" name="importBoardType" value="local" checked class="w-4 h-4 text-emerald-600 border-gray-300 focus:ring-emerald-500 accent-emerald-500">
+              <span class="font-bold text-xs text-gray-900 dark:text-white text-center leading-tight">Офлайн <br><span class="text-[9px] text-gray-400 font-medium">Мое устройство</span></span>
+            </label>
+            <label class="flex flex-col items-center gap-2 p-3 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 rounded-xl cursor-pointer hover:shadow-sm transition-all group">
+              <input type="radio" name="importBoardType" value="online" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 accent-blue-500">
+              <span class="font-bold text-xs text-gray-900 dark:text-white text-center leading-tight">Cloud <br><span class="text-[9px] text-gray-400 font-medium">Облачная команда</span></span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2 block flex justify-between">
+            Новый пароль доступа <span class="text-[10px] text-blue-500 font-black uppercase">Опционально</span>
+          </label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="password" id="importBoardPassword" placeholder="Установите PIN-код для входа" class="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-emerald-500 transition-all">
+          </div>
+        </div>
+
+        <div>
+          <label id="importDropzone" ondragover="event.preventDefault(); this.classList.add('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-900/20')" ondragleave="event.preventDefault(); this.classList.remove('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-900/20')" ondrop="event.preventDefault(); this.classList.remove('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-900/20'); handleImportFileSelect({target: {files: event.dataTransfer.files}})" class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-2xl cursor-pointer p-6 transition-all group bg-gray-50/50 dark:bg-gray-900/30">
+            <div class="p-3 bg-white dark:bg-gray-800 rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform">
+              <i data-lucide="file-json" class="w-6 h-6 text-emerald-500"></i>
+            </div>
+            <span class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 text-center">Перетащите резервную копию</span>
+            <span class="text-[10px] text-gray-500">или нажмите для выбора JSON</span>
+            <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="handleImportFileSelect(event)">
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- модалка вход по id -->
-  <div id="joinBoardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-100 transition-opacity px-4">
-    <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700">
+  <div id="joinBoardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-100 transition-opacity px-4">    <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700">
       <button onclick="closeJoinModal()" class="absolute top-5 right-5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
     
       <div class="flex items-center gap-3 mb-4">
@@ -1562,26 +1608,146 @@ async function executeBackup() {
   showSystemToast('Загрузка начата', 'Резервная копия успешно сформирована.', 'check-circle', 'text-green-500', 'bg-green-50');
 }
   
-function importLocalBoard(event) {
-  const file = event.target.files[0];
+let pendingImportFile = null;
+
+function openImportModal() {
+  if (!currentUser) return showSystemToast('Ошибка', 'Авторизуйтесь для загрузки.', 'lock', 'text-red-500', 'bg-red-50');
+  
+  const modal = document.getElementById('importBoardModal');
+  const content = document.getElementById('importBoardContent');
+  
+  // Сброс формы
+  document.getElementById('importFileInput').value = '';
+  document.getElementById('importBoardPassword').value = '';
+  pendingImportFile = null;
+  document.getElementById('importDropzone').innerHTML = `
+    <div class="p-3 bg-white dark:bg-gray-800 rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform"><i data-lucide="file-json" class="w-6 h-6 text-emerald-500"></i></div>
+    <span class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 text-center">Перетащите резервную копию</span>
+    <span class="text-[10px] text-gray-500">или нажмите для выбора JSON</span>
+    <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="handleImportFileSelect(event)">
+  `;
+  lucide.createIcons();
+
+  modal.classList.remove('hidden');
+  setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+}
+
+function closeImportModal() {
+  const modal = document.getElementById('importBoardModal');
+  const content = document.getElementById('importBoardContent');
+  modal.classList.add('opacity-0');
+  content.classList.add('scale-95');
+  setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function handleImportFileSelect(event) {
+  const file = event.target.files[0] || (event.dataTransfer && event.dataTransfer.files[0]);
   if (!file) return;
+  
+  pendingImportFile = file;
+  
+  document.getElementById('importDropzone').innerHTML = `
+    <div class="p-4 flex flex-col items-center w-full">
+      <i data-lucide="check-circle" class="w-10 h-10 text-emerald-500 mb-3 shadow-sm rounded-full bg-white dark:bg-gray-800"></i>
+      <span class="text-sm font-bold text-gray-800 dark:text-white truncate w-full text-center px-4 mb-4">${file.name}</span>
+      <button onclick="event.stopPropagation(); event.preventDefault(); processBoardImport()" class="w-full px-6 py-3.5 bg-emerald-500 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/25 active:scale-95 hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
+        <i data-lucide="upload-cloud" class="w-5 h-5"></i> Восстановить проект
+      </button>
+    </div>
+  `;
+  lucide.createIcons();
+}
+
+async function processBoardImport() {
+  if (!pendingImportFile || !currentUser) return;
+  
+  const type = document.querySelector('input[name="importBoardType"]:checked').value;
+  const password = document.getElementById('importBoardPassword').value.trim() || null;
+
+  // ЭНТЕРПРАЙЗ: Проверка лимитов тарифа при загрузке в Облако
+  if (type === 'online') {
+    const ownedOnlineCount = onlineBoards.filter(b => b.owner === currentUser.id).length;
+    const currentPlanKey = userPlan.toUpperCase();
+    const planLimits = PLANS[currentPlanKey] || PLANS.FREE; 
+    
+    if (ownedOnlineCount >= planLimits.boardsLimit) {
+      closeImportModal();
+      openPricingModal();
+      return showSystemToast('Лимит достигнут', `На вашем тарифе доступно до ${planLimits.boardsLimit} облачных проектов.`, 'lock', 'text-amber-500', 'bg-amber-50');
+    }
+  }
+
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = async function(e) {
     try {
       const imported = JSON.parse(e.target.result);
-      if(!imported.columns) throw new Error("Invalid");
-      imported.id = 'local_' + Date.now(); // Создаем новый ID чтобы не было конфликтов
+      if(!imported.columns) throw new Error("Invalid blocko backup format");
+      
+      const newBoardId = (type === 'local' ? 'local_' : '') + Date.now();
+      imported.id = newBoardId;
       imported.owner = currentUser.id;
       imported.members = [currentUser.id];
-      const localBoards = getLocalBoards();
-      localBoards[imported.id] = imported;
-      localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
-      renderBoardsGrid();
-      alert("Офлайн доска успешно загружена!");
-    } catch (err) { alert("Ошибка чтения файла. Это не бэкап Blocko."); }
+      imported.password = password;
+      imported.createdAt = type === 'local' ? Date.now() : firebase.firestore.FieldValue.serverTimestamp();
+      
+      // ЭНТЕРПРАЙЗ: Текущий пользователь становится полным Владельцем (с премиум атрибутами)
+      imported.users = { 
+        [currentUser.id]: { 
+          name: currentUser.name, 
+          avatar: currentUser.avatar, 
+          role: 'owner',
+          customAvatar: currentUser.customAvatar || null,
+          badgeStatus: currentUser.badgeStatus || null,
+          badgeConfig: currentUser.badgeConfig || null
+        } 
+      };
+
+      if (type === 'local') {
+        const localBoards = getLocalBoards();
+        localBoards[newBoardId] = imported;
+        localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
+        if (password) sessionStorage.setItem('blocko_auth_' + newBoardId, password);
+        
+        closeImportModal();
+        renderBoardsGrid();
+        showSystemToast('Успех', 'Офлайн проект успешно восстановлен.', 'check-circle', 'text-emerald-500', 'bg-emerald-50');
+      } else {
+         // Cloud развертывание с учетом Subcollections
+         const cardsToImport = [];
+         imported.columns.forEach(col => {
+            if (col.cards) {
+                col.cards.forEach(card => cardsToImport.push({...card, columnId: col.id}));
+                col.cards = []; // Очищаем метаданные колонок от карточек
+            }
+         });
+
+         closeImportModal();
+         showSystemToast('Загрузка в облако...', 'Развертывание резервной копии. Это может занять пару секунд.', 'loader-2', 'text-blue-500 animate-spin', 'bg-blue-50');
+
+         const docRef = db.collection("boards").doc(); // Генерируем красивый Cloud ID
+         imported.id = docRef.id;
+         if (password) sessionStorage.setItem('blocko_auth_' + docRef.id, password);
+
+         await docRef.set(imported);
+
+         if (cardsToImport.length > 0) {
+             const batch = db.batch();
+             cardsToImport.forEach(card => {
+                 const newCardId = 'card_' + Math.random().toString(36).substr(2, 9);
+                 card.id = newCardId;
+                 const cardRef = docRef.collection("cards").doc(newCardId);
+                 batch.set(cardRef, { ...card, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+             });
+             await batch.commit();
+         }
+         
+         showSystemToast('Успех', 'Облачный проект успешно восстановлен!', 'cloud-snow', 'text-blue-500', 'bg-blue-50');
+      }
+    } catch (err) { 
+        showSystemToast('Ошибка', 'Файл поврежден или не является бэкапом Blocko.', 'x-circle', 'text-red-500', 'bg-red-50'); 
+    }
   };
-  reader.readAsText(file);
-  event.target.value = '';
+  reader.readAsText(pendingImportFile);
 }
 
 function promptJoinById() {
@@ -1745,7 +1911,6 @@ function shareVia(platform) {
 function toggleTheme() { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); }
 
 // Закрытие модалок по клику на затемненный фон
-// ==========================================
 window.addEventListener('click', (e) => {
   if (e.target.id === 'createBoardModal') closeCreateModal();
   if (e.target.id === 'joinBoardModal') closeJoinModal();
@@ -1756,7 +1921,9 @@ window.addEventListener('click', (e) => {
   if (e.target.id === 'aboutModal') closeAboutModal();
   if (e.target.id === 'customConfirmModal') closeConfirmModal();
   if (e.target.id === 'planDetailsModal') closePlanDetails();
+  if (e.target.id === 'importBoardModal') closeImportModal();
 });
+  
 let toastTimeout;
 function showSystemToast(title, desc, iconName, iconColor, bgColor) {
   const toast = document.getElementById('globalToast');
@@ -1803,12 +1970,11 @@ document.addEventListener('keydown', (e) => {
     if (typeof closeBackupModal === 'function' && !document.getElementById('backupModal').classList.contains('hidden')) closeBackupModal();
     if (typeof closeAffiliateModal === 'function' && !document.getElementById('affiliateModal').classList.contains('hidden')) closeAffiliateModal();
     if (typeof closeTopUpModal === 'function' && !document.getElementById('topUpModal').classList.contains('hidden')) closeTopUpModal();
+    if (typeof closeImportModal === 'function' && !document.getElementById('importBoardModal').classList.contains('hidden')) closeImportModal();
     
-    // Новые окна
     if (!document.getElementById('planDetailsModal').classList.contains('hidden')) closePlanDetails();
     if (!document.getElementById('customConfirmModal').classList.contains('hidden')) closeConfirmModal();
     
-    // Закрываем прайсинг только если открыт он, а детали тарифа закрыты
     if (typeof closePricingModal === 'function' && !document.getElementById('pricingModal').classList.contains('hidden') && document.getElementById('planDetailsModal').classList.contains('hidden')) {
       closePricingModal();
     }
