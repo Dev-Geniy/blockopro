@@ -175,6 +175,13 @@
         currentBoardData = doc.data();
         
         const isOwner = currentBoardData.owner === currentUser.uid;
+        
+        // Защита: Если пользователя удалили из проекта, мгновенно выгоняем из Архива
+        if (!isOwner && currentBoardData.members && !currentBoardData.members.includes(currentUser.uid)) {
+          window.location.href = 'index.html';
+          return;
+        }
+
         if (!isOwner && currentBoardData.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== currentBoardData.password) {
           window.location.href = 'index.html';
           return;
