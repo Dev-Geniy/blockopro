@@ -27,10 +27,13 @@
   
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    /* Плавающие macOS скроллбары */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; border: 2px solid transparent; background-clip: padding-box; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; border: 2px solid transparent; background-clip: padding-box; }
+    .dark ::-webkit-scrollbar-thumb:hover { background: #475569; border: 2px solid transparent; background-clip: padding-box; }
     
     /* Premium Blocko Loader */
     @keyframes block-stretch {
@@ -62,14 +65,29 @@
     .partner-frame { padding: 3px; background: linear-gradient(45deg, #6366f1, #a855f7, #ec4899); border-radius: 50%; display: inline-flex; }
     .friend-frame { padding: 3px; background: linear-gradient(45deg, #3b82f6, #06b6d4); border-radius: 50%; display: inline-flex; }
 
-    /* Premium Smart Scroll Zones */
+    /* ENTERPRISE: Визуальные подсказки скролл-зон для Карточек (Вертикальные) */
     body.is-dragging-card [id^="cards-"] {
-      /* Создаем внутреннюю неоновую тень, указывающую на возможность скролла к краям */
       box-shadow: inset 0px 50px 30px -40px rgba(59, 130, 246, 0.2), inset 0px -50px 30px -40px rgba(59, 130, 246, 0.2);
       transition: box-shadow 0.3s ease;
     }
     .dark body.is-dragging-card [id^="cards-"] {
       box-shadow: inset 0px 50px 30px -40px rgba(59, 130, 246, 0.4), inset 0px -50px 30px -40px rgba(59, 130, 246, 0.4);
+    }
+
+    /* ENTERPRISE: Визуальные подсказки скролл-зон для Колонок (Горизонтальные) */
+    body.is-dragging-column #mainScroll {
+      box-shadow: inset 80px 0px 50px -50px rgba(59, 130, 246, 0.15), inset -80px 0px 50px -50px rgba(59, 130, 246, 0.15);
+      transition: box-shadow 0.4s ease;
+    }
+    .dark body.is-dragging-column #mainScroll {
+      box-shadow: inset 80px 0px 50px -50px rgba(59, 130, 246, 0.3), inset -80px 0px 50px -50px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* ENTERPRISE: Эффект Focus Mode (блюр и затемнение) для неактивных колонок */
+    body.is-dragging-column #board > div:not(.sortable-drag):not(.sortable-ghost) {
+      opacity: 0.5;
+      filter: blur(1.5px) grayscale(30%);
+      transition: opacity 0.3s ease, filter 0.3s ease;
     }
   </style>
   
@@ -2447,17 +2465,37 @@ function render() {
     }
     // ----------------------------------------------------
 
+    // Инициализация SortableJS для Колонок (Enterprise Horizontal DnD + Focus Mode)
     sortableInstances.push(new Sortable(board, { 
-      animation: 200, 
+      animation: 300, 
+      easing: "cubic-bezier(0.25, 1, 0.5, 1)", // Премиальная плавная кинематика
       handle: '.col-handle', 
       ghostClass: 'sortable-ghost', 
       dragClass: 'sortable-drag', 
-      forceFallback: true, 
+      swapThreshold: 0.65,
       disabled: isViewer,
+      delay: 150, // Защита от ложных срабатываний при скролле
+      delayOnTouchOnly: true,
+      
+      // ЭНТЕРПРАЙЗ: Умная горизонтальная прокрутка
+      scroll: true,
+      scrollSensitivity: 100, // Широкая магнитная зона (100px от краев)
+      scrollSpeed: 25, // Быстрая скорость панорамирования доски
+      
+      onStart: function (evt) {
+        // Активируем Focus Mode и неоновые зоны в CSS
+        document.body.classList.add('is-dragging-column');
+        if (navigator.vibrate) navigator.vibrate(50); // Haptic feedback на смартфонах
+      },
       onEnd: function (evt) { 
-        const movedCol = columns.splice(evt.oldIndex, 1)[0];
-        columns.splice(evt.newIndex, 0, movedCol); 
-        persist(); 
+        document.body.classList.remove('is-dragging-column');
+        if (evt.oldIndex !== evt.newIndex) {
+            const movedCol = columns.splice(evt.oldIndex, 1)[0];
+            columns.splice(evt.newIndex, 0, movedCol); 
+            persist(); 
+            // Даем DOM время на плавную установку колонки, затем мягко рендерим данные
+            setTimeout(() => render(), 50);
+        }
       } 
     }));
 
@@ -2528,12 +2566,37 @@ function resetBoardBackground() {
   else { db.collection("boards").doc(BOARD_ID).update({ background: firebase.firestore.FieldValue.delete() }); }
 }
 
-const mainScroll = document.getElementById('mainScroll'); let isDown=false, startX, scrollLeft;
-mainScroll.addEventListener('mousedown', e => { if(e.target.closest('.card-item') || e.target.closest('button')) return; isDown=true; mainScroll.style.cursor='grabbing'; startX=e.pageX-mainScroll.offsetLeft; scrollLeft=mainScroll.scrollLeft; });
-mainScroll.addEventListener('mouseleave', () => { isDown=false; mainScroll.style.cursor='grab'; });
-mainScroll.addEventListener('mouseup', () => { isDown=false; mainScroll.style.cursor='grab'; });
-mainScroll.addEventListener('mousemove', e => { if(!isDown) return; e.preventDefault(); mainScroll.scrollLeft=scrollLeft-(e.pageX-mainScroll.offsetLeft-startX); });
+// ЭНТЕРПРАЙЗ: Продвинутый Panning (Панорамирование доски мышью)
+const mainScroll = document.getElementById('mainScroll'); 
+let isDown = false, startX, scrollLeft;
 
+mainScroll.addEventListener('mousedown', e => { 
+  // Игнорируем захват, если клик попал на карточку, кнопку, input или шапку колонки (Drag Handle)
+  if(e.target.closest('.card-item') || e.target.closest('button') || e.target.closest('input') || e.target.closest('.col-handle')) return; 
+  isDown = true; 
+  mainScroll.style.cursor = 'grabbing'; 
+  startX = e.pageX - mainScroll.offsetLeft; 
+  scrollLeft = mainScroll.scrollLeft; 
+});
+
+mainScroll.addEventListener('mouseleave', () => { 
+  isDown = false; 
+  mainScroll.style.cursor = 'grab'; 
+});
+
+mainScroll.addEventListener('mouseup', () => { 
+  isDown = false; 
+  mainScroll.style.cursor = 'grab'; 
+});
+
+mainScroll.addEventListener('mousemove', e => { 
+  if(!isDown) return; 
+  e.preventDefault(); 
+  const x = e.pageX - mainScroll.offsetLeft;
+  const walk = (x - startX) * 1.5; // Чувствительность панорамирования (Ускорение x1.5 для больших досок)
+  mainScroll.scrollLeft = scrollLeft - walk; 
+});
+  
 function getBoardTags() { return boardData.tags && boardData.tags.length > 0 ? boardData.tags : DEFAULT_BOARD_TAGS; }
 function renderSettingsTags() {
   const list = document.getElementById('settingsTagsList'); const form = document.getElementById('newTagForm');
