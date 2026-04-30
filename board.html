@@ -1284,7 +1284,18 @@ async function uploadImageToImgbb(file) {
 }
 
 function processBoardData(data) {
-  document.getElementById('boardTitleHeader').innerText = data.title;
+  const headerTitle = document.getElementById('boardTitleHeader');
+  headerTitle.innerText = data.title;
+  
+  // ЭНТЕРПРАЙЗ UX: Отключаем визуальные подсказки переименования (hover/курсор), если нет прав владельца
+  if (!isLocalBoard && data.owner !== currentUser.id) {
+    headerTitle.classList.remove('cursor-pointer', 'hover:text-blue-500', 'hover:underline');
+    headerTitle.removeAttribute('title');
+  } else {
+    headerTitle.classList.add('cursor-pointer', 'hover:text-blue-500', 'hover:underline');
+    headerTitle.setAttribute('title', 'Нажмите, чтобы переименовать');
+  }
+
   if (data.background) {
     document.body.style.backgroundImage = `url('${data.background}')`;
     document.body.style.backgroundSize = 'cover';
@@ -1319,6 +1330,11 @@ function processBoardData(data) {
 }
 
 function renameBoard() {
+  // КРИТИЧЕСКИЙ ФИКС БЕЗОПАСНОСТИ: Запрет изменения названия для всех, кроме владельца
+  if (!isLocalBoard && boardData.owner !== currentUser.id) {
+    return showSystemToast('Отказ в доступе', 'Только владелец проекта может изменять его название.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+  }
+
   const currentTitle = document.getElementById('boardTitleHeader').innerText;
   // Создаем временный оверлей для ввода названия, чтобы не использовать системный prompt
   const newTitle = prompt("Новое название проекта:", currentTitle); 
@@ -1326,7 +1342,7 @@ function renameBoard() {
   // Пока фокусируемся на критических системных уведомлениях.
   if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
     updateBoardData({ title: newTitle.trim() });
-    showSystemToast('Название обновлено', 'Изменения синхронизированы с облаком.', 'edit-3', 'text-blue-500', 'bg-blue-50');
+    showSystemToast('Название обновлено', 'Изменения синхронизированы с облаком.', 'edit-3', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
   }
 }
 
