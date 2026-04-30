@@ -2327,8 +2327,9 @@ function render() {
           </div>`;
       }).join('');
       
+      // ЭНТЕРПРАЙЗ: Заглушка занимает всё свободное пространство пустой колонки, становясь огромным "магнитом"
       const emptyStateHtml = filteredCards.length === 0 
-        ? `<div class="empty-state-placeholder absolute inset-x-3 top-3 h-24 border-2 border-dashed border-gray-300 dark:border-gray-700/50 rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-xs font-bold gap-2 select-none opacity-50 pointer-events-none"><i data-lucide="download-cloud" class="w-5 h-5 pointer-events-none"></i> Перетащите сюда</div>` 
+        ? `<div class="empty-state-placeholder w-full min-h-[100px] flex-1 border-2 border-dashed border-gray-300 dark:border-gray-700/50 rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-xs font-bold gap-2 select-none opacity-50 pointer-events-none mt-0 mb-auto"><i data-lucide="download-cloud" class="w-5 h-5 pointer-events-none"></i> Перетащите сюда</div>` 
         : '';
         
       wrap.innerHTML = `
@@ -2340,12 +2341,12 @@ function render() {
           </div>
           ${isViewer ? '' : `<button data-action="editCol" data-col="${col.id}" class="text-gray-400 hover:text-blue-500 p-1 rounded transition-colors"><i data-lucide="more-horizontal" class="w-5 h-5 pointer-events-none"></i></button>`}
         </div>
-        <div id="cards-${col.id}" ${isViewer ? '' : `data-dblaction="quickAdd" data-col="${col.id}"`} class="p-3 flex-1 overflow-y-auto hide-scroll space-y-3 min-h-[120px] ${isViewer ? '' : 'cursor-pointer'} relative">
+        <div id="cards-${col.id}" ${isViewer ? '' : `data-dblaction="quickAdd" data-col="${col.id}"`} class="p-3 flex-1 overflow-y-auto hide-scroll space-y-3 min-h-[120px] flex flex-col ${isViewer ? '' : 'cursor-pointer'} relative">
           ${cardsHtml}
           ${emptyStateHtml}
         </div>
         ${isViewer ? '' : `
-        <div class="p-3 pt-0 flex gap-2">
+        <div class="p-3 pt-0 flex gap-2 mt-auto">
           <button data-action="editCard" data-col="${col.id}" class="flex-[4] py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors border border-transparent dark:border-gray-700/50 border-dashed">
             <i data-lucide="plus" class="w-4 h-4 pointer-events-none"></i> Карточка
           </button>
@@ -2357,8 +2358,7 @@ function render() {
       // Вместо прямой вставки в board, добавляем в DocumentFragment
       fragment.appendChild(wrap);
       
-      // Инициализация SortableJS для текущей колонки (Enterprise HTML5 DnD + Smart Auto-Scroll)
-      // Инициализация SortableJS для текущей колонки (Enterprise Pointer Snapping + Smart Scroll)
+      // Инициализация SortableJS для текущей колонки (Enterprise Pointer Snapping + Smart Sort)
       const colEl = wrap.querySelector(`#cards-${col.id}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
@@ -2366,13 +2366,13 @@ function render() {
         easing: "cubic-bezier(0.25, 1, 0.5, 1)", // Премиальная физика примагничивания
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
-        direction: 'vertical', // ЭНТЕРПРАЙЗ: Строгое вертикальное позиционирование внутри колонки
-        swapThreshold: 0.65, // Срабатывание ровно по пересечению зоны курсором
+        // Убрали direction: 'vertical' для свободного 2D-определения (решает проблему "прыгания" карточек)
+        swapThreshold: 0.5, // Идеальный баланс: ровно середина элемента запускает перестановку
         disabled: isViewer,
         delay: 150, 
         delayOnTouchOnly: true, 
         filter: '.empty-state-placeholder', 
-        emptyInsertThreshold: 50, // Оптимальный магнит для пустых колонок (без перекрытия соседних)
+        emptyInsertThreshold: 100, // Глубокий магнит для пустых колонок
         
         // Умная зона прокрутки
         scroll: true, 
