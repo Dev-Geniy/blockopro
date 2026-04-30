@@ -661,7 +661,9 @@
   </div>
 </div>
 
-<div id="customConfirmModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">    <div id="confirmIconBg" class="mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
+<div id="customConfirmModal" class="hidden fixed inset-0 z-[600] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95" id="confirmModalContent">
+    <div id="confirmIconBg" class="mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
       <i id="confirmIcon" data-lucide="alert-triangle" class="w-8 h-8"></i>
     </div>
     <h2 id="confirmTitle" class="text-xl font-bold mb-2 text-gray-900 dark:text-white">Подтверждение</h2>
@@ -1011,11 +1013,19 @@ function loadBoard() {
     document.getElementById('shareUrlText').innerText = window.location.href;
     const docRef = db.collection("boards").doc(BOARD_ID);
     
-    // 1. Слушаем метаданные доски (названия колонок, теги, фон)
+    // 1. Слушаем метаданные доски (названия колонок, теги, фон, доступ)
     docRef.onSnapshot((doc) => {
-      if (!doc.exists) return;
+      if (!doc.exists) {
+        window.location.href = 'index.html'; return;
+      }
       boardData = doc.data();
       const isOwner = boardData.owner === currentUser.id;
+
+      // ЭНТЕРПРАЙЗ: Выброс пользователя в реальном времени, если его исключили из команды
+      if (!isOwner && boardData.members && !boardData.members.includes(currentUser.id)) {
+        window.location.href = 'index.html'; 
+        return;
+      }
 
       if (!isOwner && boardData.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== boardData.password) {
         window.location.href = 'index.html'; return;
