@@ -2358,7 +2358,7 @@ function render() {
       // Вместо прямой вставки в board, добавляем в DocumentFragment
       fragment.appendChild(wrap);
       
-      // Инициализация SortableJS для текущей колонки (Enterprise Smart Invert Physics)
+      // Инициализация SortableJS для текущей колонки (Enterprise Smart Physics)
       const colEl = wrap.querySelector(`#cards-${col.id}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
@@ -2367,10 +2367,9 @@ function render() {
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
         
-        // ЭНТЕРПРАЙЗ: Фикс для карточек разного размера (Аудио над Картинкой)
-        invertSwap: true, // Вычисляет пересечение по физическим краям (top/bottom), а не по центру мыши
-        direction: 'vertical', // Требуется для правильной работы invertSwap в строгих колонках
-        swapThreshold: 0.6, // Идеальная чувствительность для инвертированного обмена
+        // ЭНТЕРПРАЙЗ: Универсальный фикс для перетаскивания карточек разной высоты
+        fallbackOnBody: true, // Исключает баги позиционирования при скролле и разнице высот
+        swapThreshold: 0.65, // Оптимальный порог для плавного обмена
         
         disabled: isViewer,
         delay: 150, 
