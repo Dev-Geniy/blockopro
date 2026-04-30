@@ -2329,7 +2329,7 @@ function render() {
       // Вместо прямой вставки в board, добавляем в DocumentFragment
       fragment.appendChild(wrap);
       
-      // Инициализация SortableJS для текущей колонки (Магнитное, плавное перетаскивание)
+      // Инициализация SortableJS для текущей колонки (Enterprise HTML5 DnD)
       const colEl = wrap.querySelector(`#cards-${col.id}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
@@ -2337,11 +2337,13 @@ function render() {
         easing: "cubic-bezier(0.25, 1, 0.5, 1)", // Премиальная физика примагничивания
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
-        forceFallback: true, // Игнорируем нативный HTML5 Drag and Drop для идеального контроля
-        fallbackClass: 'sortable-drag',
+        // Убираем forceFallback: true. Передаем отрисовку аппаратной среде браузера.
+        swapThreshold: 0.65, 
         disabled: isViewer,
-        filter: '.empty-state-placeholder', // Запрещаем перетаскивать саму плашку
-        emptyInsertThreshold: 15, // Легко перетаскивать карточки даже в пустые колонки
+        delay: 150, // Интеллектуальная задержка
+        delayOnTouchOnly: true, // Включаем задержку только на смартфонах для спасения скролла
+        filter: '.empty-state-placeholder', 
+        emptyInsertThreshold: 30, 
         onEnd: async function (evt) {
           const cardId = evt.item.dataset.id;
           const fromColId = evt.from.id.replace('cards-','');
