@@ -2874,8 +2874,9 @@ async function generateAIQuickDescription() {
   }
 }
 
-// Закрытие модалок по клику на фон
+// Закрытие модалок по клику на фон и умное скрытие боковых панелей
 window.addEventListener('click', (e) => {
+  // 1. Обработка кликов по фону модальных окон
   if (e.target.id === 'viewCardModal') closeViewModal();
   if (e.target.id === 'editCardModal') closeEditModal();
   if (e.target.id === 'colModal') closeColModal();
@@ -2884,6 +2885,20 @@ window.addEventListener('click', (e) => {
   if (e.target.id === 'customConfirmModal') closeConfirmModal();
   if (e.target.id === 'voiceMemoModal') closeVoiceMemoModal();
   if (e.target.id === 'pollStatsModal') closePollStatsModal();
+
+  // 2. ЭНТЕРПРАЙЗ UX: Автоматическое скрытие открытых шторок при клике в рабочую область
+  // Проверяем, что клик был НЕ по самой шторке (aside), НЕ по шапке с кнопками (header),
+  // НЕ по модальному окну (.glass-modal) и НЕ по всплывающему меню
+  const isSidebar = e.target.closest('aside');
+  const isHeader = e.target.closest('header');
+  const isMobileMenu = e.target.closest('#mobileMenuDropdown');
+  const isModal = e.target.closest('.glass-modal');
+  
+  if (!isSidebar && !isHeader && !isMobileMenu && !isModal) {
+    if (typeof closeOtherSidebars === 'function') {
+      closeOtherSidebars('none');
+    }
+  }
 });
 
 let toastTimeout;
