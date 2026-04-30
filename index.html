@@ -189,6 +189,7 @@
           <i data-lucide="plus" class="w-5 h-5"></i> Создать проект
         </button>
       </div>
+    </div>
     
     <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-10">
       <div class="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700/50 h-48 rounded-[2rem] animate-pulse p-6 flex flex-col justify-between">
@@ -1661,6 +1662,11 @@ function handleImportFileSelect(event) {
 async function processBoardImport() {
   if (!pendingImportFile || !currentUser) return;
   
+  // ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Ограничение размера файла (максимум 10 MB)
+  if (pendingImportFile.size > 10 * 1024 * 1024) {
+     return showSystemToast('Отказ в доступе', 'Файл слишком большой. Максимальный размер 10 МБ.', 'shield-alert', 'text-red-500', 'bg-red-50');
+  }
+
   const type = document.querySelector('input[name="importBoardType"]:checked').value;
   const password = document.getElementById('importBoardPassword').value.trim() || null;
 
@@ -1681,8 +1687,16 @@ async function processBoardImport() {
   reader.onload = async function(e) {
     try {
       const imported = JSON.parse(e.target.result);
-      if(!imported.columns) throw new Error("Invalid blocko backup format");
       
+      // ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Строгая валидация структуры (Anti-Malware & Integrity Check)
+      if (typeof imported !== 'object' || !Array.isArray(imported.columns) || !imported.title || typeof imported.title !== 'string') {
+         throw new Error("Неверная сигнатура файла.");
+      }
+
+      // Базовая санитизация (стриппинг тегов script)
+      const sanitizeText = (text) => typeof text === 'string' ? text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') : text;
+      imported.title = sanitizeText(imported.title);
+
       const newBoardId = (type === 'local' ? 'local_' : '') + Date.now();
       imported.id = newBoardId;
       imported.owner = currentUser.id;
@@ -1690,7 +1704,6 @@ async function processBoardImport() {
       imported.password = password;
       imported.createdAt = type === 'local' ? Date.now() : firebase.firestore.FieldValue.serverTimestamp();
       
-      // ЭНТЕРПРАЙЗ: Текущий пользователь становится полным Владельцем (с премиум атрибутами)
       imported.users = { 
         [currentUser.id]: { 
           name: currentUser.name, 
@@ -1711,40 +1724,58 @@ async function processBoardImport() {
         closeImportModal();
         renderBoardsGrid();
         showSystemToast('Успех', 'Офлайн проект успешно восстановлен.', 'check-circle', 'text-emerald-500', 'bg-emerald-50');
+        setTimeout(() => window.location.href = `board.html?b=${newBoardId}`, 800);
       } else {
          // Cloud развертывание с учетом Subcollections
          const cardsToImport = [];
          imported.columns.forEach(col => {
-            if (col.cards) {
-                col.cards.forEach(card => cardsToImport.push({...card, columnId: col.id}));
-                col.cards = []; // Очищаем метаданные колонок от карточек
+            col.name = sanitizeText(col.name);
+            if (col.cards && Array.isArray(col.cards)) {
+                col.cards.forEach(card => {
+                   card.title = sanitizeText(card.title);
+                   cardsToImport.push({...card, columnId: col.id});
+                });
+                col.cards = []; 
             }
          });
 
          closeImportModal();
-         showSystemToast('Загрузка в облако...', 'Развертывание резервной копии. Это может занять пару секунд.', 'loader-2', 'text-blue-500 animate-spin', 'bg-blue-50');
+         showSystemToast('Синхронизация...', 'Создаем облачную инфраструктуру. Пожалуйста, подождите.', 'loader-2', 'text-blue-500 animate-spin', 'bg-blue-50');
 
-         const docRef = db.collection("boards").doc(); // Генерируем красивый Cloud ID
+         const docRef = db.collection("boards").doc(); 
          imported.id = docRef.id;
          if (password) sessionStorage.setItem('blocko_auth_' + docRef.id, password);
 
          await docRef.set(imported);
 
+         // ЭНТЕРПРАЙЗ: Пакетная запись (Chunking) для обхода лимита Firestore в 500 операций
          if (cardsToImport.length > 0) {
-             const batch = db.batch();
+             const batches = [];
+             let currentBatch = db.batch();
+             let opCount = 0;
+
              cardsToImport.forEach(card => {
-                 const newCardId = 'card_' + Math.random().toString(36).substr(2, 9);
-                 card.id = newCardId;
-                 const cardRef = docRef.collection("cards").doc(newCardId);
-                 batch.set(cardRef, { ...card, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                 // Оставляем оригинальный ID карточки, чтобы сохранить целостность вложенных данных (чек-листы и т.д.)
+                 const cardRef = docRef.collection("cards").doc(String(card.id));
+                 currentBatch.set(cardRef, { ...card, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                 opCount++;
+                 
+                 if (opCount >= 450) {
+                     batches.push(currentBatch.commit());
+                     currentBatch = db.batch();
+                     opCount = 0;
+                 }
              });
-             await batch.commit();
+             
+             if (opCount > 0) batches.push(currentBatch.commit());
+             await Promise.all(batches);
          }
          
-         showSystemToast('Успех', 'Облачный проект успешно восстановлен!', 'cloud-snow', 'text-blue-500', 'bg-blue-50');
+         showSystemToast('Успех', 'Облачный проект восстановлен!', 'cloud-snow', 'text-blue-500', 'bg-blue-50');
+         setTimeout(() => window.location.href = `board.html?b=${docRef.id}`, 800);
       }
     } catch (err) { 
-        showSystemToast('Ошибка', 'Файл поврежден или не является бэкапом Blocko.', 'x-circle', 'text-red-500', 'bg-red-50'); 
+        showSystemToast('Блокировка', 'Файл поврежден, имеет неверный формат или содержит опасный код.', 'shield-alert', 'text-red-500', 'bg-red-50'); 
     }
   };
   reader.readAsText(pendingImportFile);
