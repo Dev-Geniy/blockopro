@@ -2358,7 +2358,7 @@ function render() {
       fragment.appendChild(wrap);
       
       // Инициализация SortableJS для текущей колонки (Enterprise HTML5 DnD + Smart Auto-Scroll)
-      // Инициализация SortableJS для текущей колонки (Enterprise Edge Snapping + Smart Scroll)
+      // Инициализация SortableJS для текущей колонки (Enterprise Pointer Snapping + Smart Scroll)
       const colEl = wrap.querySelector(`#cards-${col.id}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
@@ -2366,17 +2366,17 @@ function render() {
         easing: "cubic-bezier(0.25, 1, 0.5, 1)", // Премиальная физика примагничивания
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
-        invertSwap: true, // ЭНТЕРПРАЙЗ: Расчет наложения по физическим краям карточки, а не по мыши
-        swapThreshold: 0.8, // Мягкая и широкая зона вытеснения других карточек
+        direction: 'vertical', // ЭНТЕРПРАЙЗ: Строгое вертикальное позиционирование внутри колонки
+        swapThreshold: 0.65, // Срабатывание ровно по пересечению зоны курсором
         disabled: isViewer,
         delay: 150, 
         delayOnTouchOnly: true, 
         filter: '.empty-state-placeholder', 
-        emptyInsertThreshold: 150, // Мощный магнит: втягивает карточку в пустую колонку за 150px
+        emptyInsertThreshold: 50, // Оптимальный магнит для пустых колонок (без перекрытия соседних)
         
-        // Умная зона прокрутки (расширенная)
+        // Умная зона прокрутки
         scroll: true, 
-        scrollSensitivity: 150, // Увеличенная зона чувствительности от краев экрана
+        scrollSensitivity: 150, // Сохраняем увеличенную зону чувствительности от краев экрана
         scrollSpeed: 30, // Слегка ускоренная плавная прокрутка
         bubbleScroll: true,
         
