@@ -1461,8 +1461,6 @@ function updateTagFilterDropdown() {
   if ([...select.options].some(o => o.value === savedValue)) select.value = savedValue;
 }
 
-
-  
 function toggleSettings() { if (window.event) window.event.stopPropagation(); closeOtherSidebars('settingsSidebar'); document.getElementById('settingsSidebar').classList.toggle('translate-x-full'); }
 function toggleMembers() { if (window.event) window.event.stopPropagation(); closeOtherSidebars('membersSidebar'); document.getElementById('membersSidebar').classList.toggle('translate-x-full'); }
 function toggleArchive() { 
