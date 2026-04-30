@@ -1774,10 +1774,12 @@ function openViewModal(colId, cardId) {
             const doneCount = card.checklist.filter(i => i.isCompleted).length;
             const percent = Math.round((doneCount / card.checklist.length) * 100) || 0;
             const itemsHtml = card.checklist.map((item, idx) => `
-                <label class="flex items-start gap-3 p-4 bg-white dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 transition-colors hover:border-cyan-300 dark:hover:border-cyan-700 shadow-sm cursor-pointer">
-                  <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onclick="event.stopPropagation(); toggleBoardTodo('${colId}', '${card.id}', ${idx}); setTimeout(()=>openViewModal('${colId}', '${card.id}'), 150)" class="w-5 h-5 mt-0.5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer flex-shrink-0">
-                  <span class="text-sm font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'} leading-relaxed select-none">${item.text}</span>
-                </label>
+                <div onclick="event.stopPropagation(); toggleBoardTodo('${colId}', '${card.id}', ${idx}); setTimeout(()=>openViewModal('${colId}', '${card.id}'), 150)" class="flex items-start gap-3 p-4 bg-white dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 transition-colors hover:border-cyan-300 dark:hover:border-cyan-700 shadow-sm cursor-pointer">
+                  <div class="w-6 h-6 flex-shrink-0 mt-0.5 rounded-lg border-2 flex items-center justify-center transition-all ${item.isCompleted ? 'bg-cyan-500 border-cyan-500' : 'bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-600'}">
+                    ${item.isCompleted ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
+                  </div>
+                  <span class="text-sm font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'} leading-relaxed select-none flex-1">${item.text}</span>
+                </div>
             `).join('');
             body.innerHTML = `<div class="bg-cyan-50/50 dark:bg-cyan-900/20 p-6 rounded-[2rem] border border-cyan-100 dark:border-cyan-800/50">
                 <div class="flex justify-between items-center mb-3"><span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Прогресс</span><span class="text-cyan-500 font-black">${percent}%</span></div>
@@ -2064,10 +2066,12 @@ function renderChecklistEdit() {
       <div class="drag-handle cursor-grab text-gray-400 hover:text-blue-500 px-2 flex-shrink-0 mt-0.5">
         <i data-lucide="grip-vertical" class="w-4 h-4"></i>
       </div>
-      <label class="flex items-start gap-3 cursor-pointer flex-1 px-2 min-w-0">
-        <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onchange="toggleChecklistItemEdit(${index})" class="w-4 h-4 text-blue-600 rounded border-gray-300 flex-shrink-0 mt-0.5" />
-        <span class="text-sm ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} break-words flex-1 leading-tight">${item.text}</span>
-      </label>
+      <div onclick="toggleChecklistItemEdit(${index})" class="flex items-start gap-3 cursor-pointer flex-1 px-2 min-w-0">
+        <div class="w-5 h-5 flex-shrink-0 mt-0.5 rounded-md border-2 flex items-center justify-center transition-all ${item.isCompleted ? 'bg-blue-500 border-blue-500' : 'bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-600'}">
+          ${item.isCompleted ? '<i data-lucide="check" class="w-3.5 h-3.5 text-white"></i>' : ''}
+        </div>
+        <span class="text-sm ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} break-words flex-1 leading-tight select-none">${item.text}</span>
+      </div>
       <button onclick="removeChecklistItem(${index})" class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex-shrink-0 mt-[-4px]">
         <i data-lucide="trash-2" class="w-4 h-4"></i>
       </button>
@@ -2115,10 +2119,12 @@ function renderChecklistView() {
     <div class="space-y-2">
   `;
   html += viewingCard.checklist.map((item, index) => `
-    <label class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl cursor-pointer border border-gray-100 dark:border-gray-800 transition-colors hover:border-blue-300">
-      <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onchange="toggleChecklistView(${index})" class="w-5 h-5 text-blue-600 rounded border-gray-300 flex-shrink-0 mt-0.5" />
-      <span class="text-sm font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'} break-words flex-1 leading-relaxed">${item.text}</span>
-    </label>
+    <div onclick="toggleChecklistView(${index})" class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl cursor-pointer border border-gray-100 dark:border-gray-800 transition-colors hover:border-blue-300">
+      <div class="w-6 h-6 flex-shrink-0 mt-0.5 rounded-lg border-2 flex items-center justify-center transition-all ${item.isCompleted ? 'bg-blue-500 border-blue-500' : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'}">
+        ${item.isCompleted ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
+      </div>
+      <span class="text-sm font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'} break-words flex-1 leading-relaxed select-none">${item.text}</span>
+    </div>
   `).join('');
   container.innerHTML = html + '</div>'; lucide.createIcons();
 }
@@ -2367,9 +2373,11 @@ function render() {
           const doneCount = c.checklist.filter(i => i.isCompleted).length;
           const percent = Math.round((doneCount / c.checklist.length) * 100) || 0;
           const itemsHtml = c.checklist.map((item, idx) => `
-            <div class="flex items-start gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50 hover:border-cyan-200 dark:hover:border-cyan-800 transition-colors mb-2 last:mb-0 relative z-20 pointer-events-auto group/chk">
-              <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onclick="event.stopPropagation(); toggleBoardTodo('${col.id}', '${c.id}', ${idx})" class="w-4 h-4 mt-0.5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer flex-shrink-0">
-              <span class="text-xs font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} leading-snug select-none cursor-pointer flex-1" onclick="event.stopPropagation(); toggleBoardTodo('${col.id}', '${c.id}', ${idx})">${item.text}</span>
+            <div onclick="event.stopPropagation(); toggleBoardTodo('${col.id}', '${c.id}', ${idx})" class="flex items-start gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50 hover:border-cyan-200 dark:hover:border-cyan-800 transition-colors mb-2 last:mb-0 relative z-20 pointer-events-auto group/chk cursor-pointer">
+              <div class="w-5 h-5 flex-shrink-0 rounded-md border-2 flex items-center justify-center transition-all ${item.isCompleted ? 'bg-cyan-500 border-cyan-500' : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'}">
+                ${item.isCompleted ? '<i data-lucide="check" class="w-3.5 h-3.5 text-white"></i>' : ''}
+              </div>
+              <span class="text-xs font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} leading-snug select-none flex-1">${item.text}</span>
             </div>
           `).join('');
 
