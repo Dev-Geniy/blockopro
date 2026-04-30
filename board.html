@@ -2314,13 +2314,13 @@ function render() {
         const normalComments = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400 pointer-events-none"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
 
         return `
-          <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none">
+          <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none flex flex-col">
             ${isViewer ? '' : `<button data-action="editCard" data-col="${col.id}" data-card="${c.id}" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
-            ${c.image ? `<img src="${c.image}" loading="lazy" class="mb-3 rounded-lg w-full h-32 object-cover border dark:border-gray-700/50 pointer-events-none" />` : ''}
+            ${c.image ? `<div class="mb-3 w-full h-32 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0 bg-gray-50 dark:bg-gray-900/50"><img src="${c.image}" loading="lazy" class="w-full h-full object-cover block" /></div>` : ''}
             ${tagsHtml}
-            <div class="font-bold text-sm leading-tight pr-8 mb-3 text-gray-900 dark:text-white pointer-events-none">${displayTitle}</div>
+            <div class="font-bold text-sm leading-tight pr-8 mb-3 text-gray-900 dark:text-white pointer-events-none flex-1">${displayTitle}</div>
             ${checklistHtml}
-            <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
+            <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0">
               <div class="flex gap-2 items-center text-gray-400">${dueDateHtml}${c.description ? '<i data-lucide="align-left" class="w-3.5 h-3.5 text-gray-400"></i>' : ''}${normalComments}</div>
               ${authorAvatar}
             </div>
@@ -2362,22 +2362,26 @@ function render() {
       const colEl = wrap.querySelector(`#cards-${col.id}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
-        animation: 150, // Уменьшено для более четкого и быстрого просчета хитбоксов при смене
+        animation: 150, 
         easing: "cubic-bezier(0.25, 1, 0.5, 1)", 
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
         
-        // КРИТИЧЕСКИЙ ЭНТЕРПРАЙЗ-ФИКС: Переопределяем нативный HTML5 Drag and Drop
-        forceFallback: true, // Запускает собственный JS-движок расчета мыши, обходя баги браузера
-        fallbackClass: 'sortable-drag', // Обязательный класс при forceFallback
-        fallbackOnBody: true, // Переносит клон в корень DOM для обхода z-index и overflow
-        swapThreshold: 0.65, // Идеально для карточек разной высоты
+        // КРИТИЧЕСКИЙ ЭНТЕРПРАЙЗ-ФИКС ДЛЯ КАРТОЧЕК РАЗНОЙ ВЫСОТЫ
+        forceFallback: true, 
+        fallbackClass: 'sortable-drag', 
+        fallbackOnBody: true, 
+        
+        // Математика обмена малых и больших элементов
+        invertSwap: true, // Включаем захват по краям (идеально для маленькой аудио поверх большой картинки)
+        invertedSwapThreshold: 0.5, // Срабатывает, когда маленькая карточка на 50% заползла на большую
+        direction: 'vertical',
         
         disabled: isViewer,
         delay: 150, 
         delayOnTouchOnly: true, 
         filter: '.empty-state-placeholder', 
-        emptyInsertThreshold: 100, // Глубокий магнит для пустых колонок
+        emptyInsertThreshold: 100,
         
         // Умная зона прокрутки
         scroll: true, 
