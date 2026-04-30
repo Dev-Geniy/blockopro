@@ -89,6 +89,15 @@
       filter: blur(1.5px) grayscale(30%);
       transition: opacity 0.3s ease, filter 0.3s ease;
     }
+
+    /* ENTERPRISE: Компактный режим доски (High-Density View) */
+    body.compact-mode .card-item { padding: 0.5rem !important; }
+    body.compact-mode .card-item img { display: none !important; }
+    body.compact-mode .card-item .text-sm { font-size: 0.75rem !important; line-height: 1rem !important; margin-bottom: 0.25rem !important; }
+    body.compact-mode .card-item .mt-3 { margin-top: 0.25rem !important; }
+    body.compact-mode .card-item .mb-3 { margin-bottom: 0.25rem !important; }
+    body.compact-mode .card-item .gap-2 { gap: 0.25rem !important; }
+    body.compact-mode [id^="cards-"] { gap: 0.35rem !important; }
   </style>
   
   <script>
@@ -214,22 +223,24 @@
     
     <div class="flex-1 overflow-y-auto p-6 space-y-8 hide-scroll">
       
-      <!-- Быстрые действия -->
+      <!-- Быстрые действия (Quick Actions) -->
       <div class="grid grid-cols-3 gap-3">
-        <button onclick="toggleTheme()" class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-gray-800 transition-all group">
+        <button onclick="toggleTheme()" class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-gray-800 transition-all group active:scale-95 shadow-sm hover:shadow">
           <div class="text-gray-500 group-hover:text-blue-500 transition-colors mb-1.5">
             <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
             <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
           </div>
           <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400">Тема</span>
         </button>
-        <button class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-gray-800 transition-all group">
-          <i data-lucide="zap" class="w-5 h-5 text-gray-500 group-hover:text-blue-500 transition-colors mb-1.5"></i>
-          <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400">Скоро</span>
+        
+        <button onclick="toggleCompactMode()" class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-gray-800 transition-all group active:scale-95 shadow-sm hover:shadow" title="Сжать карточки для обзора">
+          <i data-lucide="align-justify" class="w-5 h-5 text-gray-500 group-hover:text-blue-500 transition-colors mb-1.5"></i>
+          <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400">Компакт</span>
         </button>
-        <button class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-gray-800 transition-all group">
-          <i data-lucide="box" class="w-5 h-5 text-gray-500 group-hover:text-blue-500 transition-colors mb-1.5"></i>
-          <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400">Скоро</span>
+        
+        <button onclick="toggleFocusMode()" class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-gray-800 transition-all group active:scale-95 shadow-sm hover:shadow" title="Полноэкранный режим работы">
+          <i data-lucide="maximize" class="w-5 h-5 text-gray-500 group-hover:text-blue-500 transition-colors mb-1.5"></i>
+          <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400">Фокус</span>
         </button>
       </div>
       
@@ -4016,6 +4027,48 @@ function commitTableToDb() {
 function toggleTheme() { 
   document.documentElement.classList.toggle('dark'); 
   localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); 
+}
+
+// ЭНТЕРПРАЙЗ: Компактный режим (High-Density View)
+function toggleCompactMode() {
+  document.body.classList.toggle('compact-mode');
+  const isCompact = document.body.classList.contains('compact-mode');
+  localStorage.setItem('blocko_compact', isCompact ? 'true' : 'false');
+  
+  showSystemToast(
+    'Отображение', 
+    isCompact ? 'Включен компактный вид доски.' : 'Включен стандартный вид доски.', 
+    'align-justify', 
+    'text-blue-500', 
+    'bg-blue-50 dark:bg-blue-900/30'
+  );
+  
+  // ЭНТЕРПРАЙЗ: Вызываем перерасчет хитбоксов SortableJS, так как высоты карточек изменились
+  if (typeof render === 'function') {
+    setTimeout(() => render(), 150);
+  }
+}
+
+// Инициализация компактного режима при загрузке
+if (localStorage.getItem('blocko_compact') === 'true') {
+  document.body.classList.add('compact-mode');
+}
+
+// ЭНТЕРПРАЙЗ: Режим Фокуса (Fullscreen API)
+function toggleFocusMode() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(err => {
+      showSystemToast('Ошибка', 'Ваш браузер не поддерживает полноэкранный режим.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    });
+    showSystemToast('Фокус', 'Полноэкранный режим активирован. Нажмите ESC для выхода.', 'maximize', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
+    
+    // Закрываем шторку настроек, чтобы юзер остался наедине с доской
+    closeOtherSidebars('none');
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
 }
 </script>
 </body>
