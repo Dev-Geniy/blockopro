@@ -2329,36 +2329,83 @@ function render() {
       // Вместо прямой вставки в board, добавляем в DocumentFragment
       fragment.appendChild(wrap);
       
-      // Инициализация SortableJS для текущей колонки (оставляем как есть, так как DOM-нода wrap уже существует)
+      // Инициализация SortableJS для текущей колонки (Магнитное, плавное перетаскивание)
       const colEl = wrap.querySelector(`#cards-${col.id}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
-        animation: 150, 
+        animation: 250, 
+        easing: "cubic-bezier(0.25, 1, 0.5, 1)", // Премиальная физика примагничивания
+        ghostClass: 'sortable-ghost',
+        dragClass: 'sortable-drag',
+        forceFallback: true, // Игнорируем нативный HTML5 Drag and Drop для идеального контроля
+        fallbackClass: 'sortable-drag',
         disabled: isViewer,
         filter: '.empty-state-placeholder', // Запрещаем перетаскивать саму плашку
+        emptyInsertThreshold: 15, // Легко перетаскивать карточки даже в пустые колонки
         onEnd: async function (evt) {
           const cardId = evt.item.dataset.id;
+          const fromColId = evt.from.id.replace('cards-','');
           const toColId = evt.to.id.replace('cards-','');
           
+          // ЭНТЕРПРАЙЗ: Считываем новый порядок элементов прямо из DOM для 100% точности
+          const toCardsElements = Array.from(evt.to.children).filter(el => el.classList.contains('card-item'));
+          
           if (isLocalBoard) {
-            let mCard;
+            let mCard = null;
             columns.forEach(c => {
-               const found = c.cards.find(card => card.id == cardId);
-               if(found) { mCard = found; c.cards = c.cards.filter(card => card.id != cardId); }
+               if (c.id == fromColId) {
+                  const idx = c.cards.findIndex(card => card.id == cardId);
+                  if (idx !== -1) {
+                     mCard = c.cards[idx];
+                     c.cards.splice(idx, 1);
+                  }
+               }
             });
-            const targetCol = columns.find(c => c.id == toColId);
-            targetCol.cards.splice(evt.newIndex, 0, mCard);
-            persist();
+            
+            if (mCard) {
+                mCard.columnId = toColId;
+                const targetCol = columns.find(c => c.id == toColId);
+                if (targetCol) {
+                    targetCol.cards.push(mCard); 
+                    // Переназначаем всем карточкам правильный order согласно их позициям в DOM
+                    toCardsElements.forEach((el, index) => {
+                       const id = el.dataset.id;
+                       const c = targetCol.cards.find(card => card.id == id);
+                       if (c) c.order = index;
+                    });
+                }
+                persist();
+                render();
+            }
           } else {
-            await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).update({
-              columnId: toColId,
-              order: evt.newIndex,
-              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            // ЭНТЕРПРАЙЗ: Пакетное обновление (Batch Update) для идеальной синхронизации индексов у всей колонки
+            const batch = db.batch();
+            const cardsRef = db.collection("boards").doc(BOARD_ID).collection("cards");
+            
+            toCardsElements.forEach((el, index) => {
+               const id = el.dataset.id;
+               batch.update(cardsRef.doc(String(id)), {
+                   columnId: toColId,
+                   order: index,
+                   updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+               });
             });
+
+            // Если переместили в другую колонку, обновляем индексы и в старой, чтобы закрыть образовавшиеся "дыры"
+            if (fromColId !== toColId) {
+               const fromCardsElements = Array.from(evt.from.children).filter(el => el.classList.contains('card-item'));
+               fromCardsElements.forEach((el, index) => {
+                   const id = el.dataset.id;
+                   batch.update(cardsRef.doc(String(id)), {
+                       order: index,
+                       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                   });
+               });
+            }
+            await batch.commit();
           }
         } 
       }));
-    });
     
     board.replaceChildren(fragment);
 
