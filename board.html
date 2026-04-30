@@ -2359,29 +2359,25 @@ function render() {
       fragment.appendChild(wrap);
       
       // Инициализация SortableJS для текущей колонки (Enterprise Ultimate Physics)
+      // Инициализация SortableJS для текущей колонки (Enterprise Smart Invert Physics)
       const colEl = wrap.querySelector(`#cards-${col.id}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
-        animation: 150, 
-        easing: "cubic-bezier(0.25, 1, 0.5, 1)", 
+        animation: 250, 
+        easing: "cubic-bezier(0.25, 1, 0.5, 1)", // Премиальная физика примагничивания
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
         
-        // КРИТИЧЕСКИЙ ЭНТЕРПРАЙЗ-ФИКС ДЛЯ КАРТОЧЕК РАЗНОЙ ВЫСОТЫ
-        forceFallback: true, 
-        fallbackClass: 'sortable-drag', 
-        fallbackOnBody: true, 
-        
-        // Математика обмена малых и больших элементов
-        invertSwap: true, // Включаем захват по краям (идеально для маленькой аудио поверх большой картинки)
-        invertedSwapThreshold: 0.5, // Срабатывает, когда маленькая карточка на 50% заползла на большую
-        direction: 'vertical',
+        // ВЕРНУЛИ КАК БЫЛО: Фикс для карточек разного размера (Аудио над Картинкой)
+        invertSwap: true, // Вычисляет пересечение по физическим краям (top/bottom), а не по центру мыши
+        direction: 'vertical', // Требуется для правильной работы invertSwap в строгих колонках
+        swapThreshold: 0.6, // Идеальная чувствительность для инвертированного обмена
         
         disabled: isViewer,
         delay: 150, 
         delayOnTouchOnly: true, 
         filter: '.empty-state-placeholder', 
-        emptyInsertThreshold: 100,
+        emptyInsertThreshold: 100, // Глубокий магнит для пустых колонок
         
         // Умная зона прокрутки
         scroll: true, 
@@ -2419,12 +2415,32 @@ function render() {
                 const targetCol = columns.find(c => c.id == toColId);
                 if (targetCol) {
                     targetCol.cards.push(mCard); 
+                    
                     // Переназначаем всем карточкам правильный order согласно их позициям в DOM
                     toCardsElements.forEach((el, index) => {
                        const id = el.dataset.id;
                        const c = targetCol.cards.find(card => card.id == id);
                        if (c) c.order = index;
                     });
+
+                    // ИСПРАВЛЕНИЕ БАГА: Локальный рендер читает массив по порядку индексов.
+                    // После .push(mCard) карточка физически оказывается в самом низу массива.
+                    // Поэтому мы обязаны отсортировать массив карточек колонки по новому `order` перед сохранением.
+                    targetCol.cards.sort((a, b) => (a.order || 0) - (b.order || 0));
+                    
+                    // Если карточка перемещена в другую колонку, сортируем и исходную
+                    if (fromColId !== toColId) {
+                        const fromCol = columns.find(c => c.id == fromColId);
+                        if (fromCol) {
+                            const fromCardsElements = Array.from(evt.from.children).filter(el => el.classList.contains('card-item'));
+                            fromCardsElements.forEach((el, index) => {
+                               const id = el.dataset.id;
+                               const c = fromCol.cards.find(card => card.id == id);
+                               if (c) c.order = index;
+                            });
+                            fromCol.cards.sort((a, b) => (a.order || 0) - (b.order || 0));
+                        }
+                    }
                 }
                 persist();
                 render();
