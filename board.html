@@ -61,8 +61,18 @@
     .ambassador-frame { padding: 3px; background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: rainbow-border 3s linear infinite; border-radius: 50%; display: inline-flex; }
     .partner-frame { padding: 3px; background: linear-gradient(45deg, #6366f1, #a855f7, #ec4899); border-radius: 50%; display: inline-flex; }
     .friend-frame { padding: 3px; background: linear-gradient(45deg, #3b82f6, #06b6d4); border-radius: 50%; display: inline-flex; }
-  </style>
 
+    /* Premium Smart Scroll Zones */
+    body.is-dragging-card [id^="cards-"] {
+      /* Создаем внутреннюю неоновую тень, указывающую на возможность скролла к краям */
+      box-shadow: inset 0px 50px 30px -40px rgba(59, 130, 246, 0.2), inset 0px -50px 30px -40px rgba(59, 130, 246, 0.2);
+      transition: box-shadow 0.3s ease;
+    }
+    .dark body.is-dragging-card [id^="cards-"] {
+      box-shadow: inset 0px 50px 30px -40px rgba(59, 130, 246, 0.4), inset 0px -50px 30px -40px rgba(59, 130, 246, 0.4);
+    }
+  </style>
+  
   <script>
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
   </script>
@@ -2329,7 +2339,7 @@ function render() {
       // Вместо прямой вставки в board, добавляем в DocumentFragment
       fragment.appendChild(wrap);
       
-      // Инициализация SortableJS для текущей колонки (Enterprise HTML5 DnD)
+      // Инициализация SortableJS для текущей колонки (Enterprise HTML5 DnD + Smart Auto-Scroll)
       const colEl = wrap.querySelector(`#cards-${col.id}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
@@ -2337,14 +2347,25 @@ function render() {
         easing: "cubic-bezier(0.25, 1, 0.5, 1)", // Премиальная физика примагничивания
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
-        // Убираем forceFallback: true. Передаем отрисовку аппаратной среде браузера.
         swapThreshold: 0.65, 
         disabled: isViewer,
-        delay: 150, // Интеллектуальная задержка
-        delayOnTouchOnly: true, // Включаем задержку только на смартфонах для спасения скролла
+        delay: 150, 
+        delayOnTouchOnly: true, 
         filter: '.empty-state-placeholder', 
         emptyInsertThreshold: 30, 
+
+        // ЭНТЕРПРАЙЗ: Умная прокрутка (Smart Auto-Scroll Zones)
+        scroll: true, 
+        scrollSensitivity: 85, // Большая магнитная зона от краев (в пикселях) для срабатывания прокрутки
+        scrollSpeed: 25, // Мягкая, но быстрая скорость листания
+        bubbleScroll: true, // Позволяет прокручивать всю доску по горизонтали, если вынести карточку за экран
+
+        // Интерактивная визуализация зон прокрутки
+        onStart: function (evt) {
+          document.body.classList.add('is-dragging-card');
+        },
         onEnd: async function (evt) {
+          document.body.classList.remove('is-dragging-card');
           const cardId = evt.item.dataset.id;
           const fromColId = evt.from.id.replace('cards-','');
           const toColId = evt.to.id.replace('cards-','');
