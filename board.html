@@ -2358,6 +2358,7 @@ function render() {
       fragment.appendChild(wrap);
       
       // Инициализация SortableJS для текущей колонки (Enterprise HTML5 DnD + Smart Auto-Scroll)
+      // Инициализация SortableJS для текущей колонки (Enterprise Edge Snapping + Smart Scroll)
       const colEl = wrap.querySelector(`#cards-${col.id}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
@@ -2365,20 +2366,21 @@ function render() {
         easing: "cubic-bezier(0.25, 1, 0.5, 1)", // Премиальная физика примагничивания
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
-        swapThreshold: 0.65, 
+        invertSwap: true, // ЭНТЕРПРАЙЗ: Расчет наложения по физическим краям карточки, а не по мыши
+        swapThreshold: 0.8, // Мягкая и широкая зона вытеснения других карточек
         disabled: isViewer,
         delay: 150, 
         delayOnTouchOnly: true, 
         filter: '.empty-state-placeholder', 
-        emptyInsertThreshold: 30, 
-
-        // ЭНТЕРПРАЙЗ: Умная прокрутка (Smart Auto-Scroll Zones)
+        emptyInsertThreshold: 150, // Мощный магнит: втягивает карточку в пустую колонку за 150px
+        
+        // Умная зона прокрутки (расширенная)
         scroll: true, 
-        scrollSensitivity: 85, // Большая магнитная зона от краев (в пикселях) для срабатывания прокрутки
-        scrollSpeed: 25, // Мягкая, но быстрая скорость листания
-        bubbleScroll: true, // Позволяет прокручивать всю доску по горизонтали, если вынести карточку за экран
-
-        // Интерактивная визуализация зон прокрутки
+        scrollSensitivity: 150, // Увеличенная зона чувствительности от краев экрана
+        scrollSpeed: 30, // Слегка ускоренная плавная прокрутка
+        bubbleScroll: true,
+        
+        // Интерактивная подсветка скролл-зон
         onStart: function (evt) {
           document.body.classList.add('is-dragging-card');
         },
@@ -2466,21 +2468,23 @@ function render() {
     // ----------------------------------------------------
 
     // Инициализация SortableJS для Колонок (Enterprise Horizontal DnD + Focus Mode)
+    // Инициализация SortableJS для Колонок (Enterprise Horizontal DnD + Edge Snapping)
     sortableInstances.push(new Sortable(board, { 
       animation: 300, 
       easing: "cubic-bezier(0.25, 1, 0.5, 1)", // Премиальная плавная кинематика
       handle: '.col-handle', 
       ghostClass: 'sortable-ghost', 
       dragClass: 'sortable-drag', 
-      swapThreshold: 0.65,
+      invertSwap: true, // Захват по границам колонки
+      swapThreshold: 0.8,
       disabled: isViewer,
-      delay: 150, // Защита от ложных срабатываний при скролле
+      delay: 150, 
       delayOnTouchOnly: true,
       
-      // ЭНТЕРПРАЙЗ: Умная горизонтальная прокрутка
+      // ЭНТЕРПРАЙЗ: Огромная зона горизонтального листания
       scroll: true,
-      scrollSensitivity: 100, // Широкая магнитная зона (100px от краев)
-      scrollSpeed: 25, // Быстрая скорость панорамирования доски
+      scrollSensitivity: 180, // Огромная магнитная зона (180px от краев экрана)
+      scrollSpeed: 30, // Увеличенная скорость панорамирования
       
       onStart: function (evt) {
         // Активируем Focus Mode и неоновые зоны в CSS
