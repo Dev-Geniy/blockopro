@@ -31,6 +31,16 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    
+    /* Premium Blocko Loader */
+    @keyframes block-stretch {
+      0%, 100% { transform: scaleX(1); opacity: 0.5; }
+      50% { transform: scaleX(2.5); opacity: 1; }
+    }
+    .loader-block { animation: block-stretch 1.2s ease-in-out infinite; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-400 { animation-delay: 0.4s; }
+
     .glass-modal { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     .sortable-ghost { opacity: 0.3; background-color: #e2e8f0; border: 2px dashed #3b82f6; border-radius: 0.75rem; }
     .dark .sortable-ghost { background-color: #1e293b; border-color: #3b82f6; }
@@ -58,6 +68,22 @@
   </script>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-screen max-h-screen flex flex-col overflow-hidden transition-colors duration-300">
+
+<!-- ПРЕМИАЛЬНЫЙ ЭКРАН ЗАГРУЗКИ (BLOCKO ANIMATION) -->
+<div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
+  <div class="flex flex-col items-center scale-110">
+    <div class="bg-gradient-to-br from-blue-600 to-indigo-600 p-4 rounded-3xl text-white shadow-2xl shadow-blue-500/40 mb-6">
+      <i data-lucide="layers" class="w-12 h-12"></i>
+    </div>
+    <h2 class="text-3xl font-black tracking-tighter mb-10">BLOCKO <span class="text-blue-500">PRO</span></h2>
+    
+    <div class="flex gap-2 h-1.5 w-48 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 relative">
+       <div class="loader-block absolute top-0 left-0 h-full w-12 bg-blue-500 rounded-full"></div>
+       <div class="loader-block delay-200 absolute top-0 left-12 h-full w-12 bg-indigo-500 rounded-full"></div>
+       <div class="loader-block delay-400 absolute top-0 left-24 h-full w-12 bg-blue-400 rounded-full"></div>
+    </div>
+  </div>
+</div>
 
 <header class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md flex justify-between items-center z-20 relative">
   <div class="flex items-center gap-3">
@@ -754,6 +780,7 @@ let boardData = {};
 let isFirstChatLoad = true; // ОДНА переменная чата
   
 auth.onAuthStateChanged(async (user) => {
+  const loader = document.getElementById('globalLoader');
   if (user) {
     const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
     
@@ -798,8 +825,18 @@ auth.onAuthStateChanged(async (user) => {
        lucide.createIcons();
     }
     
-    if (!BOARD_ID) window.location.href = 'index.html'; 
-    else loadBoard();
+    if (!BOARD_ID) {
+      window.location.href = 'index.html'; 
+    } else {
+      loadBoard();
+      // Анимация скрытия загрузчика после инициализации доски
+      setTimeout(() => {
+        if (loader) {
+          loader.style.opacity = '0';
+          setTimeout(() => loader.classList.add('hidden'), 700);
+        }
+      }, 500);
+    }
   } else {
     window.location.href = 'index.html'; 
   }
@@ -1960,7 +1997,7 @@ function render() {
                 <span class="text-[9px] font-black uppercase tracking-widest text-purple-500">Опрос</span>
               </div>
               <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6 pointer-events-none">${displayTitle}</div>
-              <div class="space-y-1 mb-2 pointer-events-none">${optionsHtml}</div>
+              <div class="space-y-1 mb-2 relative z-20 pointer-events-auto">${optionsHtml}</div>
               <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
                 <div class="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                   <span><i data-lucide="users" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> ${totalVotes}</span>
