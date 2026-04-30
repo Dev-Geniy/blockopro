@@ -2595,26 +2595,42 @@ function savePoll() {
 }
 
 // Оптимизированная логика голосования через Store Dispatcher
+// FIX: Исправлена логика голосования. Теперь клик по варианту срабатывает корректно через делегирование
 function votePoll(colId, cardId, optionIndex) {
   if (!currentUser || !currentUser.id) return;
   
   const uid = currentUser.id;
-  const col = columns.find(c => c.id == colId);
-  const card = col?.cards.find(c => c.id == cardId);
-  if (!card || card.type !== 'poll') return;
+  // Находим карточку во всех колонках для надежности
+  let targetCard = null;
+  let targetColId = colId;
+
+  columns.forEach(col => {
+    const found = col.cards.find(c => c.id == cardId);
+    if (found) { targetCard = found; targetColId = col.id; }
+  });
+
+  if (!targetCard || targetCard.type !== 'poll') return;
 
   let voted = false;
-  const updatedOptions = card.options.map((opt, idx) => {
+  const updatedOptions = targetCard.options.map((opt, idx) => {
+    // Удаляем старый голос пользователя из всех вариантов (переголосование)
     const cleanVotes = (opt.votes || []).filter(v => v !== uid);
-    if (idx === optionIndex && !(opt.votes && opt.votes.includes(uid))) {
+    // Добавляем голос в выбранный вариант
+    if (idx === optionIndex) {
       cleanVotes.push(uid);
       voted = true;
     }
     return { ...opt, votes: cleanVotes };
   });
 
-  if (voted) fireConfetti();
-  dispatchCardUpdate(cardId, colId, { options: updatedOptions });
+  if (voted) {
+    fireConfetti();
+    dispatchCardUpdate(cardId, targetColId, { options: updatedOptions });
+    
+    // Мгновенное визуальное обновление локального стейта до прилета данных из БД
+    targetCard.options = updatedOptions;
+    render(); 
+  }
 }
 
 // Глобальное управление кастомным плеером
