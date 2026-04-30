@@ -525,23 +525,33 @@
 </div>
 
 <div id="profileModal" class="hidden fixed inset-0 z-[260] flex items-center justify-center bg-gray-900/80 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-800 text-center transform transition-transform scale-95 flex flex-col max-h-[90vh]" id="profileContent">
-    <button onclick="closeProfileModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-10"><i data-lucide="x" class="w-5 h-5"></i></button>
+  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-800 transform transition-transform scale-95 flex flex-col max-h-[90vh] overflow-hidden" id="profileContent">
+    <button onclick="closeProfileModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-5 h-5"></i></button>
     
-    <div class="overflow-y-auto pr-2 custom-scroll">
-      <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-6">Ваш Профиль</h2>
+    <div class="overflow-y-auto hide-scroll pb-2 px-1">
+      <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-6 text-center">Ваш Профиль</h2>
       
-      <div id="profilePreviewArea" class="mb-6 flex justify-center"></div>
+      <div class="flex items-center gap-6 mb-8">
+        <div id="profilePreviewArea" class="flex-shrink-0"></div>
+        <div class="flex flex-col gap-3 flex-1">
+          <button onclick="logout()" class="w-full py-2.5 border border-red-200 dark:border-red-900/50 text-red-500 font-bold rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm text-xs">
+            <i data-lucide="log-out" class="w-4 h-4"></i> Выйти из системы
+          </button>
+          <div id="badgeSettingsBlock" class="hidden">
+            <div class="flex gap-2 justify-center bg-gray-50 dark:bg-gray-800/50 p-2 rounded-xl border border-gray-100 dark:border-gray-700" id="badgeSelector"></div>
+          </div>
+        </div>
+      </div>
 
       <div class="grid grid-cols-2 gap-3 mb-8">
-        <div class="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-800/50 text-left">
+        <div class="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-800/50 text-left flex flex-col justify-between">
           <span class="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block mb-1">Монеты</span>
           <div class="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
             <i data-lucide="coins" class="w-4 h-4 text-amber-500"></i>
             <span id="profileCoinsVal">0</span>
           </div>
         </div>
-        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/50 text-left">
+        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/50 text-left flex flex-col justify-between">
           <span class="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest block mb-1">Тариф</span>
           <div class="text-sm font-black text-gray-900 dark:text-white uppercase truncate" id="profilePlanVal">FREE</div>
         </div>
@@ -556,18 +566,13 @@
               <i data-lucide="upload-cloud" class="w-4 h-4 text-blue-500"></i>
               <input type="file" class="hidden" accept="image/*" onchange="uploadProfileAvatarFile(this)">
             </label>
-            <button onclick="updateProfileAvatar()" class="px-4 bg-blue-600 text-white rounded-xl font-bold text-xs active:scale-95 shadow-lg shadow-blue-500/20">Save</button>
+            <button onclick="updateProfileAvatar()" class="px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs active:scale-95 shadow-lg shadow-blue-500/20 transition-all">Save</button>
           </div>
         </div>
 
-        <div id="badgeSettingsBlock" class="hidden">
-          <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Отображаемый статус (Бейдж)</label>
-          <div class="flex gap-2 overflow-x-auto pb-2 hide-scroll" id="badgeSelector"></div>
-        </div>
-
         <div id="frameSettingsBlock" class="hidden">
-          <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Кастомизация рамки</label>
-          <div class="flex gap-3 overflow-x-auto pb-2 hide-scroll" id="frameColorPicker"></div>
+          <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Цвет рамки</label>
+          <div class="flex gap-2 justify-between" id="frameColorPicker"></div>
         </div>
 
         <div id="animationSettingsBlock" class="hidden">
@@ -580,10 +585,6 @@
           </select>
         </div>
       </div>
-
-      <button onclick="logout()" class="w-full mt-8 py-4 border border-red-200 dark:border-red-900/50 text-red-500 font-bold rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center justify-center gap-2 active:scale-95">
-        <i data-lucide="log-out" class="w-4 h-4"></i> Выйти из системы
-      </button>
     </div>
   </div>
 </div>
@@ -2358,18 +2359,19 @@ async function openProfileSettings() {
   }
 }
 
+// Оптимизированные и компактные бейджи-иконки
 function renderBadgeSelector(currentBadge, rewards) {
   const container = document.getElementById('badgeSelector');
-  let html = `<button onclick="setActiveBadge('none')" class="px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 ${currentBadge === 'none' ? 'border-gray-900 dark:border-white bg-gray-100 dark:bg-gray-800' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}"><i data-lucide="x-circle" class="w-4 h-4"></i> Скрыть</button>`;
+  let html = `<button onclick="setActiveBadge('none')" class="w-8 h-8 rounded-lg border-2 transition-all flex items-center justify-center flex-shrink-0 ${currentBadge === 'none' ? 'border-gray-900 dark:border-white bg-gray-100 dark:bg-gray-800' : 'border-gray-200 dark:border-gray-700 text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}" title="Скрыть бейдж"><i data-lucide="x" class="w-4 h-4"></i></button>`;
   
   if (rewards.includes('friend')) {
-    html += `<button onclick="setActiveBadge('friend')" class="px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 ${currentBadge === 'friend' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}"><i data-lucide="shield-check" class="w-4 h-4"></i> Друг</button>`;
+    html += `<button onclick="setActiveBadge('friend')" class="w-8 h-8 rounded-lg border-2 transition-all flex items-center justify-center flex-shrink-0 ${currentBadge === 'friend' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/10'}" title="Бейдж: Друг"><i data-lucide="shield-check" class="w-4 h-4"></i></button>`;
   }
   if (rewards.includes('partner')) {
-    html += `<button onclick="setActiveBadge('partner')" class="px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 ${currentBadge === 'partner' ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}"><i data-lucide="award" class="w-4 h-4"></i> Партнер</button>`;
+    html += `<button onclick="setActiveBadge('partner')" class="w-8 h-8 rounded-lg border-2 transition-all flex items-center justify-center flex-shrink-0 ${currentBadge === 'partner' ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' : 'border-gray-200 dark:border-gray-700 text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/10'}" title="Бейдж: Партнер"><i data-lucide="award" class="w-4 h-4"></i></button>`;
   }
   if (rewards.includes('ambassador')) {
-     html += `<button onclick="setActiveBadge('ambassador')" class="px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 ${currentBadge === 'ambassador' ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}"><i data-lucide="crown" class="w-4 h-4"></i> Амбассадор</button>`;
+     html += `<button onclick="setActiveBadge('ambassador')" class="w-8 h-8 rounded-lg border-2 transition-all flex items-center justify-center flex-shrink-0 ${currentBadge === 'ambassador' ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' : 'border-gray-200 dark:border-gray-700 text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/10'}" title="Бейдж: Амбассадор"><i data-lucide="crown" class="w-4 h-4"></i></button>`;
   }
   container.innerHTML = html;
   lucide.createIcons();
@@ -2397,7 +2399,6 @@ async function setActiveBadge(badge) {
   showSystemToast('Сохранено', 'Отображаемый бейдж изменен везде!', 'check-circle', 'text-green-500', 'bg-green-50');
 }
 
-// ЭНТЕРПРАЙЗ: Фоновая синхронизация профиля по всем активным проектам пользователя
 // ЭНТЕРПРАЙЗ: Фоновая синхронизация профиля по всем активным проектам пользователя
 async function syncUserProfileToBoards(updates) {
   if (!currentUser || !currentUser.id) return;
@@ -2439,7 +2440,8 @@ async function syncUserProfileToBoards(updates) {
 }
 
 function updateProfilePreview(data) {
-  document.getElementById('profilePreviewArea').innerHTML = renderUserAvatar(data, "w-32 h-32");
+  // Идеально вписывающийся в левую часть аватар
+  document.getElementById('profilePreviewArea').innerHTML = renderUserAvatar(data, "w-24 h-24");
   lucide.createIcons();
 }
 
@@ -2459,7 +2461,15 @@ async function updateProfileAvatar() {
   showSystemToast('Обновлено', 'Ваше фото профиля изменено везде!', 'image', 'text-blue-500', 'bg-blue-50');
 }
 
-// --- НЕДОСТАЮЩИЕ ФУНКЦИИ ДЛЯ МОДАЛКИ ПРОФИЛЯ ---
+// Выход из системы
+async function logout() { 
+  closeProfileModal();
+  setTimeout(() => {
+    auth.signOut().then(() => {
+      window.location.reload(); 
+    });
+  }, 300);
+}
 
 // 1. Функция закрытия окна
 function closeProfileModal() {
@@ -2471,18 +2481,15 @@ function closeProfileModal() {
   setTimeout(() => { modal.classList.add('hidden'); }, 300);
 }
 
-// 2. Отрисовка палитры цветов (если доступна рамка)
+// 2. Отрисовка палитры цветов (один симметричный ряд без прокрутки)
 function renderFrameColors(currentColor) {
   const colors = [
     { name: 'Нет', value: 'transparent', glow: 'transparent' },
     { name: 'Синий', value: '#3b82f6', glow: 'rgba(59, 130, 246, 0.6)' },
-    { name: 'Индиго', value: '#6366f1', glow: 'rgba(99, 102, 241, 0.6)' },
     { name: 'Фиолетовый', value: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.6)' },
     { name: 'Розовый', value: '#ec4899', glow: 'rgba(236, 72, 153, 0.6)' },
     { name: 'Красный', value: '#ef4444', glow: 'rgba(239, 68, 68, 0.6)' },
     { name: 'Оранжевый', value: '#f97316', glow: 'rgba(249, 115, 22, 0.6)' },
-    { name: 'Желтый', value: '#eab308', glow: 'rgba(234, 179, 8, 0.6)' },
-    { name: 'Зеленый', value: '#22c55e', glow: 'rgba(34, 197, 94, 0.6)' },
     { name: 'Изумрудный', value: '#10b981', glow: 'rgba(16, 185, 129, 0.6)' },
     { name: 'Циан', value: '#06b6d4', glow: 'rgba(6, 182, 212, 0.6)' }
   ];
@@ -2490,12 +2497,12 @@ function renderFrameColors(currentColor) {
   const container = document.getElementById('frameColorPicker');
   container.innerHTML = colors.map(c => `
     <button onclick="applyFrameColor('${c.value}', '${c.glow}')" 
-            class="flex-shrink-0 w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${currentColor === c.glow ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'}"
+            class="flex-shrink-0 w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 ${currentColor === c.glow ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'}"
             style="background: ${c.value}; box-shadow: 0 0 10px ${c.glow};" title="${c.name}">
     </button>
   `).join('');
 }
-
+  
 // 3. Сохранение выбранного цвета в базу
 async function applyFrameColor(frameColor, glowColor) {
   if (!currentUser) return;
