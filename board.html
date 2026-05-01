@@ -3476,8 +3476,22 @@ function activateGlobalVoiceAgent() {
 
   globalVoiceRecognition.onresult = async (event) => {
     const transcript = event.results[0][0].transcript.trim();
+    const commandLower = transcript.toLowerCase();
     closeGlobalVoiceAgent();
     
+    // ЭНТЕРПРАЙЗ: Голосовое подтверждение деструктивных действий (Если открыта модалка)
+    const confirmModal = document.getElementById('confirmModal');
+    if (confirmModal && !confirmModal.classList.contains('hidden')) {
+        if (commandLower.includes('да') || commandLower.includes('подтверждаю') || commandLower.includes('удаляй') || commandLower.includes('согласен')) {
+            const confirmBtn = document.getElementById('confirmModalBtn');
+            if (confirmBtn) confirmBtn.click();
+            return showSystemToast('Голос', 'Действие подтверждено', 'mic', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+        } else if (commandLower.includes('нет') || commandLower.includes('отмена') || commandLower.includes('стоп')) {
+            closeConfirmModal();
+            return showSystemToast('Голос', 'Действие отменено', 'mic-off', 'text-gray-500', 'bg-gray-50 dark:bg-gray-800');
+        }
+    }
+
     if (transcript) {
       // Открываем шторку AI для демонстрации процесса работы агента
       const aiSidebar = document.getElementById('aiSidebar');
@@ -4916,30 +4930,34 @@ async function sendAiMessage() {
   chatBox.scrollTop = chatBox.scrollHeight;
 
   try {
-    // ЭНТЕРПРАЙЗ: Ультимативный системный промпт с инфраструктурными командами
+    // ЭНТЕРПРАЙЗ: Ультимативный системный промпт с командами перемещения, удаления и кастомизации
     const systemPrompt = `Ты — гениальный AI-менеджер задач в системе Blocko Pro. 
-Твоя цель: помогать пользователю планировать проекты, генерировать идеи и создавать нужные элементы (задачи и колонки) на канбан-доске.
+Твоя цель: управлять доской (создавать, удалять, перемещать, менять дизайн).
 
-СТРОГОЕ ПРАВИЛО: Если твой ответ подразумевает создание элемента на доске, ты ОБЯЗАН вставить в ЛЮБОЕ место своего ответа технический код. 
-Формат кода использует строгие разделители "|||" и "END_ACTION". Никаких других символов между ними не допускается.
+СТРОГОЕ ПРАВИЛО: Для любого действия ты ОБЯЗАН использовать технический код с разделителями "|||" и "END_ACTION".
 
-Доступные форматы (Генерируй их максимально точно):
-1. Стандартная задача: [BLOCKO_ACTION:TASK ||| Название задачи ||| Детальное описание. Для подзадач используй формат "- [ ] Шаг 1" ||| END_ACTION]
-2. Опрос: [BLOCKO_ACTION:POLL ||| Вопрос опроса ||| Вариант 1, Вариант 2, Вариант 3 ||| END_ACTION]
-3. Таблица Excel: [BLOCKO_ACTION:TABLE ||| Название таблицы ||| Название колонки 1, Название колонки 2 | Данные 1, Данные 2 | Данные 3, Данные 4 ||| END_ACTION]
-4. Быстрый To-Do список: [BLOCKO_ACTION:TODO ||| Название списка ||| Пункт 1\nПункт 2\nПункт 3 ||| END_ACTION]
-5. Ссылка: [BLOCKO_ACTION:LINK ||| Название закладки ||| https://example.com ||| END_ACTION]
-6. Таймер дедлайна: [BLOCKO_ACTION:TIMER ||| Название таймера ||| 2026-12-31T23:59 ||| END_ACTION]
-7. НОВАЯ КОЛОНКА ДОСКИ: [BLOCKO_ACTION:COLUMN ||| Название колонки ||| #6366f1 ||| END_ACTION] (Вместо #6366f1 укажи любой HEX-цвет).
+Доступные форматы (Генерируй их точно):
+1. СОЗДАТЬ ЗАДАЧУ: [BLOCKO_ACTION:TASK ||| Название задачи ||| Описание ||| END_ACTION]
+2. ОПРОС: [BLOCKO_ACTION:POLL ||| Вопрос ||| Вариант 1, Вариант 2 ||| END_ACTION]
+3. ТАБЛИЦА: [BLOCKO_ACTION:TABLE ||| Название ||| Кол1, Кол2 | Данные 1, Данные 2 ||| END_ACTION]
+4. TODO СПИСОК: [BLOCKO_ACTION:TODO ||| Название ||| Пункт 1\nПункт 2 ||| END_ACTION]
+5. ТАЙМЕР: [BLOCKO_ACTION:TIMER ||| Название ||| 2026-12-31T23:59 ||| END_ACTION]
+6. СОЗДАТЬ КОЛОНКУ: [BLOCKO_ACTION:COLUMN ||| Название колонки ||| #6366f1 ||| END_ACTION]
+7. УДАЛИТЬ КОЛОНКУ: [BLOCKO_ACTION:DELETE_COLUMN ||| Название колонки ||| Удаление ||| END_ACTION]
+8. УДАЛИТЬ КАРТОЧКУ/ТАБЛИЦУ/ТАЙМЕР: [BLOCKO_ACTION:DELETE_CARD ||| Название карточки ||| Удаление ||| END_ACTION]
+9. ПЕРЕМЕСТИТЬ КАРТОЧКУ: [BLOCKO_ACTION:MOVE_CARD ||| Точное название карточки ||| Название колонки (ИЛИ слова: UP, DOWN, TOP, BOTTOM) ||| END_ACTION]
+10. ИЗМЕНИТЬ ЦВЕТ КОЛОНКИ: [BLOCKO_ACTION:CHANGE_COL_COLOR ||| Название колонки ||| #ff0000 ||| END_ACTION]
+11. СМЕНИТЬ ОБОИ ПРОЕКТА: [BLOCKO_ACTION:CHANGE_BG ||| Обои ||| RANDOM ||| END_ACTION]
 
-Отвечай профессионально, структурно и по делу. Запрос пользователя: `;
+Отвечай кратко, профессионально. Запрос пользователя: `;
     
     const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(systemPrompt + text)}?model=openai`);
     let replyText = await response.text();
     
     document.getElementById(loadId)?.remove();
 
-    const actionRegex = /\[BLOCKO_ACTION:(TASK|POLL|LINK|TIMER|TABLE|TODO|COLUMN)\s*\|\|\|\s*(.*?)\s*\|\|\|\s*([\s\S]*?)\s*\|\|\|\s*END_ACTION\]/g;
+    // КРИТИЧЕСКИЙ ФИКС: Regex расширен для поддержки всех новых манипуляций (DELETE, MOVE, CHANGE)
+    const actionRegex = /\[BLOCKO_ACTION:(TASK|POLL|LINK|TIMER|TABLE|TODO|COLUMN|DELETE_COLUMN|DELETE_CARD|MOVE_CARD|CHANGE_COL_COLOR|CHANGE_BG)\s*\|\|\|\s*(.*?)\s*\|\|\|\s*([\s\S]*?)\s*\|\|\|\s*END_ACTION\]/g;
     const actions = [];
     
     replyText = replyText.replace(actionRegex, (fullMatch, type, title, data) => {
@@ -4953,21 +4971,24 @@ async function sendAiMessage() {
 
     if (actions.length > 0) {
       if (isAiAutoMode) {
-        // ЭНТЕРПРАЙЗ: РЕЖИМ АВТОПИЛОТА (Немедленное выполнение в фоне)
+        // ЭНТЕРПРАЙЗ: РЕЖИМ АВТОПИЛОТА
         formattedText += `<div class="mt-4 flex flex-col gap-2 border-t border-emerald-200/50 dark:border-emerald-700/50 pt-4">
           <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mb-1"><i data-lucide="zap" class="w-3.5 h-3.5"></i> Автопилот выполнил:</div>`;
         actions.forEach(act => {
-          formattedText += `<div class="text-[11px] text-gray-600 dark:text-gray-300 flex items-center gap-1.5 font-medium"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-500"></i> ${act.title}</div>`;
-          // Запускаем асинхронно в фоне, передавая флаг isAuto = true
+          let labelText = act.title;
+          if (act.type === 'DELETE_COLUMN' || act.type === 'DELETE_CARD') labelText = `Удаление: ${act.title}`;
+          if (act.type === 'MOVE_CARD') labelText = `Перемещение: ${act.title}`;
+          
+          formattedText += `<div class="text-[11px] text-gray-600 dark:text-gray-300 flex items-center gap-1.5 font-medium"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-500"></i> ${labelText}</div>`;
           setTimeout(() => aiExecuteAction(act.type, act.safeTitle, act.safeData, true), 100);
         });
         formattedText += `</div>`;
       } else {
-        // ОБЫЧНЫЙ РЕЖИМ (Рендер кнопок подтверждения)
+        // ОБЫЧНЫЙ РЕЖИМ (Кнопки)
         formattedText += `<div class="mt-4 flex flex-col gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">`;
         actions.forEach(act => {
           let icon = 'plus';
-          let label = 'Вставить на доску';
+          let label = 'Выполнить действие';
           let colorClass = 'text-indigo-600 dark:text-indigo-400';
           let bgClass = 'bg-indigo-100 dark:bg-indigo-900/50';
           
@@ -4977,6 +4998,10 @@ async function sendAiMessage() {
           else if (act.type === 'TABLE') { icon = 'table'; label = 'Сгенерировать таблицу'; colorClass = 'text-blue-600 dark:text-blue-400'; bgClass = 'bg-blue-100 dark:bg-blue-900/50'; }
           else if (act.type === 'TODO') { icon = 'list-todo'; label = 'Быстрый список'; colorClass = 'text-cyan-600 dark:text-cyan-400'; bgClass = 'bg-cyan-100 dark:bg-cyan-900/50'; }
           else if (act.type === 'COLUMN') { icon = 'layout-template'; label = 'Создать колонку'; colorClass = 'text-pink-600 dark:text-pink-400'; bgClass = 'bg-pink-100 dark:bg-pink-900/50'; }
+          else if (act.type === 'DELETE_COLUMN' || act.type === 'DELETE_CARD') { icon = 'trash-2'; label = 'Удалить объект'; colorClass = 'text-red-600 dark:text-red-400'; bgClass = 'bg-red-100 dark:bg-red-900/50'; }
+          else if (act.type === 'MOVE_CARD') { icon = 'move'; label = 'Переместить карточку'; colorClass = 'text-blue-600 dark:text-blue-400'; bgClass = 'bg-blue-100 dark:bg-blue-900/50'; }
+          else if (act.type === 'CHANGE_COL_COLOR') { icon = 'palette'; label = 'Сменить цвет'; colorClass = 'text-amber-600 dark:text-amber-400'; bgClass = 'bg-amber-100 dark:bg-amber-900/50'; }
+          else if (act.type === 'CHANGE_BG') { icon = 'image'; label = 'Случайные обои'; colorClass = 'text-emerald-600 dark:text-emerald-400'; bgClass = 'bg-emerald-100 dark:bg-emerald-900/50'; }
 
           formattedText += `
             <button onclick="aiExecuteAction('${act.type}', '${act.safeTitle}', '${act.safeData}')" class="flex items-center gap-3 w-full text-left px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all shadow-sm hover:shadow-md group active:scale-95">
@@ -5018,137 +5043,171 @@ async function sendAiMessage() {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Исполнитель команд от AI: Мульти-форматный диспетчер (с поддержкой Автопилота)
+// Исполнитель команд от AI: Мульти-форматный диспетчер (с поддержкой Автопилота и Деструкции)
 function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
   const myRole = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role : 'editor';
   if (myRole === 'viewer' && !isLocalBoard) {
-    if (!isAuto) showSystemToast('Отказ в доступе', 'Только редакторы могут создавать объекты.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+    if (!isAuto) showSystemToast('Отказ в доступе', 'Только редакторы могут изменять доску.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
     return;
   }
 
   const title = decodeURIComponent(safeTitle);
   const data = decodeURIComponent(safeData);
 
+  // --- КОНСТРУКТОР ДОСКИ ---
+  if (type === 'CHANGE_BG') {
+    setRandomBackground();
+    if (!isAuto) { showSystemToast('Успех', 'Обои проекта изменены!', 'image', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30'); toggleAiSidebar(); }
+    return;
+  }
+
+  if (type === 'CHANGE_COL_COLOR') {
+    const col = columns.find(c => c.name.toLowerCase() === title.toLowerCase());
+    if (!col) return !isAuto && showSystemToast('Ошибка', `Колонка "${title}" не найдена.`, 'alert-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+    const colorMatch = data.match(/#[0-9A-Fa-f]{6}/i);
+    if (colorMatch) col.color = colorMatch[0];
+    if (isLocalBoard) { persist(); render(); } else { db.collection("boards").doc(BOARD_ID).update({ columns }); }
+    if (!isAuto) { showSystemToast('Успех', `Цвет колонки изменен.`, 'palette', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30'); toggleAiSidebar(); }
+    return;
+  }
+
   if (type === 'COLUMN') {
     const newColId = 'col_' + Date.now();
     const colorMatch = data.match(/#[0-9A-Fa-f]{6}/i);
     const colColor = colorMatch ? colorMatch[0] : '#6366f1'; 
-
     columns.push({ id: newColId, name: title, color: colColor, cards: [] });
-
-    if (isLocalBoard) { persist(); render(); } 
-    else { db.collection("boards").doc(BOARD_ID).update({ columns: columns }); }
-
-    // ЭНТЕРПРАЙЗ: Глушим визуальный спам в Авторежиме
-    if (!isAuto) {
-      if(typeof fireConfetti === 'function') fireConfetti();
-      showSystemToast('AI Магия', `Колонка "${title}" успешно построена!`, 'layout-template', 'text-pink-500', 'bg-pink-50 dark:bg-pink-900/30');
-      toggleAiSidebar(); 
-    }
+    if (isLocalBoard) { persist(); render(); } else { db.collection("boards").doc(BOARD_ID).update({ columns }); }
+    if (!isAuto) { if(typeof fireConfetti === 'function') fireConfetti(); showSystemToast('Успех', `Колонка создана!`, 'layout-template', 'text-pink-500', 'bg-pink-50 dark:bg-pink-900/30'); toggleAiSidebar(); }
     return; 
   }
+
+  // --- ДЕСТРУКТОР (Удаление) ---
+  if (type === 'DELETE_COLUMN') {
+    const col = columns.find(c => c.name.toLowerCase() === title.toLowerCase());
+    if (!col) return !isAuto && showSystemToast('Ошибка', `Колонка "${title}" не найдена.`, 'alert-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+    
+    // ВСЕГДА запрашиваем подтверждение для удаления колонки, даже в Авторежиме!
+    openConfirmModal(`Удалить колонку "${col.name}"?`, 'AI запрашивает разрешение на удаление. Вы можете сказать "Да" или "Нет" в микрофон.', 'Удалить', true, () => {
+      columns = columns.filter(c => c.id !== col.id);
+      if (isLocalBoard) { persist(); render(); } else { db.collection("boards").doc(BOARD_ID).update({ columns }); }
+      showSystemToast('Уничтожено', `Колонка удалена.`, 'trash-2', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+    });
+    if (!isAuto) toggleAiSidebar();
+    return;
+  }
+
+  if (type === 'DELETE_CARD') {
+    const card = allCards.find(c => c.title.toLowerCase() === title.toLowerCase());
+    if (!card) return !isAuto && showSystemToast('Ошибка', `Объект "${title}" не найден.`, 'alert-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+    
+    if (isLocalBoard) {
+      columns.forEach(col => { if(col.cards) col.cards = col.cards.filter(c => c.id !== card.id); });
+      persist(); render();
+    } else {
+      db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(card.id)).delete();
+    }
+    if (!isAuto) { showSystemToast('Уничтожено', `Объект удален.`, 'trash-2', 'text-red-500', 'bg-red-50 dark:bg-red-900/20'); toggleAiSidebar(); }
+    return;
+  }
+
+  // --- ЛОГИСТИКА (Перемещение) ---
+  if (type === 'MOVE_CARD') {
+    const card = allCards.find(c => c.title.toLowerCase() === title.toLowerCase());
+    if (!card) return !isAuto && showSystemToast('Ошибка', `Карточка "${title}" не найдена.`, 'alert-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+    
+    const targetAction = data.trim().toUpperCase();
+    let targetColId = card.columnId;
+    let newOrder = card.order;
+    const colCards = allCards.filter(c => c.columnId === targetColId).sort((a,b) => a.order - b.order);
+    const currIdx = colCards.findIndex(c => c.id === card.id);
+
+    if (targetAction === 'UP' && currIdx > 0) newOrder = colCards[currIdx - 1].order - 1;
+    else if (targetAction === 'DOWN' && currIdx < colCards.length - 1) newOrder = colCards[currIdx + 1].order + 1;
+    else if (targetAction === 'TOP') newOrder = (colCards[0]?.order || 0) - 1000;
+    else if (targetAction === 'BOTTOM') newOrder = (colCards[colCards.length - 1]?.order || 0) + 1000;
+    else {
+      const destCol = columns.find(c => c.name.toLowerCase() === data.trim().toLowerCase());
+      if (destCol) {
+        targetColId = destCol.id;
+        const destColCards = allCards.filter(c => c.columnId === targetColId).sort((a,b) => a.order - b.order);
+        newOrder = destColCards.length > 0 ? destColCards[destColCards.length - 1].order + 1000 : 0;
+      }
+    }
+
+    if (isLocalBoard) {
+      let srcCol = columns.find(c => c.id === card.columnId);
+      let dstCol = columns.find(c => c.id === targetColId);
+      if (srcCol && dstCol) {
+        const cObj = srcCol.cards.find(c => c.id === card.id);
+        srcCol.cards = srcCol.cards.filter(c => c.id !== card.id);
+        cObj.order = newOrder;
+        dstCol.cards.push(cObj);
+        dstCol.cards.sort((a,b) => a.order - b.order);
+        persist(); render();
+      }
+    } else {
+      db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(card.id)).update({ columnId: targetColId, order: newOrder, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+    if (!isAuto) { showSystemToast('Логистика', `Перемещение завершено!`, 'move', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30'); toggleAiSidebar(); }
+    return;
+  }
   
+  // --- СОЗДАНИЕ ОБЪЕКТОВ ---
   if (!columns || columns.length === 0) {
-    if (!isAuto) showSystemToast('Ошибка', 'Создайте хотя бы одну колонку на доске.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    if (!isAuto) showSystemToast('Ошибка', 'Создайте хотя бы одну колонку на доске.', 'alert-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
     return;
   }
   
   const targetColId = columns[0].id; 
   const cardId = 'card_' + Date.now();
   
-  let newCard = { 
-    id: cardId, 
-    title, 
-    author: currentUser, 
-    columnId: targetColId, 
-    archived: false, 
-    order: allCards.length,
-    comments: []
-  };
+  let newCard = { id: cardId, title, author: currentUser, columnId: targetColId, archived: false, order: allCards.length, comments: [] };
 
   if (type === 'TASK') {
     const lines = data.split('\n');
     const checklist = [];
     const cleanDescLines = [];
-    
     lines.forEach(line => {
       if (line.trim().startsWith('- [ ]') || line.trim().startsWith('- [x]')) {
         const isCompleted = line.trim().startsWith('- [x]');
         const text = line.replace(/^- \[[ x]\] /, '').trim();
         if (text) checklist.push({ id: Date.now() + Math.random(), text, isCompleted });
-      } else {
-        cleanDescLines.push(line);
-      }
+      } else cleanDescLines.push(line);
     });
-    
-    newCard.type = 'task';
-    newCard.description = cleanDescLines.join('\n').trim();
-    newCard.tags = ['tag_feat'];
-    newCard.dueDate = "";
-    newCard.checklist = checklist;
+    newCard.type = 'task'; newCard.description = cleanDescLines.join('\n').trim(); newCard.tags = ['tag_feat']; newCard.dueDate = ""; newCard.checklist = checklist;
   } 
   else if (type === 'POLL') {
     const optionsRaw = data.split(',');
-    newCard.type = 'poll';
-    newCard.isAnonymous = false;
-    newCard.options = optionsRaw.map(opt => ({ text: opt.trim(), votes: [] })).filter(o => o.text !== '');
+    newCard.type = 'poll'; newCard.isAnonymous = false; newCard.options = optionsRaw.map(opt => ({ text: opt.trim(), votes: [] })).filter(o => o.text !== '');
   }
-  else if (type === 'LINK') {
-    newCard.type = 'link';
-    newCard.url = data.trim();
-  }
-  else if (type === 'TIMER') {
-    newCard.type = 'timer';
-    newCard.targetDate = data.trim();
-  }
+  else if (type === 'LINK') { newCard.type = 'link'; newCard.url = data.trim(); }
+  else if (type === 'TIMER') { newCard.type = 'timer'; newCard.targetDate = data.trim(); }
   else if (type === 'TABLE') {
     newCard.type = 'table';
     const rowsRaw = data.split('|').map(r => r.trim()).filter(r => r !== '');
     const headersRaw = rowsRaw.shift(); 
     const headers = headersRaw ? headersRaw.split(',').map(h => h.trim()) : ['Колонка 1', 'Колонка 2'];
-    const colsCount = headers.length;
-    
-    newCard.cols = colsCount;
-    newCard.rows = rowsRaw.length > 0 ? rowsRaw.length : 1;
-    newCard.colHeaders = headers;
-    newCard.rowHeaders = Array.from({length: newCard.rows}, (_, i) => `${i + 1}`);
-    
+    newCard.cols = headers.length; newCard.rows = rowsRaw.length > 0 ? rowsRaw.length : 1; newCard.colHeaders = headers; newCard.rowHeaders = Array.from({length: newCard.rows}, (_, i) => `${i + 1}`);
     const tableData = {};
-    if (rowsRaw.length > 0) {
-      rowsRaw.forEach((rowStr, rIdx) => {
-        const cells = rowStr.split(',').map(c => c.trim());
-        const filledCells = Array.from({length: colsCount}, (_, cIdx) => cells[cIdx] || '');
-        tableData[rIdx] = filledCells;
-      });
-    } else {
-       tableData[0] = Array(colsCount).fill("");
-    }
+    if (rowsRaw.length > 0) rowsRaw.forEach((rowStr, rIdx) => { tableData[rIdx] = Array.from({length: headers.length}, (_, cIdx) => rowStr.split(',').map(c => c.trim())[cIdx] || ''); });
+    else tableData[0] = Array(headers.length).fill("");
     newCard.tableData = tableData;
   }
   else if (type === 'TODO') {
     newCard.type = 'todo';
-    const itemsRaw = data.split('\n').map(i => i.trim()).filter(i => i !== '');
-    newCard.checklist = itemsRaw.map(text => ({ id: Date.now() + Math.random(), text, isCompleted: false }));
+    newCard.checklist = data.split('\n').map(i => i.trim()).filter(i => i !== '').map(text => ({ id: Date.now() + Math.random(), text, isCompleted: false }));
   }
   
   if (isLocalBoard) {
     const col = columns.find(c => c.id == targetColId);
-    if (col) { 
-        if(!col.cards) col.cards = [];
-        col.cards.push(newCard); 
-        persist(); 
-        render();
-    } 
+    if (col) { if(!col.cards) col.cards = []; col.cards.push(newCard); persist(); render(); } 
   } else {
-    db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({
-      ...newCard,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...newCard, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
   }
   
   if (!isAuto) {
     if(typeof fireConfetti === 'function') fireConfetti();
-    showSystemToast('AI Магия', 'Объект успешно добавлен в первую колонку!', 'sparkles', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
+    showSystemToast('AI Магия', 'Объект успешно добавлен!', 'sparkles', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
     toggleAiSidebar(); 
   }
 }
