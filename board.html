@@ -1694,81 +1694,88 @@ function updateTagFilterDropdown() {
   if ([...select.options].some(o => o.value === savedValue)) select.value = savedValue;
 }
 
-// ЭНТЕРПРАЙЗ: Унифицированная архитектура состояния (State Machine) для шторок
-function toggleSidebar(targetId) {
-  // КРИТИЧЕСКИЙ ФИКС: Безопасный перехват событий, предотвращающий краш (TypeError) 
-  // при асинхронном вызове функции из голосового агента (когда window.event не является кликом).
-  try {
-    if (window.event && typeof window.event.preventDefault === 'function') {
-      window.event.preventDefault();
-      window.event.stopPropagation();
-    }
-  } catch (e) {}
-
-  const targetSidebar = document.getElementById(targetId);
-  if (!targetSidebar) return;
-
-  const isCurrentlyHidden = targetSidebar.classList.contains('translate-x-full');
-
-  // 1. ЖЕСТКАЯ ИЗОЛЯЦИЯ: Принудительно закрываем ВСЕ шторки
-  ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
+// ЭНТЕРПРАЙЗ: АБСОЛЮТНАЯ ИЗОЛЯЦИЯ ШТОРОК И УПРАВЛЕНИЕ ФОКУСОМ
+const SidebarManager = {
+  sidebars: ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar'],
+  
+  closeAll: function() {
+    this.sidebars.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
         el.classList.add('translate-x-full');
-        // Сбрасываем слой у всех скрытых элементов
         el.classList.remove('z-50');
         el.classList.add('z-40');
-    }
-  });
-
-  const aiBtn = document.getElementById('aiFloatingBtn');
-
-  // 2. Если целевая шторка была скрыта, открываем её эксклюзивно
-  if (isCurrentlyHidden) {
-    targetSidebar.classList.remove('translate-x-full');
-    // Поднимаем активную шторку поверх всех возможных слоев
-    targetSidebar.classList.remove('z-40');
-    targetSidebar.classList.add('z-50');
-
-    if (aiBtn) aiBtn.classList.add('opacity-0', 'pointer-events-none');
-
-    // Специфичные триггеры после открытия
-    if (targetId === 'archiveSidebar' && typeof renderArchiveSidebar === 'function') renderArchiveSidebar();
-    if (targetId === 'aiSidebar') setTimeout(() => document.getElementById('aiChatInput')?.focus(), 100);
-    if (targetId === 'chatSidebar') {
-        const chatBox = document.getElementById('chatMessages');
-        if (chatBox) setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
-        const badge = document.getElementById('chatBadge');
-        if (badge) { badge.classList.add('hidden'); badge.innerText = ''; }
-    }
-  } else {
-    // Если она была открыта, мы её уже закрыли на шаге 1. Возвращаем кнопку AI.
+      }
+    });
+    const aiBtn = document.getElementById('aiFloatingBtn');
     if (aiBtn) aiBtn.classList.remove('opacity-0', 'pointer-events-none');
-  }
-}
+  },
 
-// ЭНТЕРПРАЙЗ: Перехватываем все вызовы кнопок и направляем в единый контроллер (перезаписываем старые функции)
-window.toggleAiSidebar = () => toggleSidebar('aiSidebar');
-window.toggleArchive = () => toggleSidebar('archiveSidebar');
-window.toggleSettings = () => toggleSidebar('settingsSidebar');
-window.toggleMembers = () => toggleSidebar('membersSidebar');
-window.toggleChat = () => toggleSidebar('chatSidebar');
-
-function closeOtherSidebars(excludeId) {
-    // Вызывается только для принудительного закрытия всего UI (например, при клике по фону или старте Voice Agent)
-    if (excludeId === 'none') {
-        ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.classList.add('translate-x-full');
-                el.classList.remove('z-50');
-                el.classList.add('z-40');
-            }
-        });
-        const aiBtn = document.getElementById('aiFloatingBtn');
-        if (aiBtn) aiBtn.classList.remove('opacity-0', 'pointer-events-none');
+  open: function(targetId, callback) {
+    // КРИТИЧЕСКИЙ ФИКС: Сбрасываем фокус с любых кнопок/ссылок.
+    // Это предотвращает фантомные вызовы Архива при случайном нажатии Enter после закрытия шторки.
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
     }
-}
+    
+    try {
+      if (window.event && typeof window.event.preventDefault === 'function') {
+        window.event.preventDefault();
+        window.event.stopPropagation();
+      }
+    } catch (e) {}
+
+    const targetEl = document.getElementById(targetId);
+    if (!targetEl) return;
+    
+    const isCurrentlyHidden = targetEl.classList.contains('translate-x-full');
+    
+    // 1. БЕЗУСЛОВНО выжигаем и скрываем всё остальное перед открытием
+    this.closeAll();
+
+    // 2. Открываем только целевую
+    if (isCurrentlyHidden) {
+      targetEl.classList.remove('translate-x-full');
+      targetEl.classList.remove('z-40');
+      targetEl.classList.add('z-50'); // Поднимаем над всеми
+
+      const aiBtn = document.getElementById('aiFloatingBtn');
+      if (aiBtn) aiBtn.classList.add('opacity-0', 'pointer-events-none');
+
+      if (callback) callback();
+    }
+  }
+};
+
+// Строго разделенные публичные методы без пересечений контекста
+window.toggleAiSidebar = () => {
+  SidebarManager.open('aiSidebar', () => {
+    setTimeout(() => document.getElementById('aiChatInput')?.focus(), 100);
+  });
+};
+
+window.toggleArchive = () => {
+  SidebarManager.open('archiveSidebar', () => {
+    if (typeof renderArchiveSidebar === 'function') renderArchiveSidebar();
+  });
+};
+
+window.toggleSettings = () => SidebarManager.open('settingsSidebar');
+window.toggleMembers = () => SidebarManager.open('membersSidebar');
+
+window.toggleChat = () => {
+  SidebarManager.open('chatSidebar', () => {
+    const chatBox = document.getElementById('chatMessages');
+    if (chatBox) setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
+    const badge = document.getElementById('chatBadge');
+    if (badge) { badge.classList.add('hidden'); badge.innerText = ''; }
+  });
+};
+
+// Для обратной совместимости вызовов перекрытия экрана
+window.closeOtherSidebars = (excludeId) => {
+  if (excludeId === 'none') SidebarManager.closeAll();
+};
 
 function restoreCardFromSidebar(cardId, colId) {
   dispatchCardUpdate(cardId, colId, { archived: false });
