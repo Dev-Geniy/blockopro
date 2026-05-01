@@ -290,6 +290,20 @@
         </button>
       </div>
       
+      <div id="publicBoardSettingsBlock" class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 mb-6">
+        <div class="flex justify-between items-center mb-2">
+          <div class="flex items-center gap-2">
+            <i data-lucide="globe" class="w-4 h-4 text-indigo-500"></i>
+            <h4 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Публичный RoadMap</h4>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer group" title="Сделать доску публичной">
+            <input type="checkbox" id="publicBoardToggle" onchange="togglePublicBoardState(this.checked)" class="sr-only peer">
+            <div class="w-8 h-4 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-500"></div>
+          </label>
+        </div>
+        <p class="text-[10px] text-gray-500 leading-relaxed">Любой желающий сможет просматривать эту доску на портале вашей компании. (Только тариф Company)</p>
+      </div>
+
       <div id="bgSettingsBlock">
         <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Обои проекта</h4>
         <div class="flex gap-3 mb-2">
@@ -1681,6 +1695,12 @@ function processBoardData(data) {
   const bgSettingsBlock = document.getElementById('bgSettingsBlock');
   if (bgSettingsBlock) bgSettingsBlock.style.display = isViewer ? 'none' : 'block';
 
+  const publicSettingsBlock = document.getElementById('publicBoardSettingsBlock');
+  if (publicSettingsBlock) publicSettingsBlock.style.display = isViewer ? 'none' : 'block';
+  
+  const publicToggle = document.getElementById('publicBoardToggle');
+  if (publicToggle) publicToggle.checked = data.isPublic === true;
+  
   // ЭНТЕРПРАЙЗ: Отключаем плавающую кнопку AI-ассистента для Читателей (Read-Only Mode)
   const aiFloatingBtn = document.getElementById('aiFloatingBtn');
   if (aiFloatingBtn) aiFloatingBtn.style.display = isViewer ? 'none' : 'flex';
@@ -3455,6 +3475,27 @@ document.getElementById('boardBgUpload').addEventListener('change', async (e) =>
 function resetBoardBackground() {
   if(isLocalBoard) { const local = JSON.parse(localStorage.getItem('blocko_local_boards')); delete local[BOARD_ID].background; localStorage.setItem('blocko_local_boards', JSON.stringify(local)); boardData = local[BOARD_ID]; processBoardData(boardData); }
   else { db.collection("boards").doc(BOARD_ID).update({ background: firebase.firestore.FieldValue.delete() }); }
+}
+
+function togglePublicBoardState(isPublic) {
+  if (isLocalBoard) {
+    document.getElementById("publicBoardToggle").checked = false;
+    return showSystemToast('Ограничение', 'Офлайн-доски нельзя сделать публичными.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
+  }
+
+  if (userPlan !== 'pro') {
+    document.getElementById("publicBoardToggle").checked = false;
+    return showSystemToast('Премиум', 'Публичные доски доступны только на тарифе Company.', 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+  }
+  
+  const isOwner = boardData.owner === currentUser.id;
+  if (!isOwner) {
+    document.getElementById("publicBoardToggle").checked = !isPublic;
+    return showSystemToast('Отказ', 'Только владелец проекта может изменять приватность.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+  }
+  
+  updateBoardData({ isPublic: isPublic });
+  showSystemToast('Приватность', isPublic ? 'Доска теперь видна на портале компании.' : 'Доска скрыта от посторонних.', 'globe', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
 }
 
 // ЭНТЕРПРАЙЗ: Продвинутый Panning (Панорамирование доски мышью)
