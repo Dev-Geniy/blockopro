@@ -687,12 +687,15 @@
             </div>
             
             <div id="cvActionsPanel" class="flex justify-between items-center pt-6 border-t border-gray-100 dark:border-gray-700/50">
-              <div class="flex gap-2">
-                <button onclick="handleViewDelete()" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors" title="Удалить навсегда">
+              <div class="flex gap-1.5 sm:gap-2">
+                <button onclick="handleViewDelete()" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors" title="Удалить навсегда">
                   <i data-lucide="trash-2" class="w-4 h-4"></i> <span class="hidden sm:inline">Удалить</span>
                 </button>
-                <button onclick="handleViewArchive()" class="text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors">
+                <button onclick="handleViewArchive()" class="text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors" title="В архив">
                   <i data-lucide="archive" class="w-4 h-4"></i> <span class="hidden sm:inline">В архив</span>
+                </button>
+                <button onclick="copyDeepLinkFromView()" class="text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20 px-3 py-2.5 rounded-xl text-sm font-bold transition-colors" title="Скопировать ссылку на объект">
+                  <i data-lucide="link" class="w-4 h-4"></i>
                 </button>
               </div>
               <div class="flex gap-2">
@@ -2168,6 +2171,13 @@ function closeContentViewModal() {
     toggleModal('contentViewModal', false);
 }
 
+function copyDeepLinkFromView() {
+  if (!activeContentView) return;
+  const url = window.location.origin + window.location.pathname + '?b=' + BOARD_ID + '&c=' + activeContentView.cardId;
+  navigator.clipboard.writeText(url);
+  showSystemToast('Ссылка скопирована!', 'Прямая ссылка на этот объект скопирована в буфер обмена.', 'link', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+}
+
 async function addCommentToContent() {
     const input = document.getElementById('cvCommentInput');
     const text = input.value.trim();
@@ -3092,9 +3102,13 @@ function confirmQuickAdd() {
   const description = document.getElementById('quickAddDesc').value.trim();
   if (!title || !quickAddTargetColId) return;
   
+  // ЭНТЕРПРАЙЗ: Адаптивное назначение тега. Берем базовый тег доски вместо жестко вшитого.
+  const currentTags = getBoardTags();
+  const defaultTag = currentTags.length > 0 ? [currentTags[0].id] : [];
+  
   const cardId = 'card_' + Date.now();
   const newCard = { 
-    id: cardId, title, description, tags: ['tag_urg'], 
+    id: cardId, title, description, tags: defaultTag, 
     comments: [], author: currentUser, dueDate: "", 
     columnId: quickAddTargetColId, archived: false, order: allCards.length 
   };
