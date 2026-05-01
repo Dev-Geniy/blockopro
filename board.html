@@ -1694,7 +1694,7 @@ function updateTagFilterDropdown() {
   if ([...select.options].some(o => o.value === savedValue)) select.value = savedValue;
 }
 
-// ЭНТЕРПРАЙЗ: АБСОЛЮТНАЯ ИЗОЛЯЦИЯ ШТОРОК И УПРАВЛЕНИЕ ФОКУСОМ
+// ЭНТЕРПРАЙЗ: АБСОЛЮТНАЯ ИЗОЛЯЦИЯ ШТОРОК (С аппаратным скрытием через CSS display)
 const SidebarManager = {
   sidebars: ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar'],
   
@@ -1702,18 +1702,18 @@ const SidebarManager = {
     this.sidebars.forEach(id => {
       const el = document.getElementById(id);
       if (el) {
+        // Жесткое вырезание из потока рендера — защита от боковых наложений
         el.classList.add('translate-x-full');
         el.classList.remove('z-50');
-        el.classList.add('z-40');
+        el.style.display = 'none'; 
       }
     });
     const aiBtn = document.getElementById('aiFloatingBtn');
     if (aiBtn) aiBtn.classList.remove('opacity-0', 'pointer-events-none');
   },
 
-  open: function(targetId, callback) {
-    // КРИТИЧЕСКИЙ ФИКС: Сбрасываем фокус с любых кнопок/ссылок.
-    // Это предотвращает фантомные вызовы Архива при случайном нажатии Enter после закрытия шторки.
+  toggle: function(targetId, callback) {
+    // Тотальный сброс фокуса, чтобы случайный Enter не активировал скрытые кнопки
     if (document.activeElement && typeof document.activeElement.blur === 'function') {
       document.activeElement.blur();
     }
@@ -1728,55 +1728,45 @@ const SidebarManager = {
     const targetEl = document.getElementById(targetId);
     if (!targetEl) return;
     
-    const isCurrentlyHidden = targetEl.classList.contains('translate-x-full');
+    // Проверяем, скрыта ли целевая шторка аппаратно или программно
+    const isCurrentlyHidden = targetEl.classList.contains('translate-x-full') || targetEl.style.display === 'none';
     
-    // 1. БЕЗУСЛОВНО выжигаем и скрываем всё остальное перед открытием
+    // БЕЗУСЛОВНО выжигаем все шторки (Архив, Чат, Настройки и т.д.)
     this.closeAll();
 
-    // 2. Открываем только целевую
+    // Если целевая шторка была скрыта — плавно вводим её в поток
     if (isCurrentlyHidden) {
-      targetEl.classList.remove('translate-x-full');
-      targetEl.classList.remove('z-40');
-      targetEl.classList.add('z-50'); // Поднимаем над всеми
+      targetEl.style.display = 'flex'; // Возвращаем в архитектуру DOM
+      
+      // Даем браузеру миллисекунду на отрисовку display:flex перед анимацией
+      requestAnimationFrame(() => {
+          targetEl.classList.remove('translate-x-full');
+          targetEl.classList.add('z-50'); 
+          
+          const aiBtn = document.getElementById('aiFloatingBtn');
+          if (aiBtn) aiBtn.classList.add('opacity-0', 'pointer-events-none');
 
-      const aiBtn = document.getElementById('aiFloatingBtn');
-      if (aiBtn) aiBtn.classList.add('opacity-0', 'pointer-events-none');
-
-      if (callback) callback();
+          if (callback) callback();
+      });
     }
   }
 };
 
-// Строго разделенные публичные методы без пересечений контекста
-window.toggleAiSidebar = () => {
-  SidebarManager.open('aiSidebar', () => {
-    setTimeout(() => document.getElementById('aiChatInput')?.focus(), 100);
-  });
-};
+// Замороженные публичные методы (toggle)
+window.toggleAiSidebar = () => SidebarManager.toggle('aiSidebar', () => setTimeout(() => document.getElementById('aiChatInput')?.focus(), 100));
+window.toggleArchive = () => SidebarManager.toggle('archiveSidebar', () => { if (typeof renderArchiveSidebar === 'function') renderArchiveSidebar(); });
+window.toggleSettings = () => SidebarManager.toggle('settingsSidebar');
+window.toggleMembers = () => SidebarManager.toggle('membersSidebar');
+window.toggleChat = () => SidebarManager.toggle('chatSidebar', () => {
+  const chatBox = document.getElementById('chatMessages');
+  if (chatBox) setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
+  const badge = document.getElementById('chatBadge');
+  if (badge) { badge.classList.add('hidden'); badge.innerText = ''; }
+});
 
-window.toggleArchive = () => {
-  SidebarManager.open('archiveSidebar', () => {
-    if (typeof renderArchiveSidebar === 'function') renderArchiveSidebar();
-  });
-};
-
-window.toggleSettings = () => SidebarManager.open('settingsSidebar');
-window.toggleMembers = () => SidebarManager.open('membersSidebar');
-
-window.toggleChat = () => {
-  SidebarManager.open('chatSidebar', () => {
-    const chatBox = document.getElementById('chatMessages');
-    if (chatBox) setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
-    const badge = document.getElementById('chatBadge');
-    if (badge) { badge.classList.add('hidden'); badge.innerText = ''; }
-  });
-};
-
-// Для обратной совместимости вызовов перекрытия экрана
-window.closeOtherSidebars = (excludeId) => {
-  if (excludeId === 'none') SidebarManager.closeAll();
-};
-
+// Глухой перехватчик для старых вызовов
+window.closeOtherSidebars = () => SidebarManager.closeAll();
+  
 function restoreCardFromSidebar(cardId, colId) {
   dispatchCardUpdate(cardId, colId, { archived: false });
   showSystemToast('Восстановлено', 'Карточка успешно возвращена на доску.', 'refresh-cw', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/20');
@@ -3438,21 +3428,18 @@ let isWakeWordActive = false;
 let globalVoiceRecognition = null;
 let isGlobalVoiceActive = false;
 
-// ЭНТЕРПРАЙЗ: Глобальный перехватчик клавиши ENTER для вызова агента (Защищенный)
+// ЭНТЕРПРАЙЗ: Глобальный перехватчик клавиши ENTER для вызова агента (Бронебойный)
 document.addEventListener('keydown', (e) => {
   const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
   const isInputFocused = activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable;
   const isModalOpen = document.querySelectorAll('.glass-modal:not(.hidden), [id$="Modal"]:not(.hidden)').length > 0;
   
-  // КРИТИЧЕСКИЙ ФИКС: Проверяем состояние абсолютно всех шторок, а не только AI
   const sidebars = ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar'];
   const isSidebarOpen = sidebars.some(id => {
       const el = document.getElementById(id);
-      return el && !el.classList.contains('translate-x-full');
+      return el && el.style.display !== 'none' && !el.classList.contains('translate-x-full');
   });
   
-  // КРИТИЧЕСКИЙ ФИКС: Строго игнорируем нажатия, если фокус находится на кнопке или ссылке. 
-  // Это предотвращает двойное срабатывание (когда Enter нажимает кнопку и одновременно вызывает Агента).
   if (e.key === 'Enter' && !isInputFocused && !isModalOpen && !isSidebarOpen && activeTag !== 'button' && activeTag !== 'a') {
     e.preventDefault();
     activateGlobalVoiceAgent();
