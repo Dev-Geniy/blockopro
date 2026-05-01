@@ -4160,34 +4160,30 @@ async function sendAiMessage() {
   chatBox.scrollTop = chatBox.scrollHeight;
 
   try {
-    // ЭНТЕРПРАЙЗ: Расширенный системный промпт с надежными разделителями (|||) и мультимодальной поддержкой
+    // ЭНТЕРПРАЙЗ: Ультимативный системный промпт с мульти-объектами
     const systemPrompt = `Ты — гениальный AI-менеджер задач в системе Blocko Pro. 
-Твоя цель: помогать пользователю планировать проекты, разбивать задачи и создавать нужные элементы на доске.
+Твоя цель: помогать пользователю планировать проекты, генерировать идеи и создавать нужные элементы на канбан-доске.
 
-СТРОГОЕ ПРАВИЛО: Если твой ответ подразумевает создание задачи, опроса, закладки или таймера, ты ОБЯЗАН вставить в ЛЮБОЕ место своего ответа технический код. 
-Формат кода использует строгие разделители "|||" и "END_ACTION". Никаких других символов и переносов строки между ними.
+СТРОГОЕ ПРАВИЛО: Если твой ответ подразумевает создание элемента на доске, ты ОБЯЗАН вставить в ЛЮБОЕ место своего ответа технический код. 
+Формат кода использует строгие разделители "|||" и "END_ACTION". Никаких других символов между ними не допускается.
 
-Доступные форматы:
-1. Задача: [BLOCKO_ACTION:TASK ||| Название задачи ||| Детальное описание. Для подзадач используй формат "- [ ] Шаг 1" ||| END_ACTION]
+Доступные форматы (Генерируй их максимально точно):
+1. Стандартная задача: [BLOCKO_ACTION:TASK ||| Название задачи ||| Детальное описание. Для подзадач используй формат "- [ ] Шаг 1" ||| END_ACTION]
 2. Опрос: [BLOCKO_ACTION:POLL ||| Вопрос опроса ||| Вариант 1, Вариант 2, Вариант 3 ||| END_ACTION]
-3. Ссылка: [BLOCKO_ACTION:LINK ||| Название закладки ||| https://example.com ||| END_ACTION]
-4. Таймер: [BLOCKO_ACTION:TIMER ||| Название таймера ||| 2026-12-31T23:59 ||| END_ACTION]
+3. Таблица Excel: [BLOCKO_ACTION:TABLE ||| Название таблицы ||| Название колонки 1, Название колонки 2 | Данные 1, Данные 2 | Данные 3, Данные 4 ||| END_ACTION]
+4. Быстрый To-Do список: [BLOCKO_ACTION:TODO ||| Название списка ||| Пункт 1\nПункт 2\nПункт 3 ||| END_ACTION]
+5. Ссылка: [BLOCKO_ACTION:LINK ||| Название закладки ||| https://example.com ||| END_ACTION]
+6. Таймер дедлайна: [BLOCKO_ACTION:TIMER ||| Название таймера ||| 2026-12-31T23:59 ||| END_ACTION]
 
-Пример генерации задачи:
-Конечно, вот план для запуска:
-[BLOCKO_ACTION:TASK ||| Запуск рекламы ||| Настроить кабинеты.
-- [ ] Собрать семантику
-- [ ] Отрисовать баннеры ||| END_ACTION]
-
-Отвечай кратко, профессионально и по делу. Запрос пользователя: `;
+Отвечай профессионально, структурно и по делу. Запрос пользователя: `;
     
     const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(systemPrompt + text)}?model=openai`);
     let replyText = await response.text();
     
     document.getElementById(loadId)?.remove();
 
-    // КРИТИЧЕСКИЙ ФИКС: Используем [\s\S]*? вместо .*? чтобы регулярка свободно "глотала" многострочные блоки с переносами внутри
-    const actionRegex = /\[BLOCKO_ACTION:(TASK|POLL|LINK|TIMER)\s*\|\|\|\s*(.*?)\s*\|\|\|\s*([\s\S]*?)\s*\|\|\|\s*END_ACTION\]/g;
+    // КРИТИЧЕСКИЙ ФИКС: Regex расширен для поддержки всех новых типов объектов доски
+    const actionRegex = /\[BLOCKO_ACTION:(TASK|POLL|LINK|TIMER|TABLE|TODO)\s*\|\|\|\s*(.*?)\s*\|\|\|\s*([\s\S]*?)\s*\|\|\|\s*END_ACTION\]/g;
     const actions = [];
     
     // Вырезаем команды из текста
@@ -4211,8 +4207,10 @@ async function sendAiMessage() {
         let bgClass = 'bg-indigo-100 dark:bg-indigo-900/50';
         
         if (act.type === 'POLL') { icon = 'bar-chart-3'; label = 'Создать опрос'; colorClass = 'text-purple-600 dark:text-purple-400'; bgClass = 'bg-purple-100 dark:bg-purple-900/50'; }
-        if (act.type === 'LINK') { icon = 'link'; label = 'Добавить закладку'; colorClass = 'text-gray-600 dark:text-gray-400'; bgClass = 'bg-gray-100 dark:bg-gray-800'; }
-        if (act.type === 'TIMER') { icon = 'timer'; label = 'Поставить таймер'; colorClass = 'text-rose-600 dark:text-rose-400'; bgClass = 'bg-rose-100 dark:bg-rose-900/50'; }
+        else if (act.type === 'LINK') { icon = 'link'; label = 'Добавить закладку'; colorClass = 'text-gray-600 dark:text-gray-400'; bgClass = 'bg-gray-100 dark:bg-gray-800'; }
+        else if (act.type === 'TIMER') { icon = 'timer'; label = 'Поставить таймер'; colorClass = 'text-rose-600 dark:text-rose-400'; bgClass = 'bg-rose-100 dark:bg-rose-900/50'; }
+        else if (act.type === 'TABLE') { icon = 'table'; label = 'Сгенерировать таблицу'; colorClass = 'text-blue-600 dark:text-blue-400'; bgClass = 'bg-blue-100 dark:bg-blue-900/50'; }
+        else if (act.type === 'TODO') { icon = 'list-todo'; label = 'Быстрый список'; colorClass = 'text-cyan-600 dark:text-cyan-400'; bgClass = 'bg-cyan-100 dark:bg-cyan-900/50'; }
 
         formattedText += `
           <button onclick="aiExecuteAction('${act.type}', '${act.safeTitle}', '${act.safeData}')" class="flex items-center gap-3 w-full text-left px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all shadow-sm hover:shadow-md group active:scale-95">
@@ -4310,6 +4308,35 @@ function aiExecuteAction(type, safeTitle, safeData) {
   else if (type === 'TIMER') {
     newCard.type = 'timer';
     newCard.targetDate = data.trim();
+  }
+  else if (type === 'TABLE') {
+    newCard.type = 'table';
+    const rowsRaw = data.split('|').map(r => r.trim()).filter(r => r !== '');
+    const headersRaw = rowsRaw.shift(); 
+    const headers = headersRaw ? headersRaw.split(',').map(h => h.trim()) : ['Колонка 1', 'Колонка 2'];
+    const colsCount = headers.length;
+    
+    newCard.cols = colsCount;
+    newCard.rows = rowsRaw.length > 0 ? rowsRaw.length : 1;
+    newCard.colHeaders = headers;
+    newCard.rowHeaders = Array.from({length: newCard.rows}, (_, i) => `${i + 1}`);
+    
+    const tableData = {};
+    if (rowsRaw.length > 0) {
+      rowsRaw.forEach((rowStr, rIdx) => {
+        const cells = rowStr.split(',').map(c => c.trim());
+        const filledCells = Array.from({length: colsCount}, (_, cIdx) => cells[cIdx] || '');
+        tableData[rIdx] = filledCells;
+      });
+    } else {
+       tableData[0] = Array(colsCount).fill("");
+    }
+    newCard.tableData = tableData;
+  }
+  else if (type === 'TODO') {
+    newCard.type = 'todo';
+    const itemsRaw = data.split('\n').map(i => i.trim()).filter(i => i !== '');
+    newCard.checklist = itemsRaw.map(text => ({ id: Date.now() + Math.random(), text, isCompleted: false }));
   }
   
   // Сохранение в базу
