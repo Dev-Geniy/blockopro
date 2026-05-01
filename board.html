@@ -1686,10 +1686,14 @@ function updateTagFilterDropdown() {
 
 // ЭНТЕРПРАЙЗ: Унифицированная архитектура состояния (State Machine) для шторок
 function toggleSidebar(targetId) {
-  if (window.event) {
-    window.event.preventDefault();
-    window.event.stopPropagation();
-  }
+  // КРИТИЧЕСКИЙ ФИКС: Безопасный перехват событий, предотвращающий краш (TypeError) 
+  // при асинхронном вызове функции из голосового агента (когда window.event не является кликом).
+  try {
+    if (window.event && typeof window.event.preventDefault === 'function') {
+      window.event.preventDefault();
+      window.event.stopPropagation();
+    }
+  } catch (e) {}
 
   const targetSidebar = document.getElementById(targetId);
   if (!targetSidebar) return;
@@ -3417,15 +3421,22 @@ let isWakeWordActive = false;
 let globalVoiceRecognition = null;
 let isGlobalVoiceActive = false;
 
-// Глобальный перехватчик клавиши ENTER для вызова агента
+// ЭНТЕРПРАЙЗ: Глобальный перехватчик клавиши ENTER для вызова агента (Защищенный)
 document.addEventListener('keydown', (e) => {
   const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
   const isInputFocused = activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable;
-  const isAnyModalOpen = document.querySelectorAll('.glass-modal:not(.hidden), [id$="Modal"]:not(.hidden)').length > 0;
-  const isAnySidebarOpen = !document.getElementById('aiSidebar')?.classList.contains('translate-x-full');
+  const isModalOpen = document.querySelectorAll('.glass-modal:not(.hidden), [id$="Modal"]:not(.hidden)').length > 0;
   
-  // Вызываем агента только на "чистом" экране
-  if (e.key === 'Enter' && !isInputFocused && !isAnyModalOpen && !isAnySidebarOpen) {
+  // КРИТИЧЕСКИЙ ФИКС: Проверяем состояние абсолютно всех шторок, а не только AI
+  const sidebars = ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar'];
+  const isSidebarOpen = sidebars.some(id => {
+      const el = document.getElementById(id);
+      return el && !el.classList.contains('translate-x-full');
+  });
+  
+  // КРИТИЧЕСКИЙ ФИКС: Строго игнорируем нажатия, если фокус находится на кнопке или ссылке. 
+  // Это предотвращает двойное срабатывание (когда Enter нажимает кнопку и одновременно вызывает Агента).
+  if (e.key === 'Enter' && !isInputFocused && !isModalOpen && !isSidebarOpen && activeTag !== 'button' && activeTag !== 'a') {
     e.preventDefault();
     activateGlobalVoiceAgent();
   }
