@@ -444,12 +444,19 @@
   <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-sm shadow-2xl border border-gray-200 dark:border-gray-700">
     <div class="flex justify-between items-center mb-5"><h2 class="text-xl font-bold dark:text-white">Настройки колонки</h2><button onclick="closeColModal()" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button></div>
     <span class="text-xs font-bold text-gray-500 uppercase block mb-2">Название</span>
-    <input id="colNameInput" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none mb-6 dark:text-white focus:ring-2 focus:ring-blue-500" />
+    <input id="colNameInput" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none mb-5 dark:text-white focus:ring-2 focus:ring-blue-500" />
     <span class="text-xs font-bold text-gray-500 uppercase block mb-3">Цвет шапки</span>
-    <div class="flex justify-between mb-8 px-1" id="colorPicker"></div>
+    <div class="flex justify-between mb-6 px-1" id="colorPicker"></div>
+    
+    <div class="mb-6 pt-5 border-t border-gray-100 dark:border-gray-700/50">
+      <button onclick="archiveAllCardsInColumn()" class="w-full flex items-center justify-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-xl text-sm font-bold transition-colors border border-amber-100 dark:border-amber-800/50 active:scale-95 shadow-sm">
+        <i data-lucide="archive" class="w-4 h-4"></i> Архивировать все задачи
+      </button>
+    </div>
+
     <div class="flex justify-between items-center pt-5 border-t border-gray-100 dark:border-gray-700/50">
-      <button onclick="deleteColumn()" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-2 rounded-xl text-sm font-bold">Удалить</button>
-      <button onclick="saveColumn()" class="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-6 py-2.5 rounded-xl text-sm font-bold hover:scale-105 shadow-md">Сохранить</button>
+      <button onclick="deleteColumn()" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors">Удалить</button>
+      <button onclick="saveColumn()" class="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-6 py-2.5 rounded-xl text-sm font-bold hover:scale-105 shadow-md transition-transform">Сохранить</button>
     </div>
   </div>
 </div>
@@ -2072,6 +2079,43 @@ function deleteColumn() {
     persist(); 
     closeColModal(); 
     render(); // Мгновенно убираем колонку из UI
+  });
+}
+
+// ЭНТЕРПРАЙЗ: Массовая архивация всех карточек колонки (Sprint Clear)
+async function archiveAllCardsInColumn() {
+  const col = columns.find(c => c.id == editingColId);
+  if (!col || !col.cards || col.cards.length === 0) {
+    return showSystemToast('Внимание', 'В этой колонке нет задач для архивации.', 'info', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
+  }
+  
+  openConfirmModal('Архивировать все?', `Все активные задачи (${col.cards.length} шт.) будут перенесены в Архив проекта.`, 'В архив', false, async () => {
+    closeColModal();
+    showSystemToast('Архивация...', 'Переносим задачи в хранилище.', 'loader-2', 'text-amber-500 animate-spin', 'bg-amber-50 dark:bg-amber-900/20');
+    
+    if (isLocalBoard) {
+      columns = columns.map(c => {
+        if (c.id == editingColId) {
+          c.cards = c.cards.map(card => ({ ...card, archived: true }));
+        }
+        return c;
+      });
+      persist();
+      render();
+      showSystemToast('Готово', 'Все задачи колонки заархивированы.', 'archive', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+    } else {
+      // Пакетное обновление для Cloud
+      const batch = db.batch();
+      col.cards.forEach(card => {
+        const cardRef = db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(card.id));
+        batch.update(cardRef, { 
+          archived: true,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+      await batch.commit();
+      showSystemToast('Готово', 'Все задачи колонки заархивированы.', 'archive', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+    }
   });
 }
 
