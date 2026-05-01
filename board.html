@@ -446,19 +446,23 @@
             <button onclick="generateAIChecklistFromDesc()" id="aiGenChecklistBtn" class="text-[10px] hover:bg-white dark:hover:bg-indigo-800 text-indigo-600 dark:text-indigo-400 px-2.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95" title="Извлечь физический чек-лист из описания"><i data-lucide="list-todo" class="w-3 h-3"></i> Чек-лист</button>
           </div>
         </div>
-        <div class="flex flex-wrap items-center gap-1 mb-2 bg-gray-100 dark:bg-gray-900/80 p-1.5 rounded-xl w-full border border-gray-200 dark:border-gray-700/50">          <button onclick="insertMarkdown('**', '**')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm font-black text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Жирный">B</button>
-          <button onclick="insertMarkdown('*', '*')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm italic font-serif text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Курсив">I</button>
-          <button onclick="insertMarkdown('~~', '~~')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm line-through text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Зачеркнутый">S</button>
-          <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
-          <button onclick="insertMarkdown('### ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-xs font-black text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Заголовок H3">H</button>
-          <button onclick="insertMarkdown('> ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Цитата"><i data-lucide="quote" class="w-4 h-4"></i></button>
-          <button onclick="insertMarkdown('\n```\n', '\n```\n')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Код"><i data-lucide="code" class="w-4 h-4"></i></button>
-          <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
-          <button onclick="insertMarkdown('- ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Маркированный список"><i data-lucide="list" class="w-4 h-4"></i></button>
-          <button onclick="insertMarkdown('1. ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Нумерованный список"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
-          <button onclick="insertMarkdown('- [ ] ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Чек-лист"><i data-lucide="check-square" class="w-4 h-4"></i></button>
-          <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
-          <button onclick="insertMarkdown('[Текст ссылки](https://', ')')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Ссылка"><i data-lucide="link" class="w-4 h-4"></i></button>
+        <div class="flex flex-wrap items-center justify-between gap-1 mb-2 bg-gray-100 dark:bg-gray-900/80 p-1.5 rounded-xl w-full border border-gray-200 dark:border-gray-700/50">          
+          <div class="flex flex-wrap items-center gap-1">
+            <button onclick="insertMarkdown('**', '**')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm font-black text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Жирный">B</button>
+            <button onclick="insertMarkdown('*', '*')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm italic font-serif text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Курсив">I</button>
+            <button onclick="insertMarkdown('~~', '~~')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm line-through text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Зачеркнутый">S</button>
+            <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
+            <button onclick="insertMarkdown('### ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-xs font-black text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Заголовок H3">H</button>
+            <button onclick="insertMarkdown('> ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Цитата"><i data-lucide="quote" class="w-4 h-4"></i></button>
+            <button onclick="insertMarkdown('\n```\n', '\n```\n')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Код"><i data-lucide="code" class="w-4 h-4"></i></button>
+            <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
+            <button onclick="insertMarkdown('- ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Маркированный список"><i data-lucide="list" class="w-4 h-4"></i></button>
+            <button onclick="insertMarkdown('1. ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Нумерованный список"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
+            <button onclick="insertMarkdown('- [ ] ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Чек-лист"><i data-lucide="check-square" class="w-4 h-4"></i></button>
+            <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
+            <button onclick="insertMarkdown('[Текст ссылки](https://', ')')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Ссылка"><i data-lucide="link" class="w-4 h-4"></i></button>
+          </div>
+          <button id="descMicBtn" onclick="toggleDescVoiceInput()" class="p-1.5 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 rounded-lg transition-all w-8 h-8 flex items-center justify-center shadow-sm border border-gray-200 dark:border-gray-700 active:scale-95" title="Голосовая диктовка описания"><i data-lucide="mic" class="w-4 h-4 pointer-events-none"></i></button>
         </div>
         <textarea id="editDescription" placeholder="Пишите свободно... Нажмите Enter для переноса строки.&#10;&#10;Текст больше не будет сплошным монолитом. Выделяйте фрагменты и применяйте форматирование сверху." rows="6" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-mono dark:text-gray-300 resize-y focus:ring-2 focus:ring-blue-500 transition-shadow leading-relaxed whitespace-pre-wrap"></textarea>
       </div>
@@ -964,7 +968,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// --- 3. MARKDOWN HELPER ---
+// --- 3. MARKDOWN HELPER & VOICE DICTATION ---
 function insertMarkdown(prefix, suffix) {
   const textarea = document.getElementById('editDescription');
   const start = textarea.selectionStart;
@@ -972,16 +976,62 @@ function insertMarkdown(prefix, suffix) {
   const text = textarea.value;
   const selected = text.substring(start, end);
   
-  // Вставляем префикс, текст и суффикс
   textarea.value = text.substring(0, start) + prefix + selected + suffix + text.substring(end);
   
-  // Умный фокус: возвращаем курсор внутрь тега или в конец выделения для бесшовной работы
   textarea.focus();
   const newCursorPos = start + prefix.length + selected.length;
   textarea.setSelectionRange(newCursorPos, newCursorPos);
   
-  // Триггерим эвент инпута, если в будущем привяжем автосохранение
   textarea.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+let descSpeechRecognition = null;
+let isDescListening = false;
+
+function toggleDescVoiceInput() {
+  if (isLocalBoard) return showSystemToast('Офлайн', 'Голосовой ввод недоступен без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
+  
+  const micBtn = document.getElementById('descMicBtn');
+  const input = document.getElementById('editDescription');
+  
+  if (isDescListening && descSpeechRecognition) {
+    descSpeechRecognition.stop();
+    return;
+  }
+  
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    return showSystemToast('Ошибка', 'Голосовой ввод не поддерживается вашим браузером.', 'mic-off', 'text-red-500', 'bg-red-50');
+  }
+  
+  descSpeechRecognition = new SpeechRecognition();
+  descSpeechRecognition.lang = 'ru-RU';
+  descSpeechRecognition.interimResults = true;
+  
+  const initialText = input.value ? input.value + (input.value.endsWith(' ') || input.value.endsWith('\n') ? '' : ' ') : '';
+  
+  descSpeechRecognition.onstart = () => {
+    isDescListening = true;
+    micBtn.classList.remove('text-gray-400', 'bg-white', 'dark:bg-gray-800');
+    micBtn.classList.add('text-red-500', 'bg-red-50', 'dark:bg-red-900/20', 'animate-pulse', 'border-red-200', 'dark:border-red-800');
+  };
+  
+  descSpeechRecognition.onresult = (event) => {
+    let transcript = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+    input.value = initialText + transcript;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  
+  descSpeechRecognition.onend = () => {
+    isDescListening = false;
+    micBtn.classList.add('text-gray-400', 'bg-white', 'dark:bg-gray-800');
+    micBtn.classList.remove('text-red-500', 'bg-red-50', 'dark:bg-red-900/20', 'animate-pulse', 'border-red-200', 'dark:border-red-800');
+  };
+  
+  try { descSpeechRecognition.start(); } catch (e) { console.error(e); }
 }
 
 // --- 4. ГЛОБАЛЬНЫЙ DRAG AND DROP ---
