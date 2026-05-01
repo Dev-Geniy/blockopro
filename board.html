@@ -1684,40 +1684,76 @@ function updateTagFilterDropdown() {
   if ([...select.options].some(o => o.value === savedValue)) select.value = savedValue;
 }
 
-function toggleSettings() { if (window.event) window.event.stopPropagation(); closeOtherSidebars('settingsSidebar'); document.getElementById('settingsSidebar').classList.toggle('translate-x-full'); }
-function toggleMembers() { if (window.event) window.event.stopPropagation(); closeOtherSidebars('membersSidebar'); document.getElementById('membersSidebar').classList.toggle('translate-x-full'); }
-function toggleArchive() { 
-  if (window.event) window.event.stopPropagation();
-  closeOtherSidebars('archiveSidebar'); 
-  const sidebar = document.getElementById('archiveSidebar');
-  sidebar.classList.toggle('translate-x-full'); 
-  if (!sidebar.classList.contains('translate-x-full')) {
-    renderArchiveSidebar();
+// ЭНТЕРПРАЙЗ: Унифицированная архитектура состояния (State Machine) для шторок
+function toggleSidebar(targetId) {
+  if (window.event) {
+    window.event.preventDefault();
+    window.event.stopPropagation();
+  }
+
+  const targetSidebar = document.getElementById(targetId);
+  if (!targetSidebar) return;
+
+  const isCurrentlyHidden = targetSidebar.classList.contains('translate-x-full');
+
+  // 1. ЖЕСТКАЯ ИЗОЛЯЦИЯ: Принудительно закрываем ВСЕ шторки
+  ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.classList.add('translate-x-full');
+        // Сбрасываем слой у всех скрытых элементов
+        el.classList.remove('z-50');
+        el.classList.add('z-40');
+    }
+  });
+
+  const aiBtn = document.getElementById('aiFloatingBtn');
+
+  // 2. Если целевая шторка была скрыта, открываем её эксклюзивно
+  if (isCurrentlyHidden) {
+    targetSidebar.classList.remove('translate-x-full');
+    // Поднимаем активную шторку поверх всех возможных слоев
+    targetSidebar.classList.remove('z-40');
+    targetSidebar.classList.add('z-50');
+
+    if (aiBtn) aiBtn.classList.add('opacity-0', 'pointer-events-none');
+
+    // Специфичные триггеры после открытия
+    if (targetId === 'archiveSidebar' && typeof renderArchiveSidebar === 'function') renderArchiveSidebar();
+    if (targetId === 'aiSidebar') setTimeout(() => document.getElementById('aiChatInput')?.focus(), 100);
+    if (targetId === 'chatSidebar') {
+        const chatBox = document.getElementById('chatMessages');
+        if (chatBox) setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
+        const badge = document.getElementById('chatBadge');
+        if (badge) { badge.classList.add('hidden'); badge.innerText = ''; }
+    }
+  } else {
+    // Если она была открыта, мы её уже закрыли на шаге 1. Возвращаем кнопку AI.
+    if (aiBtn) aiBtn.classList.remove('opacity-0', 'pointer-events-none');
   }
 }
 
-// ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Железобетонный контроллер шторок
-function closeOtherSidebars(excludeId) { 
-  const sidebars = ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar'];
-  
-  sidebars.forEach(id => { 
-    const el = document.getElementById(id);
-    if (el && id !== excludeId) {
-      el.classList.add('translate-x-full'); // Принудительно и безусловно скрываем все чужие шторки
+// ЭНТЕРПРАЙЗ: Перехватываем все вызовы кнопок и направляем в единый контроллер (перезаписываем старые функции)
+window.toggleAiSidebar = () => toggleSidebar('aiSidebar');
+window.toggleArchive = () => toggleSidebar('archiveSidebar');
+window.toggleSettings = () => toggleSidebar('settingsSidebar');
+window.toggleMembers = () => toggleSidebar('membersSidebar');
+window.toggleChat = () => toggleSidebar('chatSidebar');
+
+function closeOtherSidebars(excludeId) {
+    // Вызывается только для принудительного закрытия всего UI (например, при клике по фону или старте Voice Agent)
+    if (excludeId === 'none') {
+        ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.add('translate-x-full');
+                el.classList.remove('z-50');
+                el.classList.add('z-40');
+            }
+        });
+        const aiBtn = document.getElementById('aiFloatingBtn');
+        if (aiBtn) aiBtn.classList.remove('opacity-0', 'pointer-events-none');
     }
-  }); 
-  
-  // Независимая логика скрытия плавающей кнопки AI
-  const btn = document.getElementById('aiFloatingBtn');
-  if (btn) {
-    if (excludeId !== 'none') {
-      // Если открыта ЛЮБАЯ шторка, скрываем кнопку AI, чтобы не перекрывала контент
-      btn.classList.add('opacity-0', 'pointer-events-none');
-    } else {
-      // Если мы закрыли всё - плавно возвращаем кнопку
-      btn.classList.remove('opacity-0', 'pointer-events-none');
-    }
-  }
 }
 
 function restoreCardFromSidebar(cardId, colId) {
