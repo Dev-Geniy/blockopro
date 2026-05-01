@@ -3027,85 +3027,76 @@ function render() {
         onEnd: async function (evt) {
           document.body.classList.remove('is-dragging-card');
           const cardId = evt.item.dataset.id;
-          const fromColId = evt.from.id.replace('cards-','');
-          const toColId = evt.to.id.replace('cards-','');
+          const fromColId = evt.from.id.replace('cards-', '');
+          const toColId = evt.to.id.replace('cards-', '');
           
-          // ЭНТЕРПРАЙЗ: Считываем новый порядок элементов прямо из DOM для 100% точности
-          const toCardsElements = Array.from(evt.to.children).filter(el => el.classList.contains('card-item'));
-          
-          if (isLocalBoard) {
-            let mCard = null;
-            columns.forEach(c => {
-               if (c.id == fromColId) {
-                  const idx = c.cards.findIndex(card => card.id == cardId);
-                  if (idx !== -1) {
-                     mCard = c.cards[idx];
-                     c.cards.splice(idx, 1);
-                  }
-               }
-            });
-            
-            if (mCard) {
-                mCard.columnId = toColId;
-                const targetCol = columns.find(c => c.id == toColId);
-                if (targetCol) {
-                    targetCol.cards.push(mCard); 
-                    
-                    // Переназначаем всем карточкам правильный order согласно их позициям в DOM
-                    toCardsElements.forEach((el, index) => {
-                       const id = el.dataset.id;
-                       const c = targetCol.cards.find(card => card.id == id);
-                       if (c) c.order = index;
-                    });
+          // Получаем актуальный срез DOM-элементов для обеих колонок
+          const toItems = Array.from(evt.to.querySelectorAll('.card-item'));
+          const fromItems = Array.from(evt.from.querySelectorAll('.card-item'));
 
-                    // ИСПРАВЛЕНИЕ БАГА: Локальный рендер читает массив по порядку индексов.
-                    // После .push(mCard) карточка физически оказывается в самом низу массива.
-                    // Поэтому мы обязаны отсортировать массив карточек колонки по новому `order` перед сохранением.
-                    targetCol.cards.sort((a, b) => (a.order || 0) - (b.order || 0));
-                    
-                    // Если карточка перемещена в другую колонку, сортируем и исходную
-                    if (fromColId !== toColId) {
-                        const fromCol = columns.find(c => c.id == fromColId);
-                        if (fromCol) {
-                            const fromCardsElements = Array.from(evt.from.children).filter(el => el.classList.contains('card-item'));
-                            fromCardsElements.forEach((el, index) => {
-                               const id = el.dataset.id;
-                               const c = fromCol.cards.find(card => card.id == id);
-                               if (c) c.order = index;
-                            });
-                            fromCol.cards.sort((a, b) => (a.order || 0) - (b.order || 0));
-                        }
-                    }
+          if (isLocalBoard) {
+            // ЛОКАЛЬНАЯ ЛОГИКА: Глубокая пересортица массивов
+            let cardObj = null;
+            columns.forEach(col => {
+              if (col.id == fromColId) {
+                const idx = col.cards.findIndex(c => c.id == cardId);
+                if (idx !== -1) [cardObj] = col.cards.splice(idx, 1);
+              }
+            });
+
+            if (cardObj) {
+              cardObj.columnId = toColId;
+              const targetCol = columns.find(c => c.id == toColId);
+              if (targetCol) {
+                targetCol.cards.push(cardObj);
+                // Синхронизируем order с фактическим положением в DOM
+                const syncOrder = (items, col) => {
+                  items.forEach((el, idx) => {
+                    const c = col.cards.find(card => card.id == el.dataset.id);
+                    if (c) c.order = idx;
+                  });
+                  col.cards.sort((a, b) => a.order - b.order);
+                };
+                syncOrder(toItems, targetCol);
+                if (fromColId !== toColId) {
+                  const sourceCol = columns.find(c => c.id == fromColId);
+                  if (sourceCol) syncOrder(fromItems, sourceCol);
                 }
-                persist();
-                render();
+              }
+              persist();
+              render();
             }
           } else {
-            // ЭНТЕРПРАЙЗ: Пакетное обновление (Batch Update) для идеальной синхронизации индексов у всей колонки
-            const batch = db.batch();
-            const cardsRef = db.collection("boards").doc(BOARD_ID).collection("cards");
-            
-            toCardsElements.forEach((el, index) => {
-               const id = el.dataset.id;
-               batch.update(cardsRef.doc(String(id)), {
-                   columnId: toColId,
-                   order: index,
-                   updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-               });
-            });
+            // CLOUD ЛОГИКА: Атомарный Batch-коммит для исключения Race Condition
+            try {
+              const batch = db.batch();
+              const cardsRef = db.collection("boards").doc(BOARD_ID).collection("cards");
+              const ts = firebase.firestore.FieldValue.serverTimestamp();
 
-            // Если переместили в другую колонку, обновляем индексы и в старой, чтобы закрыть образовавшиеся "дыры"
-            if (fromColId !== toColId) {
-               const fromCardsElements = Array.from(evt.from.children).filter(el => el.classList.contains('card-item'));
-               fromCardsElements.forEach((el, index) => {
-                   const id = el.dataset.id;
-                   batch.update(cardsRef.doc(String(id)), {
-                       order: index,
-                       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                   });
-               });
+              // Обновляем целевую колонку (включая смену columnId для перемещенной карты)
+              toItems.forEach((el, idx) => {
+                batch.update(cardsRef.doc(String(el.dataset.id)), {
+                  order: idx,
+                  columnId: toColId,
+                  updatedAt: ts
+                });
+              });
+
+              // Если был межколоночный перенос, латаем дыры в исходной колонке
+              if (fromColId !== toColId) {
+                fromItems.forEach((el, idx) => {
+                  batch.update(cardsRef.doc(String(el.dataset.id)), {
+                    order: idx,
+                    updatedAt: ts
+                  });
+                });
+              }
+
+              await batch.commit();
+            } catch (err) {
+              console.error("Sortable Batch Error:", err);
+              showSystemToast('Ошибка синхронизации', 'Порядок задач может быть нарушен. Перезагрузите страницу.', 'alert-triangle', 'text-red-500', 'bg-red-50');
             }
-            await batch.commit();
           }
         } 
       }));
