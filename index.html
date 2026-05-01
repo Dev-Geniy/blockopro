@@ -972,16 +972,28 @@ auth.onAuthStateChanged(async (user) => {
         lucide.createIcons();
     }
 
-    document.getElementById('dashUserName').innerText = currentUser.name;
+        document.getElementById('dashUserName').innerText = currentUser.name;
         subscribeToBoards(user.uid);
 
         const urlParams = new URLSearchParams(window.location.search);
         const joinId = urlParams.get('join');
         const joinRole = urlParams.get('r') || 'editor'; // Читаем запрошенную роль из ссылки
         
-        if (joinId) {
+        const authBoardId = urlParams.get('auth_board');
+        const targetCardId = urlParams.get('c');
+        const errorParam = urlParams.get('error');
+        
+        if (authBoardId) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setTimeout(() => {
+            tryEnterBoard(authBoardId, true, targetCardId ? `card_${targetCardId}` : 'board');
+          }, 500);
+        } else if (joinId) {
           window.history.replaceState({}, document.title, window.location.pathname);
           setTimeout(() => joinBoardById(joinId, joinRole), 500); 
+        } else if (errorParam === 'not_member') {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setTimeout(() => showSystemToast('Отказ в доступе', 'Вы не являетесь участником этого проекта.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20'), 500);
         }
       } else {
     // Если не авторизован — показываем экран входа без долгого лоадера
@@ -1253,11 +1265,18 @@ grid.innerHTML = filtered.map(data => {
         <button onclick="event.stopPropagation(); exportBoard('${data.id}', false)" class="flex items-center gap-2 p-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-800 rounded-xl transition-all shadow-sm border border-emerald-100 dark:border-emerald-800/50" title="Скачать бэкап (Только для владельца)"><i data-lucide="download" class="w-4 h-4"></i> <span class="text-xs font-bold hidden sm:inline">Save</span></button>
       ` : '';
       
-      actionButtons = `
-        ${downloadCloudBtn}
-        <button onclick="event.stopPropagation(); copyBoardId(this, '${data.id}')" class="flex items-center gap-2 p-2.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all shadow-sm border border-gray-200 dark:border-gray-700" title="Скопировать ID"><i data-lucide="copy" class="w-4 h-4"></i> <span class="text-xs font-bold hidden sm:inline">ID</span></button>
-        <button onclick="event.stopPropagation(); copyBoardLink(this, '${data.id}')" class="flex items-center gap-2 p-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 hover:bg-indigo-100 dark:hover:bg-indigo-800 rounded-xl transition-all shadow-sm border border-indigo-100 dark:border-indigo-800/50" title="Ссылка-приглашение"><i data-lucide="link" class="w-4 h-4"></i> <span class="text-xs font-bold hidden sm:inline">Link</span></button>
-      `;
+      const myRole = data.users && data.users[currentUser.id] ? data.users[currentUser.id].role : 'editor';
+      const isViewer = myRole === 'viewer';
+      
+      if (!isViewer) {
+        actionButtons = `
+          ${downloadCloudBtn}
+          <button onclick="event.stopPropagation(); copyBoardId(this, '${data.id}')" class="flex items-center gap-2 p-2.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all shadow-sm border border-gray-200 dark:border-gray-700" title="Скопировать ID"><i data-lucide="copy" class="w-4 h-4"></i> <span class="text-xs font-bold hidden sm:inline">ID</span></button>
+          <button onclick="event.stopPropagation(); copyBoardLink(this, '${data.id}')" class="flex items-center gap-2 p-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 hover:bg-indigo-100 dark:hover:bg-indigo-800 rounded-xl transition-all shadow-sm border border-indigo-100 dark:border-indigo-800/50" title="Ссылка-приглашение"><i data-lucide="link" class="w-4 h-4"></i> <span class="text-xs font-bold hidden sm:inline">Link</span></button>
+        `;
+      } else {
+        actionButtons = ``;
+      }
     }
 
     let cardActions = `<button onclick="event.stopPropagation(); tryEnterBoard('${data.id}', ${hasPassword}, 'archive')" class="p-2 text-gray-400 hover:text-amber-500 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors" title="Архив проекта"><i data-lucide="archive" class="w-4 h-4"></i></button>`;
@@ -2215,10 +2234,15 @@ function tryEnterBoard(id, hasPassword, target = 'board') {
     boardObj = onlineBoards.find(b => b.id === id);
   }
 
-  if (!boardObj) return;
+  // Защита от несуществующих досок
+  if (!boardObj && !hasPassword) return;
 
-  const isOwner = boardObj.owner === currentUser.id;
-  const targetUrl = target === 'archive' ? `archive.html?b=${id}` : `board.html?b=${id}`;
+  const isOwner = boardObj ? boardObj.owner === currentUser.id : false;
+  
+  // ЭНТЕРПРАЙЗ: Поддержка Deep Links после ввода пароля
+  let targetUrl = `board.html?b=${id}`;
+  if (target === 'archive') targetUrl = `archive.html?b=${id}`;
+  else if (target.startsWith('card_')) targetUrl = `board.html?b=${id}&c=${target.replace('card_', '')}`;
 
   if (!isLocal && isOwner) {
     window.location.href = targetUrl;
@@ -2306,7 +2330,11 @@ async function submitBoardPassword() {
 
     if (board && board.password === entered) {
       sessionStorage.setItem('blocko_auth_' + pendingBoardId, entered);
-      const targetUrl = pendingTarget === 'archive' ? `archive.html?b=${pendingBoardId}` : `board.html?b=${pendingBoardId}`;
+      
+      let targetUrl = `board.html?b=${pendingBoardId}`;
+      if (pendingTarget === 'archive') targetUrl = `archive.html?b=${pendingBoardId}`;
+      else if (pendingTarget.startsWith('card_')) targetUrl = `board.html?b=${pendingBoardId}&c=${pendingTarget.replace('card_', '')}`;
+      
       window.location.href = targetUrl;
     } else {
       showSystemToast('Ошибка доступа', 'Неверный пароль. Попробуйте еще раз.', 'shield-alert', 'text-red-500', 'bg-red-50');
