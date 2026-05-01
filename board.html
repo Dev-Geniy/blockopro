@@ -1973,12 +1973,11 @@ function renderSingleMessage(msg, container, msgId) {
   const textHtml = msg.text ? `<div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-fit max-w-full ${isMe ? 'rounded-tr-sm ml-auto' : 'rounded-tl-sm'}">${msg.text}</div>` : '';
   const actualUser = (msg.user && boardData.users && boardData.users[msg.user.id]) ? boardData.users[msg.user.id] : msg.user;
 
-  // ЭНТЕРПРАЙЗ UX: Телеграм-стиль лайков (В правом нижнем углу контента, без рамок)
+  // ЭНТЕРПРАЙЗ UX: Телеграм-стиль лайков (В правом нижнем углу контента, полностью минималистично, без рамок и лишних теней)
   const likesCount = msg.likes ? msg.likes.length : 0;
   const hasLiked = msg.likes && msg.likes.includes(currentUser.id);
   
-  const likeBtnHtml = `<button onclick="toggleMessageLike('${msgId}')" class="absolute -bottom-3 -right-2 flex items-center justify-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 active:scale-95 z-10 ${hasLiked ? 'text-rose-500 bg-white/90 dark:bg-gray-800/90 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-gray-400 opacity-0 group-hover/msg:opacity-100 hover:text-rose-500 hover:bg-white/90 dark:hover:bg-gray-800/90'}" title="Нравится"><i data-lucide="heart" class="w-3.5 h-3.5 ${hasLiked ? 'fill-current' : ''}"></i> ${likesCount > 0 ? `<span class="ml-0.5">${likesCount}</span>` : ''}</button>`;
-
+  const likeBtnHtml = `<button onclick="toggleMessageLike('${msgId}')" class="absolute -bottom-2 -right-2 flex items-center justify-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-75 z-10 ${hasLiked ? 'text-rose-500 bg-white/80 dark:bg-gray-800/80 scale-100 opacity-100' : 'text-gray-400 scale-95 opacity-0 group-hover/msg:opacity-100 group-hover/msg:scale-100 hover:text-rose-500 hover:bg-white/80 dark:hover:bg-gray-800/80'}" title="Нравится"><i data-lucide="heart" class="w-3.5 h-3.5 transition-transform duration-300 ${hasLiked ? 'fill-current scale-110' : ''}"></i> ${likesCount > 0 ? `<span class="ml-0.5">${likesCount}</span>` : ''}</button>`;
   container.innerHTML += `
     <div id="msg_${msgId}" class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'} mt-3 mb-2">
       ${getAvatarHTML(actualUser, 'w-8 h-8 flex-shrink-0')}
@@ -3653,20 +3652,12 @@ async function generateAIQuickDescription() {
 }
 
 function toggleChat() { 
-  if (window.event) window.event.stopPropagation();
-  closeOtherSidebars('chatSidebar'); 
-  const sidebar = document.getElementById('chatSidebar');
-  sidebar.classList.toggle('translate-x-full'); 
-  
-  if (!sidebar.classList.contains('translate-x-full')) {
+  SidebarManager.toggle('chatSidebar', () => {
+    const chatBox = document.getElementById('chatMessages');
+    if (chatBox) setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
     const badge = document.getElementById('chatBadge');
-    if(badge) {
-        badge.classList.add('hidden');
-        badge.innerText = '0';
-    }
-    const chatBox = document.getElementById("chatMessages");
-    setTimeout(() => chatBox.scrollTop = chatBox.scrollHeight, 50);
-  }
+    if (badge) { badge.classList.add('hidden'); badge.innerText = '0'; }
+  });
 }
 
 // Закрытие модалок по клику на фон и умное скрытие боковых панелей
@@ -4809,18 +4800,9 @@ function toggleFocusMode() {
 // ==========================================
 
 function toggleAiSidebar() {
-  if (window.event) window.event.stopPropagation();
-  closeOtherSidebars('aiSidebar');
-  const sidebar = document.getElementById('aiSidebar');
-  sidebar.classList.toggle('translate-x-full');
-  
-  const btn = document.getElementById('aiFloatingBtn');
-  if (!sidebar.classList.contains('translate-x-full')) {
-    if(btn) btn.classList.add('opacity-0', 'pointer-events-none');
-    setTimeout(() => document.getElementById('aiChatInput').focus(), 100);
-  } else {
-    if(btn) btn.classList.remove('opacity-0', 'pointer-events-none');
-  }
+  SidebarManager.toggle('aiSidebar', () => {
+    setTimeout(() => document.getElementById('aiChatInput')?.focus(), 100);
+  });
 }
 
 // ЭНТЕРПРАЙЗ: Интерактивный Onboarding по возможностям AI (Премиальные карточки)
