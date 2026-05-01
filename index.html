@@ -973,14 +973,17 @@ auth.onAuthStateChanged(async (user) => {
     }
 
     document.getElementById('dashUserName').innerText = currentUser.name;
-    subscribeToBoards(user.uid);
+        subscribeToBoards(user.uid);
 
-    const joinId = new URLSearchParams(window.location.search).get('join');
-    if (joinId) {
-      window.history.replaceState({}, document.title, window.location.pathname);
-      setTimeout(() => joinBoardById(joinId), 500); 
-    }
-  } else {
+        const urlParams = new URLSearchParams(window.location.search);
+        const joinId = urlParams.get('join');
+        const joinRole = urlParams.get('r') || 'editor'; // Читаем запрошенную роль из ссылки
+        
+        if (joinId) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setTimeout(() => joinBoardById(joinId, joinRole), 500); 
+        }
+      } else {
     // Если не авторизован — показываем экран входа без долгого лоадера
     loader.classList.add('hidden');
     authScreen.classList.remove('hidden');
@@ -1798,47 +1801,47 @@ function confirmJoinBoard() {
   }
 }
 
-async function joinBoardById(id) {
-  if (id.startsWith('local_')) return showSystemToast('Ошибка', 'Это локальный ID, его нельзя найти в сети.', 'x-circle', 'text-red-500', 'bg-red-50');
-  try {
-    const docRef = db.collection("boards").doc(id);
-    const doc = await docRef.get();
-    
-    if (doc.exists) {
-      const data = doc.data();
-      const isMember = data.members?.includes(currentUser.id);
-      
-      // Если пользователь еще не участник — прописываем его в базу
-      if (!isMember) {
-        // ЭНТЕРПРАЙЗ ЛОГИКА: Строгая проверка лимитов тарифа владельца
-        const ownerDoc = await db.collection('users').doc(data.owner).get();
-        const ownerPlan = ownerDoc.exists ? (ownerDoc.data().plan || 'free') : 'free';
+async function joinBoardById(id, requestedRole = 'editor') {
+      if (id.startsWith('local_')) return showSystemToast('Ошибка', 'Это локальный ID, его нельзя найти в сети.', 'x-circle', 'text-red-500', 'bg-red-50');
+      try {
+        const docRef = db.collection("boards").doc(id);
+        const doc = await docRef.get();
         
-        const currentMembersCount = data.members ? data.members.length : 0;
-        let maxMembers = 3; // Лимит Free тарифа
-        if (ownerPlan === 'freelancer') maxMembers = 10;
-        if (ownerPlan === 'pro') maxMembers = 9999;
-        
-        if (currentMembersCount >= maxMembers) {
-          return showSystemToast('Лимит достигнут', 'Владелец доски исчерпал лимит участников для своего тарифа.', 'users', 'text-red-500', 'bg-red-50');
-        }
+        if (doc.exists) {
+          const data = doc.data();
+          const isMember = data.members?.includes(currentUser.id);
+          
+          // Если пользователь еще не участник — прописываем его в базу
+          if (!isMember) {
+            // ЭНТЕРПРАЙЗ ЛОГИКА: Строгая проверка лимитов тарифа владельца
+            const ownerDoc = await db.collection('users').doc(data.owner).get();
+            const ownerPlan = ownerDoc.exists ? (ownerDoc.data().plan || 'free') : 'free';
+            
+            const currentMembersCount = data.members ? data.members.length : 0;
+            let maxMembers = 3; // Лимит Free тарифа
+            if (ownerPlan === 'freelancer') maxMembers = 10;
+            if (ownerPlan === 'pro') maxMembers = 9999;
+            
+            if (currentMembersCount >= maxMembers) {
+              return showSystemToast('Лимит достигнут', 'Владелец доски исчерпал лимит участников для своего тарифа.', 'users', 'text-red-500', 'bg-red-50');
+            }
 
-        // ЭНТЕРПРАЙЗ: Сохраняем все премиальные настройки привязанного пользователя
-        await docRef.update({
-          members: firebase.firestore.FieldValue.arrayUnion(currentUser.id),
-          [`users.${currentUser.id}`]: { 
-            name: currentUser.name, 
-            avatar: currentUser.avatar, 
-            role: 'editor',
-            customAvatar: currentUser.customAvatar || null,
-            badgeStatus: currentUser.badgeStatus || null,
-            badgeConfig: currentUser.badgeConfig || null
+            // ЭНТЕРПРАЙЗ: Сохраняем пользователя с ролью, переданной через инвайт-ссылку (Редактор или Читатель)
+            await docRef.update({
+              members: firebase.firestore.FieldValue.arrayUnion(currentUser.id),
+              [`users.${currentUser.id}`]: { 
+                name: currentUser.name, 
+                avatar: currentUser.avatar, 
+                role: requestedRole,
+                customAvatar: currentUser.customAvatar || null,
+                badgeStatus: currentUser.badgeStatus || null,
+                badgeConfig: currentUser.badgeConfig || null
+              }
+            });
+            showSystemToast('Успех', 'Проект добавлен в ваше рабочее пространство!', 'check-circle', 'text-green-500', 'bg-green-50');
           }
-        });
-        showSystemToast('Успех', 'Проект добавлен в ваше рабочее пространство!', 'check-circle', 'text-green-500', 'bg-green-50');
-      }
 
-      // ПРОВЕРКА ПАРОЛЯ ПРЯМО ИЗ ИНДЕКСА
+          // ПРОВЕРКА ПАРОЛЯ ПРЯМО ИЗ ИНДЕКСА
       if (data.password && sessionStorage.getItem('blocko_auth_' + id) !== data.password) {
          // Проект защищен. Вызываем окно пароля (которое мы делали ранее)
          tryEnterBoard(id, true);
