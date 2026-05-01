@@ -977,7 +977,14 @@ auth.onAuthStateChanged(async (user) => {
         lucide.createIcons();
     }
 
-        document.getElementById('dashUserName').innerText = currentUser.name;
+        // ЭНТЕРПРАЙЗ: Умное приветствие на основе времени суток
+        const hour = new Date().getHours();
+        let greeting = 'Доброй ночи';
+        if (hour >= 5 && hour < 12) greeting = 'Доброе утро';
+        else if (hour >= 12 && hour < 18) greeting = 'Добрый день';
+        else if (hour >= 18 && hour < 23) greeting = 'Добрый вечер';
+        
+        document.getElementById('dashUserName').innerText = `${greeting}, ${currentUser.name.split(' ')[0]}!`;
         subscribeToBoards(user.uid);
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -1251,7 +1258,14 @@ function renderBoardsGrid() {
   }
 
   if (filtered.length === 0) {
-    grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-500">Проекты не найдены.</div>`;
+    grid.innerHTML = `
+      <div class="col-span-full py-20 flex flex-col items-center justify-center text-center opacity-80 animate-fade-in-up">
+        <div class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-5 shadow-inner border border-gray-200 dark:border-gray-700">
+          <i data-lucide="search-x" class="w-10 h-10 text-gray-400"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Ничего не найдено</h3>
+        <p class="text-sm text-gray-500 max-w-md mx-auto leading-relaxed">Мы не смогли найти проекты по вашему запросу. Попробуйте изменить параметры поиска или создайте новую доску.</p>
+      </div>`;
     lucide.createIcons(); 
     return;
   }
