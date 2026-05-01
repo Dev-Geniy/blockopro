@@ -297,6 +297,35 @@
     </div>
     <div id="archiveSidebarList" class="flex-1 overflow-y-auto p-4 space-y-3 hide-scroll"></div>
   </aside>
+
+  <!-- ЭНТЕРПРАЙЗ: Шторка AI Ассистента (Под шапкой, вместе с другими шторками) -->
+  <aside id="aiSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-[400px] border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-900/20">
+      <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="bot" class="w-4 h-4 text-indigo-500"></i> AI Ассистент</h3>
+      <button onclick="toggleAiSidebar()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    
+    <div id="aiChatMessages" class="flex-1 overflow-y-auto p-5 space-y-5 text-sm flex flex-col hide-scroll scroll-smooth">
+      <div class="flex gap-3">
+        <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0 border border-indigo-200 dark:border-indigo-800/50 shadow-sm"><i data-lucide="sparkles" class="w-4 h-4 text-indigo-500"></i></div>
+        <div class="bg-gray-100 dark:bg-gray-800 px-4 py-3 rounded-2xl text-sm text-gray-700 dark:text-gray-300 rounded-tl-sm w-full shadow-sm leading-relaxed border border-gray-200/50 dark:border-gray-700/50">
+          Привет! Я твой встроенный <b>Blocko AI</b>. <br><br>Я могу помочь в управлении доской. Задай мне любой вопрос или поручи задачу!
+        </div>
+      </div>
+    </div>
+
+    <div class="p-4 border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 flex flex-col gap-2">
+      <!-- Интерактивные подсказки для пользователя -->
+      <div class="flex flex-wrap gap-2 mb-1">
+        <button onclick="showAiHelp('how_it_works')" class="text-[10px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-2.5 py-1.5 rounded-lg hover:bg-gray-200 transition-colors border border-gray-200 dark:border-gray-700"><i data-lucide="help-circle" class="w-3 h-3 inline pb-0.5 text-indigo-500"></i> Как работает AI</button>
+        <button onclick="showAiHelp('capabilities')" class="text-[10px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-2.5 py-1.5 rounded-lg hover:bg-gray-200 transition-colors border border-gray-200 dark:border-gray-700"><i data-lucide="zap" class="w-3 h-3 inline pb-0.5 text-amber-500"></i> Что умеет AI?</button>
+      </div>
+      <div class="flex gap-2 items-end">
+        <textarea id="aiChatInput" rows="1" oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 120) + 'px'" onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendAiMessage(); }" placeholder="Поручи мне задачу..." class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none hide-scroll shadow-inner"></textarea>
+        <button onclick="sendAiMessage()" class="p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-colors flex-shrink-0 shadow-lg shadow-indigo-500/25 active:scale-95"><i data-lucide="send" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+  </aside>
 </div>
 
 <div id="viewCardModal" class="hidden fixed inset-0 z-50 flex justify-center bg-gray-900/40 dark:bg-black/60 glass-modal overflow-y-auto pt-10 pb-10 opacity-0 transition-opacity duration-200">
@@ -775,42 +804,14 @@
   </div>
 </div>
 
-<!-- ЭНТЕРПРАЙЗ: Плавающая кнопка вызова AI-ассистента -->
-<button onclick="toggleAiSidebar()" class="fixed bottom-24 right-6 z-[90] w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all group border-2 border-white/20 dark:border-gray-800">
+<!-- ЭНТЕРПРАЙЗ: Плавающая кнопка вызова AI-ассистента (Позиция под шторками) -->
+<button onclick="toggleAiSidebar()" id="aiFloatingBtn" class="fixed bottom-24 right-6 z-30 w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all duration-300 group border-2 border-white/20 dark:border-gray-800">
   <i data-lucide="sparkles" class="w-6 h-6 group-hover:animate-pulse"></i>
   <span class="absolute -top-1 -right-1 flex h-4 w-4">
     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
     <span class="relative inline-flex rounded-full h-4 w-4 bg-purple-500 border-2 border-white dark:border-gray-900"></span>
   </span>
 </button>
-
-<!-- ЭНТЕРПРАЙЗ: Шторка AI Ассистента -->
-<aside id="aiSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-[400px] border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl">
-  <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-900/20">
-    <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="bot" class="w-4 h-4 text-indigo-500"></i> AI Ассистент</h3>
-    <button onclick="toggleAiSidebar()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
-  </div>
-  
-  <div id="aiChatMessages" class="flex-1 overflow-y-auto p-5 space-y-5 text-sm flex flex-col hide-scroll scroll-smooth">
-    <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0 border border-indigo-200 dark:border-indigo-800/50 shadow-sm"><i data-lucide="sparkles" class="w-4 h-4 text-indigo-500"></i></div>
-      <div class="bg-gray-100 dark:bg-gray-800 px-4 py-3 rounded-2xl text-sm text-gray-700 dark:text-gray-300 rounded-tl-sm w-full shadow-sm leading-relaxed border border-gray-200/50 dark:border-gray-700/50">
-        Привет! Я твой встроенный <b>Blocko AI</b>. <br><br>Опиши мне задачу, структуру проекта или идею. Я могу дать совет, либо <b>сгенерировать готовую карточку с чек-листами</b>, которую ты добавишь на доску в один клик!
-      </div>
-    </div>
-  </div>
-
-  <div class="p-4 border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 flex flex-col gap-2">
-    <div class="flex flex-wrap gap-2 mb-1">
-      <button onclick="document.getElementById('aiChatInput').value='Разбей задачу создания лендинга на шаги'; sendAiMessage()" class="text-[10px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-2.5 py-1.5 rounded-lg hover:bg-gray-200 transition-colors border border-gray-200 dark:border-gray-700">Лендинг по шагам</button>
-      <button onclick="document.getElementById('aiChatInput').value='Напиши шаблон задачи для баг-репорта'; sendAiMessage()" class="text-[10px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-2.5 py-1.5 rounded-lg hover:bg-gray-200 transition-colors border border-gray-200 dark:border-gray-700">Шаблон баг-репорта</button>
-    </div>
-    <div class="flex gap-2 items-end">
-      <textarea id="aiChatInput" rows="1" oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 120) + 'px'" onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendAiMessage(); }" placeholder="Поручи мне задачу..." class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none hide-scroll shadow-inner"></textarea>
-      <button onclick="sendAiMessage()" class="p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-colors flex-shrink-0 shadow-lg shadow-indigo-500/25 active:scale-95"><i data-lucide="send" class="w-5 h-5"></i></button>
-    </div>
-  </div>
-</aside>
   
 <script>
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
@@ -1575,7 +1576,14 @@ function toggleArchive() {
 function closeOtherSidebars(excludeId) { 
   ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar'].forEach(id => { 
     const el = document.getElementById(id);
-    if (el && id !== excludeId) el.classList.add('translate-x-full'); 
+    if (el && id !== excludeId) {
+      el.classList.add('translate-x-full');
+      // Возвращаем плавающую кнопку AI, когда шторки закрываются
+      if (id === 'aiSidebar') {
+        const btn = document.getElementById('aiFloatingBtn');
+        if (btn) btn.classList.remove('opacity-0', 'pointer-events-none');
+      }
+    }
   }); 
 }
 
@@ -4202,9 +4210,47 @@ function toggleAiSidebar() {
   closeOtherSidebars('aiSidebar');
   const sidebar = document.getElementById('aiSidebar');
   sidebar.classList.toggle('translate-x-full');
+  
+  const btn = document.getElementById('aiFloatingBtn');
   if (!sidebar.classList.contains('translate-x-full')) {
+    if(btn) btn.classList.add('opacity-0', 'pointer-events-none');
     setTimeout(() => document.getElementById('aiChatInput').focus(), 100);
+  } else {
+    if(btn) btn.classList.remove('opacity-0', 'pointer-events-none');
   }
+}
+
+// ЭНТЕРПРАЙЗ: Интерактивный Onboarding по возможностям AI
+function showAiHelp(type) {
+  const chatBox = document.getElementById('aiChatMessages');
+  let text = '';
+  
+  if (type === 'how_it_works') {
+    text = `<b>Как я работаю:</b><br><br>
+    1. Ты описываешь свою задачу простыми словами (например: <i>"Сделай таблицу сравнения конкурентов"</i>).<br>
+    2. Я анализирую запрос, структурирую данные и генерирую ответ.<br>
+    3. Если твой запрос подразумевает создание объекта (задача, опрос, таблица), я <b>автоматически прикреплю кнопку</b> под своим сообщением.<br>
+    4. Ты нажимаешь кнопку — и объект мгновенно появляется на твоей доске!`;
+  } else if (type === 'capabilities') {
+    text = `<b>Что я умею создавать:</b><br><br>
+    • <i data-lucide="layers" class="w-3.5 h-3.5 inline pb-0.5 text-blue-500"></i> <b>Задачи с чек-листами:</b> <i>"Разбей создание лендинга на шаги"</i><br>
+    • <i data-lucide="table" class="w-3.5 h-3.5 inline pb-0.5 text-blue-500"></i> <b>Таблицы:</b> <i>"Сделай таблицу плюсов и минусов React vs Vue"</i><br>
+    • <i data-lucide="bar-chart-3" class="w-3.5 h-3.5 inline pb-0.5 text-purple-500"></i> <b>Опросы:</b> <i>"Создай опрос: куда пойдем на корпоратив"</i><br>
+    • <i data-lucide="list-todo" class="w-3.5 h-3.5 inline pb-0.5 text-cyan-500"></i> <b>Быстрые списки:</b> <i>"Список покупок в офис"</i><br>
+    • <i data-lucide="timer" class="w-3.5 h-3.5 inline pb-0.5 text-rose-500"></i> <b>Таймеры дедлайнов:</b> <i>"Таймер до релиза в пятницу"</i><br>
+    • <i data-lucide="link" class="w-3.5 h-3.5 inline pb-0.5 text-gray-500"></i> <b>Закладки:</b> <i>"Сохрани ссылку на figma.com"</i>`;
+  }
+
+  chatBox.innerHTML += `
+    <div class="flex gap-3 mt-4 animate-fade-in-up">
+      <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0 border border-indigo-200 dark:border-indigo-800/50 shadow-sm"><i data-lucide="bot" class="w-4 h-4 text-indigo-500"></i></div>
+      <div class="bg-white dark:bg-gray-800 px-5 py-4 rounded-2xl text-sm text-gray-700 dark:text-gray-300 rounded-tl-sm w-full prose dark:prose-invert prose-sm leading-relaxed max-w-none shadow-sm border border-gray-100 dark:border-gray-700/50">
+        ${text}
+      </div>
+    </div>
+  `;
+  lucide.createIcons({ root: chatBox });
+  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 async function sendAiMessage() {
