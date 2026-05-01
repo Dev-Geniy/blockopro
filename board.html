@@ -185,6 +185,9 @@
     <button onclick="toggleMobileMenu()" class="md:hidden p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 transition-colors shadow-sm">
       <i data-lucide="menu" class="w-4 h-4"></i>
     </button>
+    <button onclick="toggleActivityLog()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Журнал действий">
+      <i data-lucide="activity" class="w-4 h-4"></i>
+    </button>
     <button onclick="toggleArchive()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Архив проекта">
       <i data-lucide="archive" class="w-4 h-4"></i>
     </button>
@@ -198,8 +201,8 @@
       <i data-lucide="message-square" class="w-4 h-4"></i>
       <span id="chatBadge" class="hidden absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse border-2 border-white dark:border-gray-900 shadow-sm">0</span>
     </button>
-    <button id="addColumnBtn" onclick="addColumn()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
-      <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden sm:inline">Колонку</span>
+    <button id="addColumnBtn" onclick="addColumn()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white p-2.5 rounded-xl flex items-center justify-center text-sm shadow-lg shadow-blue-500/25 active:scale-95 transition-all" title="Добавить колонку">
+      <i data-lucide="plus" class="w-5 h-5"></i>
     </button>
   </div>
 </header>
@@ -339,6 +342,21 @@
       <a href="#" onclick="window.location.href='archive.html?b=' + BOARD_ID" class="text-amber-600 hover:underline font-bold flex items-center gap-1"><i data-lucide="external-link" class="w-3 h-3"></i> Полный вид</a>
     </div>
     <div id="archiveSidebarList" class="flex-1 overflow-y-auto p-4 space-y-3 hide-scroll"></div>
+  </aside>
+
+  <aside id="activitySidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-purple-50/50 dark:bg-purple-900/20">
+      <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="activity" class="w-4 h-4 text-purple-500"></i> Журнал действий</h3>
+      <button onclick="toggleActivityLog()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="p-3 bg-gray-50 dark:bg-gray-900/50 flex justify-between items-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+      <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Аудит операций</span>
+      <label class="relative inline-flex items-center cursor-pointer group" title="Включить запись логов">
+        <input type="checkbox" id="activityToggle" onchange="toggleActivityLogState(this.checked)" class="sr-only peer">
+        <div class="w-8 h-4 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-purple-500"></div>
+      </label>
+    </div>
+    <div id="activityList" class="flex-1 overflow-y-auto p-4 space-y-3 hide-scroll relative"></div>
   </aside>
 
   <!-- ЭНТЕРПРАЙЗ: Шторка AI Ассистента (Жесткая изоляция z-50 для защиты от наложения) -->
@@ -1349,9 +1367,108 @@ function loadBoard() {
       }
 
       renderMembersSidebar();
-      if (isFirstChatLoad) initChatListener(docRef);
+      if (isFirstChatLoad) {
+        initChatListener(docRef);
+        initActivityListener(docRef);
+      }
     });
   }
+}
+
+function initActivityListener(docRef) {
+  docRef.collection("activity").orderBy("timestamp", "desc").limit(50).onSnapshot((snapshot) => {
+    window.currentActivitySnapshot = snapshot;
+    renderActivityLog();
+  });
+}
+
+function renderActivityLog() {
+  const list = document.getElementById("activityList");
+  const toggle = document.getElementById("activityToggle");
+  if (!list || !toggle) return;
+  
+  const isEnabled = boardData.isActivityEnabled === true;
+  toggle.checked = isEnabled;
+  
+  if (!isEnabled) {
+    if (userPlan !== 'pro') {
+      list.innerHTML = `
+        <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in-up mt-10">
+          <div class="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4 shadow-sm border border-amber-100 dark:border-amber-800">
+            <i data-lucide="lock" class="w-8 h-8 text-amber-500"></i>
+          </div>
+          <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-2">Логгер заблокирован</h3>
+          <p class="text-xs text-gray-500 mb-6 leading-relaxed">Детальный аудит действий доступен эксклюзивно на тарифе <b>Company</b>. Контролируйте каждый шаг команды.</p>
+          <a href="store.html" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 mx-auto"><i data-lucide="shopping-cart" class="w-4 h-4"></i> Магазин</a>
+        </div>`;
+    } else {
+      list.innerHTML = `
+        <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in-up mt-10">
+          <div class="w-16 h-16 bg-gray-50 dark:bg-gray-800/80 rounded-full flex items-center justify-center mb-4 shadow-sm border border-gray-200 dark:border-gray-700">
+            <i data-lucide="power-off" class="w-8 h-8 text-gray-400"></i>
+          </div>
+          <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-2">Логгер отключен</h3>
+          <p class="text-xs text-gray-500 leading-relaxed">Включите тумблер сверху, чтобы начать записывать историю перемещений и изменений на доске.</p>
+        </div>`;
+    }
+    lucide.createIcons({ root: list });
+    return;
+  }
+
+  const snapshot = window.currentActivitySnapshot;
+  if (!snapshot || snapshot.empty) {
+    list.innerHTML = '<div class="text-center py-10 text-gray-400 text-sm">Журнал пока пуст.</div>';
+    return;
+  }
+  
+  let html = '';
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const actualUser = (data.user && boardData.users && boardData.users[data.user.id]) ? boardData.users[data.user.id] : data.user;
+    const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString('ru-RU', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}) : '';
+    html += `
+      <div class="flex gap-3 bg-white dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm animate-fade-in-up">
+        ${getAvatarHTML(actualUser, 'w-8 h-8 flex-shrink-0')}
+        <div class="flex flex-col min-w-0 flex-1">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-bold text-gray-900 dark:text-white truncate">${actualUser.name}</span>
+            <span class="text-[9px] text-gray-400">${time}</span>
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed"><i data-lucide="${data.icon}" class="w-3.5 h-3.5 inline pb-0.5 text-purple-500 mr-1"></i>${data.text}</div>
+        </div>
+      </div>
+    `;
+  });
+  list.innerHTML = html;
+  lucide.createIcons({ root: list });
+}
+
+function toggleActivityLogState(isChecked) {
+  if (isChecked && userPlan !== 'pro') {
+     document.getElementById("activityToggle").checked = false;
+     return showSystemToast('Премиум', 'Журнал действий доступен только на тарифе Company.', 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+  }
+  
+  const isOwner = boardData.owner === currentUser.id;
+  if (!isOwner) {
+     document.getElementById("activityToggle").checked = !isChecked;
+     return showSystemToast('Отказ', 'Только владелец проекта может изменять эту настройку.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+  }
+  
+  updateBoardData({ isActivityEnabled: isChecked });
+  showSystemToast('Аудит', isChecked ? 'Логгер запущен. Запись началась.' : 'Логгер остановлен. База экономится.', 'activity', 'text-purple-500', 'bg-purple-50 dark:bg-purple-900/30');
+  
+  setTimeout(renderActivityLog, 100);
+}
+
+function logActivity(text, icon = 'activity') {
+  if (isLocalBoard || boardData.isActivityEnabled !== true) return;
+  db.collection("boards").doc(BOARD_ID).collection("activity").add({
+    text: text,
+    icon: icon,
+    user: currentUser,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
 }
 
 // Склеиваем структуру колонок с карточками из подколлекции через Batching DOM Updates
@@ -1771,7 +1888,7 @@ function updateTagFilterDropdown() {
 
 // ЭНТЕРПРАЙЗ: АБСОЛЮТНАЯ ИЗОЛЯЦИЯ ШТОРОК (С аппаратным скрытием через CSS display)
 const SidebarManager = {
-  sidebars: ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar'],
+  sidebars: ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar', 'activitySidebar'],
   
   closeAll: function() {
     this.sidebars.forEach(id => {
@@ -1830,6 +1947,7 @@ const SidebarManager = {
 // Замороженные публичные методы (toggle)
 window.toggleAiSidebar = () => SidebarManager.toggle('aiSidebar', () => setTimeout(() => document.getElementById('aiChatInput')?.focus(), 100));
 window.toggleArchive = () => SidebarManager.toggle('archiveSidebar', () => { if (typeof renderArchiveSidebar === 'function') renderArchiveSidebar(); });
+window.toggleActivityLog = () => SidebarManager.toggle('activitySidebar', () => { if (typeof renderActivityLog === 'function') renderActivityLog(); });
 window.toggleSettings = () => SidebarManager.toggle('settingsSidebar');
 window.toggleMembers = () => SidebarManager.toggle('membersSidebar');
 window.toggleChat = () => SidebarManager.toggle('chatSidebar', () => {
@@ -2344,8 +2462,10 @@ async function addCommentToContent() {
 }
 
 function addColumn() { 
-  columns.push({ id: Date.now(), name: "Новая колонка", color: 'default', cards: [] }); 
+  const newName = "Новая колонка";
+  columns.push({ id: Date.now(), name: newName, color: 'default', cards: [] }); 
   persist(); 
+  if (!isLocalBoard) logActivity(`Создал(а) колонку "${newName}"`, 'layout-template');
   render(); // Обновляем UI после добавления
 }
 
@@ -3188,6 +3308,12 @@ function render() {
                     updatedAt: ts
                   });
                 });
+                
+                // ЭНТЕРПРАЙЗ: Аудит-лог при перемещении (Activity Log)
+                const cardTitle = evt.item.querySelector('.font-bold')?.innerText || 'Задачу';
+                const fromColName = columns.find(c => c.id == fromColId)?.name || '...';
+                const toColName = columns.find(c => c.id == toColId)?.name || '...';
+                logActivity(`Переместил(а) "${cardTitle}" из "${fromColName}" в "${toColName}"`, 'move');
               }
 
               await batch.commit();
@@ -3291,6 +3417,8 @@ function confirmQuickAdd() {
       ...newCard,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    const colName = columns.find(c => c.id == quickAddTargetColId)?.name || '...';
+    logActivity(`Создал(а) быструю задачу "${title}" в "${colName}"`, 'plus-circle');
   }
   closeQuickAdd();
 }
