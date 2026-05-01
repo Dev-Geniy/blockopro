@@ -336,7 +336,12 @@
   <!-- ЭНТЕРПРАЙЗ: Шторка AI Ассистента (Жесткая изоляция z-50 для защиты от наложения) -->
   <aside id="aiSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-[400px] border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-50 shadow-2xl">
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-900/20">
-      <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="bot" class="w-4 h-4 text-indigo-500"></i> AI Ассистент</h3>
+      <div class="flex items-center gap-3">
+        <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="bot" class="w-4 h-4 text-indigo-500"></i> AI Ассистент</h3>
+        <button id="wakeWordToggleBtn" onclick="toggleWakeWord()" class="flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider text-gray-500 hover:bg-indigo-100 hover:text-indigo-600 dark:hover:bg-indigo-900/50 dark:hover:text-indigo-400 transition-all border border-transparent hover:border-indigo-200 dark:hover:border-indigo-700" title="Включить активацию голосом">
+          <i data-lucide="mic" class="w-3 h-3"></i> Окей Блоко
+        </button>
+      </div>
       <button onclick="toggleAiSidebar()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     
@@ -3354,9 +3359,68 @@ async function generateAIChecklistFromDesc() {
   finally { setBtnLoading(btnId, false, ogBtn); }
 }
 
-// ЭНТЕРПРАЙЗ: Voice-to-Text для AI (Web Speech API)
+// ЭНТЕРПРАЙЗ: Мощный движок Voice-to-Text & Wake Word ("Окей Блоко")
 let aiSpeechRecognition = null;
 let isAiListening = false;
+let wakeWordRecognition = null;
+let isWakeWordActive = false;
+
+function toggleWakeWord() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return showSystemToast('Ошибка', 'Ваш браузер не поддерживает фоновое распознавание.', 'mic-off', 'text-red-500', 'bg-red-50');
+
+  const toggleBtn = document.getElementById('wakeWordToggleBtn');
+
+  if (isWakeWordActive) {
+      isWakeWordActive = false;
+      if (wakeWordRecognition) wakeWordRecognition.stop();
+      showSystemToast('Окей Блоко', 'Фоновый ассистент отключен.', 'mic-off', 'text-gray-500', 'bg-gray-50');
+      toggleBtn.classList.remove('text-indigo-600', 'bg-indigo-100', 'border-indigo-300', 'dark:text-indigo-400', 'dark:bg-indigo-900/50', 'dark:border-indigo-700');
+      toggleBtn.classList.add('text-gray-500', 'border-transparent');
+      return;
+  }
+
+  isWakeWordActive = true;
+  toggleBtn.classList.remove('text-gray-500', 'border-transparent');
+  toggleBtn.classList.add('text-indigo-600', 'bg-indigo-100', 'border-indigo-300', 'dark:text-indigo-400', 'dark:bg-indigo-900/50', 'dark:border-indigo-700');
+  showSystemToast('Окей Блоко', 'Скажите "Окей Блоко", чтобы вызвать ассистента из любого места.', 'mic', 'text-indigo-500', 'bg-indigo-50');
+
+  wakeWordRecognition = new SpeechRecognition();
+  wakeWordRecognition.lang = 'ru-RU';
+  wakeWordRecognition.continuous = true; // Слушаем постоянно
+  wakeWordRecognition.interimResults = false;
+
+  wakeWordRecognition.onresult = (event) => {
+      const last = event.results.length - 1;
+      const command = event.results[last][0].transcript.trim().toLowerCase();
+      
+      // Ловим триггерные фразы с учетом погрешности распознавания
+      if (command.includes('окей блоко') || command.includes('окей блок') || command.includes('ок блок') || command.includes('окей блэк')) {
+          
+          const sidebar = document.getElementById('aiSidebar');
+          if (sidebar.classList.contains('translate-x-full')) {
+              toggleAiSidebar();
+          }
+          
+          // Ставим фонового шпиона на паузу, чтобы передать микрофон основному диктатору
+          wakeWordRecognition.stop();
+          
+          showSystemToast('Слушаю...', 'Произнесите ваш запрос.', 'sparkles', 'text-indigo-500', 'bg-indigo-50');
+          setTimeout(() => {
+              if (!isAiListening) toggleAiVoiceInput();
+          }, 400);
+      }
+  };
+
+  wakeWordRecognition.onend = () => {
+      // Бесконечный цикл рестарта, если юзер не отключил кнопку вручную и не говорит сейчас напрямую в чат
+      if (isWakeWordActive && !isAiListening) {
+          try { wakeWordRecognition.start(); } catch(e){}
+      }
+  };
+
+  try { wakeWordRecognition.start(); } catch(e){}
+}
 
 function toggleAiVoiceInput() {
   const micBtn = document.getElementById('aiMicBtn');
@@ -3376,11 +3440,12 @@ function toggleAiVoiceInput() {
   aiSpeechRecognition.lang = 'ru-RU';
   aiSpeechRecognition.interimResults = true;
   
-  // Сохраняем текущий текст, чтобы бесшовно склеивать его с диктовкой
   const initialText = input.value ? input.value + ' ' : '';
   
   aiSpeechRecognition.onstart = () => {
     isAiListening = true;
+    if (wakeWordRecognition && isWakeWordActive) wakeWordRecognition.stop(); // Глушим фоновый сканер во избежание конфликтов портов
+    
     micBtn.classList.remove('text-gray-500', 'bg-gray-100', 'dark:bg-gray-800');
     micBtn.classList.add('text-red-500', 'bg-red-100', 'dark:bg-red-900/40', 'animate-pulse');
   };
@@ -3399,6 +3464,11 @@ function toggleAiVoiceInput() {
     isAiListening = false;
     micBtn.classList.add('text-gray-500', 'bg-gray-100', 'dark:bg-gray-800');
     micBtn.classList.remove('text-red-500', 'bg-red-100', 'dark:bg-red-900/40', 'animate-pulse');
+    
+    // Поднимаем фонового сканера обратно
+    if (wakeWordRecognition && isWakeWordActive) {
+        try { wakeWordRecognition.start(); } catch(e){} 
+    }
   };
   
   try { aiSpeechRecognition.start(); } catch (e) { console.error(e); }
@@ -4674,9 +4744,9 @@ async function sendAiMessage() {
   chatBox.scrollTop = chatBox.scrollHeight;
 
   try {
-    // ЭНТЕРПРАЙЗ: Ультимативный системный промпт с мульти-объектами
+    // ЭНТЕРПРАЙЗ: Ультимативный системный промпт с инфраструктурными командами (Создание колонок)
     const systemPrompt = `Ты — гениальный AI-менеджер задач в системе Blocko Pro. 
-Твоя цель: помогать пользователю планировать проекты, генерировать идеи и создавать нужные элементы на канбан-доске.
+Твоя цель: помогать пользователю планировать проекты, генерировать идеи и создавать нужные элементы (задачи и колонки) на канбан-доске.
 
 СТРОГОЕ ПРАВИЛО: Если твой ответ подразумевает создание элемента на доске, ты ОБЯЗАН вставить в ЛЮБОЕ место своего ответа технический код. 
 Формат кода использует строгие разделители "|||" и "END_ACTION". Никаких других символов между ними не допускается.
@@ -4688,6 +4758,7 @@ async function sendAiMessage() {
 4. Быстрый To-Do список: [BLOCKO_ACTION:TODO ||| Название списка ||| Пункт 1\nПункт 2\nПункт 3 ||| END_ACTION]
 5. Ссылка: [BLOCKO_ACTION:LINK ||| Название закладки ||| https://example.com ||| END_ACTION]
 6. Таймер дедлайна: [BLOCKO_ACTION:TIMER ||| Название таймера ||| 2026-12-31T23:59 ||| END_ACTION]
+7. НОВАЯ КОЛОНКА ДОСКИ: [BLOCKO_ACTION:COLUMN ||| Название колонки ||| #6366f1 ||| END_ACTION] (Вместо #6366f1 можешь указать любой другой красивый HEX-цвет, подходящий по смыслу).
 
 Отвечай профессионально, структурно и по делу. Запрос пользователя: `;
     
@@ -4696,8 +4767,8 @@ async function sendAiMessage() {
     
     document.getElementById(loadId)?.remove();
 
-    // КРИТИЧЕСКИЙ ФИКС: Regex расширен для поддержки всех новых типов объектов доски
-    const actionRegex = /\[BLOCKO_ACTION:(TASK|POLL|LINK|TIMER|TABLE|TODO)\s*\|\|\|\s*(.*?)\s*\|\|\|\s*([\s\S]*?)\s*\|\|\|\s*END_ACTION\]/g;
+    // КРИТИЧЕСКИЙ ФИКС: Regex расширен для поддержки создания инфраструктуры (COLUMN)
+    const actionRegex = /\[BLOCKO_ACTION:(TASK|POLL|LINK|TIMER|TABLE|TODO|COLUMN)\s*\|\|\|\s*(.*?)\s*\|\|\|\s*([\s\S]*?)\s*\|\|\|\s*END_ACTION\]/g;
     const actions = [];
     
     // Вырезаем команды из текста
@@ -4725,6 +4796,7 @@ async function sendAiMessage() {
         else if (act.type === 'TIMER') { icon = 'timer'; label = 'Поставить таймер'; colorClass = 'text-rose-600 dark:text-rose-400'; bgClass = 'bg-rose-100 dark:bg-rose-900/50'; }
         else if (act.type === 'TABLE') { icon = 'table'; label = 'Сгенерировать таблицу'; colorClass = 'text-blue-600 dark:text-blue-400'; bgClass = 'bg-blue-100 dark:bg-blue-900/50'; }
         else if (act.type === 'TODO') { icon = 'list-todo'; label = 'Быстрый список'; colorClass = 'text-cyan-600 dark:text-cyan-400'; bgClass = 'bg-cyan-100 dark:bg-cyan-900/50'; }
+        else if (act.type === 'COLUMN') { icon = 'layout-template'; label = 'Создать колонку'; colorClass = 'text-pink-600 dark:text-pink-400'; bgClass = 'bg-pink-100 dark:bg-pink-900/50'; }
 
         formattedText += `
           <button onclick="aiExecuteAction('${act.type}', '${act.safeTitle}', '${act.safeData}')" class="flex items-center gap-3 w-full text-left px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all shadow-sm hover:shadow-md group active:scale-95">
@@ -4768,7 +4840,6 @@ async function sendAiMessage() {
 // Исполнитель команд от AI: Мульти-форматный диспетчер
 function aiExecuteAction(type, safeTitle, safeData) {
   // ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Дополнительная защита на уровне ядра. 
-  // Защищаем от попыток хакеров вызвать создание задачи напрямую через консоль.
   const myRole = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role : 'editor';
   if (myRole === 'viewer' && !isLocalBoard) {
     return showSystemToast('Отказ в доступе', 'Только редакторы могут создавать объекты.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
@@ -4776,6 +4847,32 @@ function aiExecuteAction(type, safeTitle, safeData) {
 
   const title = decodeURIComponent(safeTitle);
   const data = decodeURIComponent(safeData);
+
+  // ЭНТЕРПРАЙЗ: AI Управление инфраструктурой доски (Создание Колонок)
+  if (type === 'COLUMN') {
+    const newColId = 'col_' + Date.now();
+    const colorMatch = data.match(/#[0-9A-Fa-f]{6}/i);
+    const colColor = colorMatch ? colorMatch[0] : '#6366f1'; // Fallback цвет
+
+    columns.push({
+        id: newColId,
+        name: title,
+        color: colColor,
+        cards: []
+    });
+
+    if (isLocalBoard) {
+        persist();
+        render();
+    } else {
+        db.collection("boards").doc(BOARD_ID).update({ columns: columns });
+    }
+
+    if(typeof fireConfetti === 'function') fireConfetti();
+    showSystemToast('AI Магия', `Колонка "${title}" успешно построена!`, 'layout-template', 'text-pink-500', 'bg-pink-50 dark:bg-pink-900/30');
+    toggleAiSidebar(); 
+    return; // Выходим из функции, так как карточку генерировать не нужно!
+  }
   
   if (!columns || columns.length === 0) {
     return showSystemToast('Ошибка', 'Создайте хотя бы одну колонку на доске.', 'alert-circle', 'text-red-500', 'bg-red-50');
