@@ -265,7 +265,7 @@
         </button>
       </div>
       
-      <div>
+      <div id="bgSettingsBlock">
         <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Обои проекта</h4>
         <div class="flex gap-3 mb-2">
           <label class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-2xl cursor-pointer h-24 relative overflow-hidden transition-all group bg-gray-50/50 dark:bg-gray-900/30">
@@ -1187,12 +1187,15 @@ function loadBoard() {
 
       // ЭНТЕРПРАЙЗ: Выброс пользователя в реальном времени, если его исключили из команды
       if (!isOwner && boardData.members && !boardData.members.includes(currentUser.id)) {
-        window.location.href = 'index.html'; 
+        window.location.href = 'index.html?error=not_member'; 
         return;
       }
 
+      // ЭНТЕРПРАЙЗ: Маршрутизация на ввод пароля с сохранением Deep Link (если перешли по ссылке на карточку)
       if (!isOwner && boardData.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== boardData.password) {
-        window.location.href = 'index.html'; return;
+        const cParam = new URLSearchParams(window.location.search).get('c');
+        window.location.href = `index.html?auth_board=${BOARD_ID}${cParam ? '&c=' + cParam : ''}`; 
+        return;
       }
 
       // 2. Оптимизированный поток: Гранулярное чтение всех карточек (для работы шторки Архива)
@@ -1402,6 +1405,16 @@ async function uploadImageToImgbb(file) {
 function processBoardData(data) {
   const headerTitle = document.getElementById('boardTitleHeader');
   headerTitle.innerText = data.title;
+  
+  const myRole = data.users && data.users[currentUser.id] ? data.users[currentUser.id].role : 'editor';
+  const isViewer = myRole === 'viewer' && !isLocalBoard;
+  
+  // ЭНТЕРПРАЙЗ: Скрываем меню инвайтов и настройки фона для Читателей
+  const shareMenuWrapper = document.getElementById('shareMenuWrapper');
+  if (shareMenuWrapper) shareMenuWrapper.style.display = isViewer ? 'none' : 'block';
+  
+  const bgSettingsBlock = document.getElementById('bgSettingsBlock');
+  if (bgSettingsBlock) bgSettingsBlock.style.display = isViewer ? 'none' : 'block';
   
   // ЭНТЕРПРАЙЗ UX: Отключаем визуальные подсказки переименования (hover/курсор), если нет прав владельца
   if (!isLocalBoard && data.owner !== currentUser.id) {
