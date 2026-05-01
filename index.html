@@ -170,145 +170,42 @@
   </header>
 
   <main class="p-8 max-w-7xl mx-auto w-full flex-1">
-    <!-- ENTERPRISE INSIGHTS PANEL -->
-    <div id="insightsPanel" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 opacity-0 translate-y-4 transition-all duration-700">
-      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2.5rem] shadow-sm flex items-center gap-5">
-        <div class="w-14 h-14 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shadow-inner">
-          <i data-lucide="layout" class="w-7 h-7"></i>
-        </div>
-        <div>
-          <div id="statsTotalBoards" class="text-2xl font-black">0</div>
-          <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Проектов в работе</div>
-        </div>
-      </div>
-      
-      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2.5rem] shadow-sm flex items-center gap-5">
-        <div class="w-14 h-14 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center shadow-inner">
-          <i data-lucide="check-circle" class="w-7 h-7"></i>
-        </div>
-        <div class="flex-1">
-          <div class="flex items-baseline gap-2">
-            <div id="statsCompletionRate" class="text-2xl font-black">0%</div>
-            <div class="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded">Efficiency</div>
-          </div>
-          <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Выполнение задач</div>
-        </div>
-      </div>
-
-      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2.5rem] shadow-sm flex items-center gap-5">
-        <div class="w-14 h-14 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center shadow-inner">
-          <i data-lucide="zap" class="w-7 h-7"></i>
-        </div>
-        <div class="flex-1">
-          <div id="statsActiveTasks" class="text-2xl font-black">0</div>
-          <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Всего карточек</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
       <div>
-        <h2 class="text-3xl font-black tracking-tighter mb-1 text-gray-900 dark:text-white uppercase">Workspaces</h2>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Персональные и командные экосистемы Blocko Cloud.</p>
+        <h2 class="text-3xl font-bold tracking-tight mb-1">Рабочие пространства</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Синхронизированные и локальные проекты.</p>
       </div>
       
       <div class="flex flex-wrap gap-3 w-full md:w-auto">
-        <button onclick="openImportModal()" class="flex-1 md:flex-none bg-white dark:bg-gray-800 hover:border-emerald-500 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white px-5 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
-          <i data-lucide="upload" class="w-4 h-4 text-emerald-500"></i> Импорт
+        <button onclick="openImportModal()" class="flex-1 md:flex-none bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white px-4 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
+          <i data-lucide="upload" class="w-4 h-4 text-emerald-500"></i> Загрузить
         </button>
         
-        <button onclick="promptJoinById()" class="flex-1 md:flex-none bg-white dark:bg-gray-800 hover:border-blue-500 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white px-5 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
-          <i data-lucide="user-plus" class="w-4 h-4 text-blue-500"></i> Join ID
+        <button onclick="promptJoinById()" class="flex-1 md:flex-none bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white px-4 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
+          <i data-lucide="user-plus" class="w-4 h-4 text-blue-500"></i> Войти по ID
         </button>
 
-        <button onclick="openCreateModal()" class="flex-1 md:flex-none bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-6 py-3 rounded-2xl text-sm font-black flex items-center justify-center gap-2 shadow-xl hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-tight">
-          <i data-lucide="plus" class="w-5 h-5"></i> New Project
+        <button onclick="openCreateModal()" class="flex-1 md:flex-none bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
+          <i data-lucide="plus" class="w-5 h-5"></i> Создать проект
         </button>
       </div>
     </div>
     
     <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-10">
-      <!-- Skeleton Loaders (Premium) -->
-      <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 h-56 rounded-[2.5rem] animate-pulse p-8 flex flex-col justify-between">
-        <div class="w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-2xl"></div>
-        <div class="space-y-4">
-          <div class="h-5 bg-gray-100 dark:bg-gray-800 rounded-full w-5/6"></div>
-          <div class="h-3 bg-gray-100 dark:bg-gray-800 rounded-full w-2/3"></div>
-        </div>
+      <div class="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700/50 h-48 rounded-[2rem] animate-pulse p-6 flex flex-col justify-between">
+        <div class="flex justify-between items-start"><div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div></div>
+        <div class="space-y-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded-full w-3/4"></div><div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full w-1/2"></div></div>
       </div>
-      <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 h-56 rounded-[2.5rem] animate-pulse p-8 flex flex-col justify-between">
-        <div class="w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-2xl"></div>
-        <div class="space-y-4">
-          <div class="h-5 bg-gray-100 dark:bg-gray-800 rounded-full w-5/6"></div>
-          <div class="h-3 bg-gray-100 dark:bg-gray-800 rounded-full w-2/3"></div>
-        </div>
+      <div class="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700/50 h-48 rounded-[2rem] animate-pulse p-6 flex flex-col justify-between">
+        <div class="flex justify-between items-start"><div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div></div>
+        <div class="space-y-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded-full w-3/4"></div><div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full w-1/2"></div></div>
       </div>
-      <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 h-56 rounded-[2.5rem] animate-pulse p-8 flex flex-col justify-between hidden sm:flex">
-        <div class="w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-2xl"></div>
-        <div class="space-y-4">
-          <div class="h-5 bg-gray-100 dark:bg-gray-800 rounded-full w-5/6"></div>
-          <div class="h-3 bg-gray-100 dark:bg-gray-800 rounded-full w-2/3"></div>
-        </div>
+      <div class="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700/50 h-48 rounded-[2rem] animate-pulse p-6 flex flex-col justify-between hidden sm:flex">
+        <div class="flex justify-between items-start"><div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div></div>
+        <div class="space-y-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded-full w-3/4"></div><div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full w-1/2"></div></div>
       </div>
     </div>
   </main>
-
-  <script>
-    // ENTERPRISE INSIGHTS CONTROLLER
-    async function calculateGlobalStats(boards) {
-      let totalTasks = 0;
-      let completedTasks = 0;
-      
-      const statsPromises = boards.map(async (board) => {
-        if (board.id.startsWith('local_')) {
-          const localData = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
-          const data = localData[board.id];
-          if (data && data.columns) {
-            data.columns.forEach(col => {
-              const cards = col.cards || [];
-              totalTasks += cards.length;
-              if (col.name.toLowerCase().includes('готово') || col.name.toLowerCase().includes('done')) {
-                completedTasks += cards.length;
-              }
-            });
-          }
-        } else {
-          // Для Cloud досок делаем быстрый срез по подколлекции cards
-          const snap = await db.collection("boards").doc(board.id).collection("cards").get();
-          totalTasks += snap.size;
-          // Упрощенная логика: если колонка карточки содержит маркер завершения
-          const boardDoc = await db.collection("boards").doc(board.id).get();
-          const bData = boardDoc.data();
-          if (bData && bData.columns) {
-            const doneColIds = bData.columns
-              .filter(c => c.name.toLowerCase().includes('готово') || c.name.toLowerCase().includes('done'))
-              .map(c => c.id);
-            snap.forEach(doc => {
-              if (doneColIds.includes(doc.data().columnId)) completedTasks++;
-            });
-          }
-        }
-      });
-
-      await Promise.all(statsPromises);
-
-      const rate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-      
-      document.getElementById('statsTotalBoards').innerText = boards.length;
-      document.getElementById('statsActiveTasks').innerText = totalTasks;
-      document.getElementById('statsCompletionRate').innerText = rate + '%';
-      
-      const panel = document.getElementById('insightsPanel');
-      panel.classList.remove('opacity-0', 'translate-y-4');
-    }
-
-    // Интеграция в существующий метод рендера
-    const originalRenderBoards = window.renderBoards;
-    window.renderBoards = function(boards) {
-      if (typeof originalRenderBoards === 'function') originalRenderBoards(boards);
-      calculateGlobalStats(boards);
-    };
-  </script>
 
   <div id="createBoardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-100 transition-opacity duration-200 px-4">
     <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700">
