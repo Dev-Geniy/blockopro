@@ -917,6 +917,11 @@ document.addEventListener('DOMContentLoaded', () => {
   lucide.createIcons();
 });
 
+// ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Защита от BFCache (Сброс стейта при возврате кнопкой "Назад" для предотвращения утечки данных)
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) window.location.reload();
+});
+
 // --- ТРЕКИНГ ПАРТНЕРСКОЙ ССЫЛКИ ---
 const urlParams = new URLSearchParams(window.location.search);
 const incomingRefId = urlParams.get('ref');
@@ -981,12 +986,16 @@ auth.onAuthStateChanged(async (user) => {
         
         const authBoardId = urlParams.get('auth_board');
         const targetCardId = urlParams.get('c');
+        const targetView = urlParams.get('target');
         const errorParam = urlParams.get('error');
         
         if (authBoardId) {
           window.history.replaceState({}, document.title, window.location.pathname);
           setTimeout(() => {
-            tryEnterBoard(authBoardId, true, targetCardId ? `card_${targetCardId}` : 'board');
+            let target = 'board';
+            if (targetView === 'archive') target = 'archive';
+            else if (targetCardId) target = `card_${targetCardId}`;
+            tryEnterBoard(authBoardId, true, target);
           }, 500);
         } else if (joinId) {
           window.history.replaceState({}, document.title, window.location.pathname);
@@ -1187,6 +1196,7 @@ async function loadReferralsList() {
 async function logout() { 
   // ЭНТЕРПРАЙЗ: Сначала закрываем UI, затем выходим из сессии
   closeProfileModal();
+  sessionStorage.clear(); // ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Полная очистка сессионных ключей
   setTimeout(() => {
     auth.signOut().then(() => {
       window.location.reload(); // Полная перезагрузка для очистки стейта
