@@ -126,6 +126,11 @@
   if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
   lucide.createIcons();
 
+  // ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Защита от BFCache
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) window.location.reload();
+  });
+
   const BOARD_ID = new URLSearchParams(window.location.search).get('b');
   const isLocalBoard = BOARD_ID && BOARD_ID.startsWith('local_');
   let currentBoardData = null;
@@ -183,7 +188,7 @@
         }
 
         if (!isOwner && currentBoardData.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== currentBoardData.password) {
-          window.location.href = 'index.html';
+          window.location.href = `index.html?auth_board=${BOARD_ID}&target=archive`;
           return;
         }
 
