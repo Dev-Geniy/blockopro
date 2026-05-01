@@ -860,6 +860,19 @@
   </div>
 </div>
 
+<!-- ЭНТЕРПРАЙЗ: Глобальный AI-Агент (Voice Overlay) -->
+<div id="globalVoiceOverlay" class="hidden fixed inset-0 z-[110] flex flex-col items-center justify-center bg-white/70 dark:bg-black/80 backdrop-blur-xl opacity-0 transition-opacity duration-300 cursor-pointer" onclick="closeGlobalVoiceAgent()">
+  <div class="relative flex items-center justify-center pointer-events-none">
+    <div class="absolute w-40 h-40 bg-indigo-500/20 dark:bg-indigo-500/10 rounded-full animate-ping"></div>
+    <div class="absolute w-28 h-28 bg-indigo-500/40 dark:bg-indigo-500/20 rounded-full animate-pulse"></div>
+    <div class="relative z-10 w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full flex items-center justify-center shadow-2xl border-4 border-white/30 dark:border-gray-800">
+      <i data-lucide="mic" class="w-10 h-10 animate-pulse"></i>
+    </div>
+  </div>
+  <h2 class="mt-10 text-3xl font-black tracking-tight text-gray-900 dark:text-white pointer-events-none">Blocko AI слушает...</h2>
+  <p class="mt-3 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white/50 dark:bg-gray-900/50 px-5 py-2.5 rounded-full border border-gray-200 dark:border-gray-800 shadow-sm pointer-events-none">Произнесите задачу или кликните в любом месте для отмены</p>
+</div>
+
 <!-- ЭНТЕРПРАЙЗ: Плавающая кнопка вызова AI-ассистента (Позиция под шторками) -->
 <button onclick="toggleAiSidebar()" id="aiFloatingBtn" class="fixed bottom-24 right-6 z-30 w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all duration-300 group border-2 border-white/20 dark:border-gray-800">
   <i data-lucide="sparkles" class="w-6 h-6 group-hover:animate-pulse"></i>
@@ -3359,11 +3372,95 @@ async function generateAIChecklistFromDesc() {
   finally { setBtnLoading(btnId, false, ogBtn); }
 }
 
-// ЭНТЕРПРАЙЗ: Мощный движок Voice-to-Text & Wake Word ("Окей Блоко")
+// ЭНТЕРПРАЙЗ: Мощный движок Voice-to-Text, Wake Word и Глобальный AI-Агент
 let aiSpeechRecognition = null;
 let isAiListening = false;
 let wakeWordRecognition = null;
 let isWakeWordActive = false;
+
+let globalVoiceRecognition = null;
+let isGlobalVoiceActive = false;
+
+// Глобальный перехватчик клавиши ENTER для вызова агента
+document.addEventListener('keydown', (e) => {
+  const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+  const isInputFocused = activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable;
+  const isAnyModalOpen = document.querySelectorAll('.glass-modal:not(.hidden), [id$="Modal"]:not(.hidden)').length > 0;
+  const isAnySidebarOpen = !document.getElementById('aiSidebar')?.classList.contains('translate-x-full');
+  
+  // Вызываем агента только на "чистом" экране
+  if (e.key === 'Enter' && !isInputFocused && !isAnyModalOpen && !isAnySidebarOpen) {
+    e.preventDefault();
+    activateGlobalVoiceAgent();
+  }
+});
+
+function activateGlobalVoiceAgent() {
+  if (isLocalBoard) return showSystemToast('Офлайн', 'Агент недоступен без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
+  
+  // ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Читатели не могут создавать объекты
+  const myRole = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role : 'editor';
+  if (myRole === 'viewer') return;
+
+  if (isGlobalVoiceActive) return;
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return showSystemToast('Ошибка', 'Голосовой ввод не поддерживается.', 'mic-off', 'text-red-500', 'bg-red-50');
+
+  closeOtherSidebars('none'); // Очищаем экран
+
+  const overlay = document.getElementById('globalVoiceOverlay');
+  overlay.classList.remove('hidden');
+  setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+  lucide.createIcons({ root: overlay });
+
+  if (wakeWordRecognition && isWakeWordActive) wakeWordRecognition.stop();
+
+  globalVoiceRecognition = new SpeechRecognition();
+  globalVoiceRecognition.lang = 'ru-RU';
+  globalVoiceRecognition.interimResults = false; 
+
+  globalVoiceRecognition.onstart = () => { isGlobalVoiceActive = true; };
+
+  globalVoiceRecognition.onresult = async (event) => {
+    const transcript = event.results[0][0].transcript.trim();
+    closeGlobalVoiceAgent();
+    
+    if (transcript) {
+      // Открываем шторку AI для демонстрации процесса работы агента
+      const aiSidebar = document.getElementById('aiSidebar');
+      if (aiSidebar && aiSidebar.classList.contains('translate-x-full')) toggleAiSidebar();
+      
+      const input = document.getElementById('aiChatInput');
+      if (input) input.value = transcript;
+      
+      showSystemToast('Анализ...', `В работе: "${transcript}"`, 'sparkles', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
+      await sendAiMessage();
+    }
+  };
+
+  globalVoiceRecognition.onerror = () => closeGlobalVoiceAgent();
+  globalVoiceRecognition.onend = () => closeGlobalVoiceAgent();
+
+  try { globalVoiceRecognition.start(); } catch (e) {}
+}
+
+function closeGlobalVoiceAgent() {
+  if (!isGlobalVoiceActive) return;
+  isGlobalVoiceActive = false;
+  if (globalVoiceRecognition) globalVoiceRecognition.stop();
+  
+  const overlay = document.getElementById('globalVoiceOverlay');
+  if (overlay) {
+      overlay.classList.add('opacity-0');
+      setTimeout(() => overlay.classList.add('hidden'), 300);
+  }
+
+  // Перезапускаем фоновое прослушивание, если оно было активно
+  if (wakeWordRecognition && isWakeWordActive) {
+    try { wakeWordRecognition.start(); } catch(e){}
+  }
+}
 
 function toggleWakeWord() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -3374,7 +3471,7 @@ function toggleWakeWord() {
   if (isWakeWordActive) {
       isWakeWordActive = false;
       if (wakeWordRecognition) wakeWordRecognition.stop();
-      showSystemToast('Окей Блоко', 'Фоновый ассистент отключен.', 'mic-off', 'text-gray-500', 'bg-gray-50');
+      showSystemToast('Окей Блоко', 'Фоновый ассистент отключен.', 'mic-off', 'text-gray-500', 'bg-gray-50 dark:bg-gray-900/30');
       toggleBtn.classList.remove('text-indigo-600', 'bg-indigo-100', 'border-indigo-300', 'dark:text-indigo-400', 'dark:bg-indigo-900/50', 'dark:border-indigo-700');
       toggleBtn.classList.add('text-gray-500', 'border-transparent');
       return;
@@ -3383,38 +3480,26 @@ function toggleWakeWord() {
   isWakeWordActive = true;
   toggleBtn.classList.remove('text-gray-500', 'border-transparent');
   toggleBtn.classList.add('text-indigo-600', 'bg-indigo-100', 'border-indigo-300', 'dark:text-indigo-400', 'dark:bg-indigo-900/50', 'dark:border-indigo-700');
-  showSystemToast('Окей Блоко', 'Скажите "Окей Блоко", чтобы вызвать ассистента из любого места.', 'mic', 'text-indigo-500', 'bg-indigo-50');
+  showSystemToast('Blocko AI', 'Скажите "Окей Блоко" или нажмите ENTER на пустом экране.', 'mic', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
 
   wakeWordRecognition = new SpeechRecognition();
   wakeWordRecognition.lang = 'ru-RU';
-  wakeWordRecognition.continuous = true; // Слушаем постоянно
+  wakeWordRecognition.continuous = true; 
   wakeWordRecognition.interimResults = false;
 
   wakeWordRecognition.onresult = (event) => {
       const last = event.results.length - 1;
       const command = event.results[last][0].transcript.trim().toLowerCase();
       
-      // Ловим триггерные фразы с учетом погрешности распознавания
       if (command.includes('окей блоко') || command.includes('окей блок') || command.includes('ок блок') || command.includes('окей блэк')) {
-          
-          const sidebar = document.getElementById('aiSidebar');
-          if (sidebar.classList.contains('translate-x-full')) {
-              toggleAiSidebar();
-          }
-          
-          // Ставим фонового шпиона на паузу, чтобы передать микрофон основному диктатору
           wakeWordRecognition.stop();
-          
-          showSystemToast('Слушаю...', 'Произнесите ваш запрос.', 'sparkles', 'text-indigo-500', 'bg-indigo-50');
-          setTimeout(() => {
-              if (!isAiListening) toggleAiVoiceInput();
-          }, 400);
+          // ЭНТЕРПРАЙЗ: Запускаем полноэкранного агента вместо открытия шторки
+          activateGlobalVoiceAgent();
       }
   };
 
   wakeWordRecognition.onend = () => {
-      // Бесконечный цикл рестарта, если юзер не отключил кнопку вручную и не говорит сейчас напрямую в чат
-      if (isWakeWordActive && !isAiListening) {
+      if (isWakeWordActive && !isAiListening && !isGlobalVoiceActive) {
           try { wakeWordRecognition.start(); } catch(e){}
       }
   };
