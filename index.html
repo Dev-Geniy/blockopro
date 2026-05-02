@@ -2648,8 +2648,6 @@ async function openProfileSettings() {
   const modal = document.getElementById('profileModal');
   const content = document.getElementById('profileContent');
   
-  switchCompanyTab('info');
-  
   try {
     const userDoc = await db.collection('users').doc(currentUser.id).get();
     const data = userDoc.exists ? userDoc.data() : {};
@@ -2677,15 +2675,12 @@ async function openProfileSettings() {
     }
     document.getElementById('profilePlanVal').innerText = planText;
 
+    // Подтягиваем данные
     document.getElementById('companyProfileName').value = data.companyName || '';
     document.getElementById('companyProfileDesc').value = data.companyDesc || '';
     document.getElementById('companyProfileWebsite').value = data.companyWebsite || '';
-    
-    currentCompanyJobs = data.companyJobs || [];
-    renderCompanyJobs();
 
-    // Смена аватара
-    if (rewards.length > 0) {
+      // Смена аватара
       document.getElementById('avatarUploadBlock').classList.remove('hidden');
       document.getElementById('customAvatarUrl').value = data.customAvatar || "";
       document.getElementById('badgeSettingsBlock').classList.remove('hidden');
