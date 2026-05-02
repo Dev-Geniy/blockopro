@@ -1409,24 +1409,22 @@ function renderActivityLog() {
   const toggle = document.getElementById("activityToggle");
   if (!list || !toggle) return;
   
-  const isEnabled = boardData.isActivityEnabled === true;
-  toggle.checked = isEnabled;
+  const isEnabled = isLocalBoard ? true : (boardData.isActivityEnabled === true);
   
-  // 1. Обработка состояний доступа и тарифа
-  if (!isEnabled) {
+  // Скрываем тумблер для офлайн досок (там лог активен всегда для владельца)
+  const toggleWrapper = toggle.parentElement.parentElement;
+  if (isLocalBoard && toggleWrapper) toggleWrapper.style.display = 'none';
+
+  if (!isLocalBoard && !isEnabled) {
     list.innerHTML = userPlan !== 'pro' ? `
         <div class="flex flex-col items-center justify-center p-8 text-center mt-12 animate-fade-in-up">
-          <div class="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-[2rem] flex items-center justify-center mb-6 shadow-xl border border-amber-100 dark:border-amber-800">
-            <i data-lucide="lock" class="w-10 h-10 text-amber-500"></i>
-          </div>
+          <div class="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-[2rem] flex items-center justify-center mb-6 shadow-xl border border-amber-100 dark:border-amber-800"><i data-lucide="lock" class="w-10 h-10 text-amber-500"></i></div>
           <h3 class="text-base font-bold text-gray-900 dark:text-white mb-2">Аудит заблокирован</h3>
           <p class="text-xs text-gray-500 mb-8 leading-relaxed px-4">Журнал действий — инструмент контроля уровня <b>Enterprise</b>. Доступен на тарифе Company.</p>
           <a href="store.html" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-2xl text-xs font-bold transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95"><i data-lucide="shopping-cart" class="w-4 h-4"></i> Перейти в магазин</a>
         </div>` : `
         <div class="flex flex-col items-center justify-center p-8 text-center mt-12 animate-fade-in-up">
-          <div class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner border border-gray-200 dark:border-gray-700">
-            <i data-lucide="power-off" class="w-10 h-10 text-gray-400"></i>
-          </div>
+          <div class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner border border-gray-200 dark:border-gray-700"><i data-lucide="power-off" class="w-10 h-10 text-gray-400"></i></div>
           <h3 class="text-base font-bold text-gray-900 dark:text-white mb-2">Логгер выключен</h3>
           <p class="text-xs text-gray-500 leading-relaxed px-4">Активируйте тумблер выше, чтобы начать запись истории изменений в реальном времени.</p>
         </div>`;
@@ -1434,34 +1432,31 @@ function renderActivityLog() {
     return;
   }
 
-  // 2. Рендеринг данных из снимка
-  const snapshot = window.currentActivitySnapshot;
-  if (!snapshot || snapshot.empty) {
-    list.innerHTML = `
-      <div class="flex flex-col items-center justify-center py-20 opacity-40">
-        <i data-lucide="database" class="w-12 h-12 mb-4"></i>
-        <p class="text-sm font-bold uppercase tracking-widest">История пуста</p>
-      </div>`;
+  // Сбор данных: либо из Firestore Snapshot, либо из localStorage
+  let activityEntries = [];
+  if (isLocalBoard) {
+    activityEntries = boardData.localActivity || [];
+  } else {
+    const snapshot = window.currentActivitySnapshot;
+    if (snapshot && !snapshot.empty) {
+      snapshot.forEach(doc => activityEntries.push({ id: doc.id, ...doc.data() }));
+    }
+  }
+
+  if (activityEntries.length === 0) {
+    list.innerHTML = `<div class="flex flex-col items-center justify-center py-20 opacity-40"><i data-lucide="database" class="w-12 h-12 mb-4"></i><p class="text-sm font-bold uppercase tracking-widest">История пуста</p></div>`;
     lucide.createIcons({ root: list });
     return;
   }
   
   let html = '';
-  snapshot.forEach(doc => {
-    const data = doc.data();
-    // ЭНТЕРПРАЙЗ: Резолюция пользователя по ID из метаданных доски для актуальности аватара
+  activityEntries.forEach(data => {
     const actualUser = (data.user && boardData.users && boardData.users[data.user.id]) ? boardData.users[data.user.id] : data.user;
     
-    // Форматирование времени
     let timeStr = 'Недавно';
     if (data.timestamp) {
-      const date = data.timestamp.toDate();
-      const now = new Date();
-      if (date.toDateString() === now.toDateString()) {
-        timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      } else {
-        timeStr = date.toLocaleDateString([], { day: '2-digit', month: 'short' });
-      }
+      const date = isLocalBoard ? new Date(data.timestamp) : data.timestamp.toDate();
+      timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
     html += `
@@ -1477,8 +1472,7 @@ function renderActivityLog() {
             <span class="line-clamp-2">${data.text}</span>
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
   });
   
   list.innerHTML = `<div class="space-y-3 pb-6">${html}</div>`;
@@ -1504,13 +1498,49 @@ function toggleActivityLogState(isChecked) {
 }
 
 function logActivity(text, icon = 'activity') {
-  if (isLocalBoard || boardData.isActivityEnabled !== true) return;
-  db.collection("boards").doc(BOARD_ID).collection("activity").add({
-    text: text,
-    icon: icon,
-    user: currentUser,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  // ЭНТЕРПРАЙЗ: Универсальный логгер для онлайн и офлайн сред
+  if (isLocalBoard) {
+    // Логика для Device-проектов (localStorage)
+    const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+    if (localBoards[BOARD_ID]) {
+      if (!localBoards[BOARD_ID].localActivity) localBoards[BOARD_ID].localActivity = [];
+      
+      const newEntry = {
+        id: 'act_' + Date.now(),
+        text: text,
+        icon: icon,
+        user: { 
+          id: currentUser.id, 
+          name: currentUser.name, 
+          avatar: currentUser.avatar,
+          badgeConfig: currentUser.badgeConfig,
+          badgeStatus: currentUser.badgeStatus
+        },
+        timestamp: new Date().toISOString()
+      };
+
+      // Храним последние 50 записей для экономии памяти устройства
+      localBoards[BOARD_ID].localActivity.unshift(newEntry);
+      localBoards[BOARD_ID].localActivity = localBoards[BOARD_ID].localActivity.slice(0, 50);
+      
+      localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
+      boardData = localBoards[BOARD_ID];
+      
+      // Мгновенное обновление UI, если шторка открыта
+      if (!document.getElementById('activitySidebar').classList.contains('translate-x-full')) {
+        renderActivityLog();
+      }
+    }
+  } else {
+    // Логика для Cloud-проектов (Firestore)
+    if (boardData.isActivityEnabled !== true) return;
+    db.collection("boards").doc(BOARD_ID).collection("activity").add({
+      text: text,
+      icon: icon,
+      user: currentUser,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
 }
 
 // Склеиваем структуру колонок с карточками из подколлекции через Batching DOM Updates
