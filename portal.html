@@ -189,10 +189,61 @@
             a.classList.remove('hidden');
          }
 
-         // Заглушки для задач, вакансий и Roadmap конкретной компании
-         document.getElementById('vacanciesList').innerHTML = '<div class="p-6 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl"><p class="text-gray-500 italic text-sm">В данный момент нет открытых вакансий</p></div>';
-         document.getElementById('currentTasksList').innerHTML = '<div class="p-6 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl"><p class="text-gray-500 italic text-sm">Задачи не опубликованы</p></div>';
-         document.getElementById('roadmapList').innerHTML = '<div class="col-span-full p-6 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl"><p class="text-gray-500 italic text-sm">RoadMap формируется</p></div>';
+         // Рендер Вакансий
+         const jobs = data.portalVacancies || [];
+         const jobsList = document.getElementById('vacanciesList');
+         if(jobs.length === 0) {
+           jobsList.innerHTML = '<div class="p-6 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl"><p class="text-gray-500 italic text-sm">В данный момент нет открытых вакансий</p></div>';
+         } else {
+            jobsList.innerHTML = jobs.map(j => `
+              <a href="${j.link}" target="_blank" class="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl hover:border-emerald-500 hover:bg-white dark:hover:bg-gray-900 transition-all flex justify-between items-center group shadow-sm">
+                 <div>
+                    <div class="font-bold text-gray-900 dark:text-white mb-1 group-hover:text-emerald-500 transition-colors">${j.title}</div>
+                    <div class="text-xs text-emerald-600 dark:text-emerald-400 font-black">${j.salary}</div>
+                 </div>
+                 <div class="w-10 h-10 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/30 transition-colors shadow-sm"><i data-lucide="arrow-up-right" class="w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors"></i></div>
+              </a>
+            `).join('');
+         }
+
+         // Рендер Текущих задач
+         const tasks = data.portalTasks || [];
+         const tasksList = document.getElementById('currentTasksList');
+         if(tasks.length === 0) {
+           tasksList.innerHTML = '<div class="p-6 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl"><p class="text-gray-500 italic text-sm">Задачи не опубликованы</p></div>';
+         } else {
+            tasksList.innerHTML = tasks.map(t => `
+              <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300 font-medium flex items-center gap-3 shadow-sm">
+                <i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 flex-shrink-0"></i> 
+                <span>${t.text}</span>
+              </div>
+            `).join('');
+         }
+
+         // Рендер RoadMap
+         const roadmap = data.portalRoadmap || [];
+         const roadmapList = document.getElementById('roadmapList');
+         if(roadmap.length === 0) {
+           roadmapList.innerHTML = '<div class="col-span-full p-6 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl"><p class="text-gray-500 italic text-sm">RoadMap формируется</p></div>';
+         } else {
+            const colors = {
+              'blue': { bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-100 dark:border-blue-800/50', title: 'text-blue-600 dark:text-blue-400', desc: 'text-blue-500/80' },
+              'purple': { bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-100 dark:border-purple-800/50', title: 'text-purple-600 dark:text-purple-400', desc: 'text-purple-500/80' },
+              'emerald': { bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-100 dark:border-emerald-800/50', title: 'text-emerald-600 dark:text-emerald-400', desc: 'text-emerald-500/80' },
+              'rose': { bg: 'bg-rose-50 dark:bg-rose-900/20', border: 'border-rose-100 dark:border-rose-800/50', title: 'text-rose-600 dark:text-rose-400', desc: 'text-rose-500/80' },
+              'amber': { bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-100 dark:border-amber-800/50', title: 'text-amber-600 dark:text-amber-400', desc: 'text-amber-500/80' }
+            };
+            
+            roadmapList.innerHTML = roadmap.map(r => {
+              const c = colors[r.color] || colors['blue'];
+              return `
+              <div class="p-5 ${c.bg} border ${c.border} rounded-2xl shadow-sm">
+                <h4 class="font-bold ${c.title} mb-2 flex items-center gap-2"><i data-lucide="calendar-days" class="w-4 h-4"></i> ${r.quarter}</h4>
+                <p class="text-sm font-bold text-gray-900 dark:text-white mb-2">${r.title}</p>
+                <p class="text-xs ${c.desc} leading-relaxed">${r.desc}</p>
+              </div>
+            `}).join('');
+         }
 
          lucide.createIcons();
 
