@@ -1379,9 +1379,28 @@ function loadBoard() {
 }
 
 function initActivityListener(docRef) {
+  // ЭНТЕРПРАЙЗ: Реактивный слушатель событий с автоматическим обновлением UI
   docRef.collection("activity").orderBy("timestamp", "desc").limit(50).onSnapshot((snapshot) => {
     window.currentActivitySnapshot = snapshot;
-    renderActivityLog();
+    
+    // Если шторка открыта, перерисовываем немедленно
+    const activitySidebar = document.getElementById('activitySidebar');
+    if (activitySidebar && !activitySidebar.classList.contains('translate-x-full')) {
+      renderActivityLog();
+    }
+    
+    // ЭНТЕРПРАЙЗ: Уведомление о последнем действии, если его совершил другой пользователь
+    if (!snapshot.empty) {
+      const latestAction = snapshot.docs[0].data();
+      if (latestAction.user && latestAction.user.id !== currentUser.id && latestAction.timestamp) {
+        const actionTime = latestAction.timestamp.toMillis();
+        const now = Date.now();
+        // Уведомляем только о свежих событиях (последние 5 секунд)
+        if (now - actionTime < 5000) {
+          showSystemToast('Активность', latestAction.text, latestAction.icon || 'activity', 'text-purple-500', 'bg-purple-50 dark:bg-purple-900/20');
+        }
+      }
+    }
   });
 }
 
@@ -1393,56 +1412,76 @@ function renderActivityLog() {
   const isEnabled = boardData.isActivityEnabled === true;
   toggle.checked = isEnabled;
   
+  // 1. Обработка состояний доступа и тарифа
   if (!isEnabled) {
-    if (userPlan !== 'pro') {
-      list.innerHTML = `
-        <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in-up mt-10">
-          <div class="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4 shadow-sm border border-amber-100 dark:border-amber-800">
-            <i data-lucide="lock" class="w-8 h-8 text-amber-500"></i>
+    list.innerHTML = userPlan !== 'pro' ? `
+        <div class="flex flex-col items-center justify-center p-8 text-center mt-12 animate-fade-in-up">
+          <div class="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-[2rem] flex items-center justify-center mb-6 shadow-xl border border-amber-100 dark:border-amber-800">
+            <i data-lucide="lock" class="w-10 h-10 text-amber-500"></i>
           </div>
-          <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-2">Логгер заблокирован</h3>
-          <p class="text-xs text-gray-500 mb-6 leading-relaxed">Детальный аудит действий доступен эксклюзивно на тарифе <b>Company</b>. Контролируйте каждый шаг команды.</p>
-          <a href="store.html" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 mx-auto"><i data-lucide="shopping-cart" class="w-4 h-4"></i> Магазин</a>
-        </div>`;
-    } else {
-      list.innerHTML = `
-        <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in-up mt-10">
-          <div class="w-16 h-16 bg-gray-50 dark:bg-gray-800/80 rounded-full flex items-center justify-center mb-4 shadow-sm border border-gray-200 dark:border-gray-700">
-            <i data-lucide="power-off" class="w-8 h-8 text-gray-400"></i>
+          <h3 class="text-base font-bold text-gray-900 dark:text-white mb-2">Аудит заблокирован</h3>
+          <p class="text-xs text-gray-500 mb-8 leading-relaxed px-4">Журнал действий — инструмент контроля уровня <b>Enterprise</b>. Доступен на тарифе Company.</p>
+          <a href="store.html" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-2xl text-xs font-bold transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95"><i data-lucide="shopping-cart" class="w-4 h-4"></i> Перейти в магазин</a>
+        </div>` : `
+        <div class="flex flex-col items-center justify-center p-8 text-center mt-12 animate-fade-in-up">
+          <div class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner border border-gray-200 dark:border-gray-700">
+            <i data-lucide="power-off" class="w-10 h-10 text-gray-400"></i>
           </div>
-          <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-2">Логгер отключен</h3>
-          <p class="text-xs text-gray-500 leading-relaxed">Включите тумблер сверху, чтобы начать записывать историю перемещений и изменений на доске.</p>
+          <h3 class="text-base font-bold text-gray-900 dark:text-white mb-2">Логгер выключен</h3>
+          <p class="text-xs text-gray-500 leading-relaxed px-4">Активируйте тумблер выше, чтобы начать запись истории изменений в реальном времени.</p>
         </div>`;
-    }
     lucide.createIcons({ root: list });
     return;
   }
 
+  // 2. Рендеринг данных из снимка
   const snapshot = window.currentActivitySnapshot;
   if (!snapshot || snapshot.empty) {
-    list.innerHTML = '<div class="text-center py-10 text-gray-400 text-sm">Журнал пока пуст.</div>';
+    list.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-20 opacity-40">
+        <i data-lucide="database" class="w-12 h-12 mb-4"></i>
+        <p class="text-sm font-bold uppercase tracking-widest">История пуста</p>
+      </div>`;
+    lucide.createIcons({ root: list });
     return;
   }
   
   let html = '';
   snapshot.forEach(doc => {
     const data = doc.data();
+    // ЭНТЕРПРАЙЗ: Резолюция пользователя по ID из метаданных доски для актуальности аватара
     const actualUser = (data.user && boardData.users && boardData.users[data.user.id]) ? boardData.users[data.user.id] : data.user;
-    const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString('ru-RU', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}) : '';
+    
+    // Форматирование времени
+    let timeStr = 'Недавно';
+    if (data.timestamp) {
+      const date = data.timestamp.toDate();
+      const now = new Date();
+      if (date.toDateString() === now.toDateString()) {
+        timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } else {
+        timeStr = date.toLocaleDateString([], { day: '2-digit', month: 'short' });
+      }
+    }
+
     html += `
-      <div class="flex gap-3 bg-white dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm animate-fade-in-up">
-        ${getAvatarHTML(actualUser, 'w-8 h-8 flex-shrink-0')}
-        <div class="flex flex-col min-w-0 flex-1">
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-[10px] font-bold text-gray-900 dark:text-white truncate">${actualUser.name}</span>
-            <span class="text-[9px] text-gray-400">${time}</span>
+      <div class="flex gap-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-3xl shadow-sm hover:border-purple-300 dark:hover:border-purple-800 transition-all group animate-fade-in-up">
+        <div class="flex-shrink-0">${getAvatarHTML(actualUser, 'w-10 h-10')}</div>
+        <div class="flex flex-col min-w-0 flex-1 justify-center">
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <span class="text-[11px] font-black text-gray-900 dark:text-gray-100 truncate">${actualUser.name}</span>
+            <span class="text-[9px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded-md">${timeStr}</span>
           </div>
-          <div class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed"><i data-lucide="${data.icon}" class="w-3.5 h-3.5 inline pb-0.5 text-purple-500 mr-1"></i>${data.text}</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400 leading-snug flex items-start gap-1.5">
+            <i data-lucide="${data.icon || 'activity'}" class="w-3.5 h-3.5 text-purple-500 mt-0.5 flex-shrink-0"></i>
+            <span class="line-clamp-2">${data.text}</span>
+          </div>
         </div>
       </div>
     `;
   });
-  list.innerHTML = html;
+  
+  list.innerHTML = `<div class="space-y-3 pb-6">${html}</div>`;
   lucide.createIcons({ root: list });
 }
 
