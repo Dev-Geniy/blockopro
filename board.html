@@ -1513,64 +1513,91 @@ function updateLogRetention(days) {
   showSystemToast('Настройки', `Срок хранения логов изменен: ${retention} дн.`, 'clock', 'text-purple-500', 'bg-purple-50');
 }
 
+/**
+ * ENTERPRISE LOGGING ENGINE v2.0 (Hybrid Cloud/Offline)
+ * Реализует сквозной аудит действий пользователя для всех типов досок.
+ * Внедрена автоматическая ротация данных для предотвращения деградации производительности.
+ */
 function logActivity(text, icon = 'activity') {
   const retentionDays = boardData.logRetention || 1;
   const now = Date.now();
   const expiryMs = retentionDays * 24 * 60 * 60 * 1000;
 
+  // Обогащенный объект пользователя для системного лога
+  const userSnapshot = { 
+    id: currentUser.id, 
+    name: currentUser.name, 
+    avatar: currentUser.avatar,
+    badgeConfig: currentUser.badgeConfig || null,
+    badgeStatus: currentUser.badgeStatus || 'none'
+  };
+
   if (isLocalBoard) {
+    // OFFLINE-FIRST: Запись истории напрямую в localStorage проекта
     const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
     if (localBoards[BOARD_ID]) {
+      // Инициализация стека активности, если отсутствует
       if (!localBoards[BOARD_ID].localActivity) localBoards[BOARD_ID].localActivity = [];
       
-      // 1. Очистка старых записей перед добавлением новой (Умная ротация)
+      // 1. ПРЕДЕЛЬНАЯ ОЧИСТКА: Удаляем записи старше установленного срока хранения
       localBoards[BOARD_ID].localActivity = localBoards[BOARD_ID].localActivity.filter(entry => {
         const entryTime = new Date(entry.timestamp).getTime();
         return (now - entryTime) < expiryMs;
       });
 
-      // 2. Добавление новой записи
+      // 2. ИНЖЕКЦИЯ: Добавляем новое событие в начало стека
       const newEntry = {
-        id: 'act_' + Date.now(),
+        id: 'act_' + Date.now() + Math.random().toString(36).substr(2, 5),
         text: text,
         icon: icon,
-        user: { 
-          id: currentUser.id, 
-          name: currentUser.name, 
-          avatar: currentUser.avatar,
-          badgeConfig: currentUser.badgeConfig,
-          badgeStatus: currentUser.badgeStatus
-        },
+        user: userSnapshot,
         timestamp: new Date().toISOString()
       };
 
       localBoards[BOARD_ID].localActivity.unshift(newEntry);
+      
+      // Лимит на количество записей (физическое ограничение для офлайна - 200 событий)
+      if (localBoards[BOARD_ID].localActivity.length > 200) {
+        localBoards[BOARD_ID].localActivity = localBoards[BOARD_ID].localActivity.slice(0, 200);
+      }
+
+      // Синхронизация состояния
       localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
       boardData = localBoards[BOARD_ID];
       
-      if (!document.getElementById('activitySidebar').classList.contains('translate-x-full')) renderActivityLog();
+      // Мгновенное обновление UI, если шторка лога открыта
+      const sidebar = document.getElementById('activitySidebar');
+      if (sidebar && !sidebar.classList.contains('translate-x-full')) {
+        renderActivityLog();
+      }
     }
   } else {
+    // CLOUD-MODE: Асинхронная запись в подколлекцию Firestore
     if (boardData.isActivityEnabled !== true) return;
     
-    // Cloud: Добавляем запись с TTL (Time To Live)
-    db.collection("boards").doc(BOARD_ID).collection("activity").add({
+    const boardRef = db.collection("boards").doc(BOARD_ID);
+    
+    // Добавление записи с серверной меткой времени
+    boardRef.collection("activity").add({
       text: text,
       icon: icon,
-      user: currentUser,
+      user: userSnapshot,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    }).catch(e => console.error("Activity Log Cloud Error:", e));
 
-    // Cloud: Авто-очистка просроченных записей при каждом действии (Гранулярное удаление)
+    // АВТО-КЛИНИНГ (Cloud): Удаление устаревших данных транзакционным пакетом
     const thresholdDate = new Date(now - expiryMs);
-    db.collection("boards").doc(BOARD_ID).collection("activity")
+    boardRef.collection("activity")
       .where("timestamp", "<", thresholdDate)
+      .limit(50) // Защита от перегрузки памяти при массовой очистке
       .get()
       .then(snapshot => {
+        if (snapshot.empty) return;
         const batch = db.batch();
         snapshot.forEach(doc => batch.delete(doc.ref));
         batch.commit();
-      }).catch(err => console.error("Retention error:", err));
+      })
+      .catch(err => console.warn("Log Rotation Delay:", err));
   }
 }
 
