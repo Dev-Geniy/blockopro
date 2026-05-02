@@ -1214,66 +1214,72 @@ let selectedColColor = 'default';
 let boardData = {};
 let isFirstChatLoad = true; // ОДНА переменная чата
   
-auth.onAuthStateChanged(async (user) => {
+function hideGlobalLoader() {
   const loader = document.getElementById('globalLoader');
+  setTimeout(() => {
+    if (loader) {
+      loader.style.opacity = '0';
+      setTimeout(() => loader.classList.add('hidden'), 700);
+    }
+  }, 500);
+}
+
+auth.onAuthStateChanged(async (user) => {
   if (user) {
     const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
-    
-    let badgeStatus = 'none';
-    let customAvatar = null;
-    let badgeConfig = null;
+    let badgeStatus = 'none', customAvatar = null, badgeConfig = null;
 
     try {
       const userRef = db.collection('users').doc(user.uid);
       const userDoc = await userRef.get();
       if (userDoc.exists) {
         const data = userDoc.data();
-        badgeStatus = data.badgeStatus || 'none';
-        customAvatar = data.customAvatar || null;
-        badgeConfig = data.badgeConfig || null;
-        
-        // ЭНТЕРПРАЙЗ: Синхронизация тарифа и проверка истечения
+        badgeStatus = data.badgeStatus || 'none'; customAvatar = data.customAvatar || null; badgeConfig = data.badgeConfig || null;
         let currentPlan = data.plan || 'free';
         if (data.planExpiresAt && Date.now() > data.planExpiresAt) {
           currentPlan = 'free';
           await userRef.update({ plan: 'free', planExpiresAt: firebase.firestore.FieldValue.delete() });
         }
-        userPlan = currentPlan;
-        localStorage.setItem('blocko_user_plan', currentPlan);
+        userPlan = currentPlan; localStorage.setItem('blocko_user_plan', currentPlan);
       }
     } catch(e) {}
 
-    // Обогащаем currentUser полными данными кастомизации
-    currentUser = { 
-      id: user.uid, 
-      name: user.displayName, 
-      avatar: safeAvatar, 
-      customAvatar: customAvatar,
-      badgeStatus: badgeStatus,
-      badgeConfig: badgeConfig
-    };
+    currentUser = { id: user.uid, name: user.displayName, avatar: safeAvatar, customAvatar, badgeStatus, badgeConfig };
     
-    // Динамически заменяем статичную картинку в инпуте комментов на нашу Enterprise-модель
     const commentAvatarEl = document.getElementById('commentMyAvatar');
-    if (commentAvatarEl) {
-       commentAvatarEl.outerHTML = getAvatarHTML(currentUser, 'w-10 h-10 flex-shrink-0', 'commentMyAvatar');
-       lucide.createIcons();
+    if (commentAvatarEl) { commentAvatarEl.outerHTML = getAvatarHTML(currentUser, 'w-10 h-10 flex-shrink-0', 'commentMyAvatar'); lucide.createIcons(); }
+    
+    if (!BOARD_ID) window.location.href = 'index.html'; 
+    else { loadBoard(); hideGlobalLoader(); }
+  } else {
+    // ЛОГИКА ДЛЯ ГОСТЕЙ (Публичные доски)
+    if (!BOARD_ID || isLocalBoard) {
+      window.location.href = 'index.html'; 
+      return;
     }
     
-    if (!BOARD_ID) {
+    try {
+      const docSnap = await db.collection("boards").doc(BOARD_ID).get();
+      if (docSnap.exists && docSnap.data().isPublic === true) {
+        currentUser = { 
+          id: 'guest_' + Date.now(), 
+          name: 'Гость (Read-Only)', 
+          role: 'viewer', 
+          avatar: 'https://ui-avatars.com/api/?name=Guest&background=6b7280&color=fff' 
+        };
+        userPlan = 'free';
+        
+        const commentAvatarEl = document.getElementById('commentMyAvatar');
+        if (commentAvatarEl) { commentAvatarEl.outerHTML = getAvatarHTML(currentUser, 'w-10 h-10 flex-shrink-0', 'commentMyAvatar'); lucide.createIcons(); }
+        
+        loadBoard();
+        hideGlobalLoader();
+      } else {
+        window.location.href = 'index.html'; 
+      }
+    } catch (e) {
       window.location.href = 'index.html'; 
-    } else {
-      loadBoard();
-      // Анимация скрытия загрузчика после инициализации доски
-      setTimeout(() => {
-        if (loader) {
-          loader.style.opacity = '0';
-          setTimeout(() => loader.classList.add('hidden'), 700);
-        }
-      }, 500);
     }
-  } else {
-    window.location.href = 'index.html'; 
   }
 });
   
@@ -1397,10 +1403,12 @@ function loadBoard() {
       boardData = doc.data();
       const isOwner = boardData.owner === currentUser.id;
 
-      // ЭНТЕРПРАЙЗ: Выброс пользователя в реальном времени, если его исключили из команды
+      // ЭНТЕРПРАЙЗ: Выброс пользователя в реальном времени, если его исключили из команды (исключение для публичных досок)
       if (!isOwner && boardData.members && !boardData.members.includes(currentUser.id)) {
-        window.location.href = 'index.html?error=not_member'; 
-        return;
+        if (boardData.isPublic !== true) {
+          window.location.href = 'index.html?error=not_member'; 
+          return;
+        }
       }
 
       // ЭНТЕРПРАЙЗ: Маршрутизация на ввод пароля с сохранением Deep Link (если перешли по ссылке на карточку)
@@ -1727,7 +1735,8 @@ function processBoardData(data) {
   const headerTitle = document.getElementById('boardTitleHeader');
   headerTitle.innerText = data.title;
   
-  const myRole = data.users && data.users[currentUser.id] ? data.users[currentUser.id].role : 'editor';
+  // КРИТИЧЕСКИЙ ФИКС БЕЗОПАСНОСТИ: Если пользователя нет в базе доски (например, он Гость), он СТРОГО Viewer.
+  const myRole = data.users && data.users[currentUser.id] ? data.users[currentUser.id].role : 'viewer';
   const isViewer = myRole === 'viewer' && !isLocalBoard;
   
   // ЭНТЕРПРАЙЗ: Скрываем меню инвайтов и настройки фона для Читателей
