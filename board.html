@@ -356,6 +356,15 @@
         <div class="w-8 h-4 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-purple-500"></div>
       </label>
     </div>
+    <div class="px-4 py-2 bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2">
+      <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Хранение:</span>
+      <select id="logRetentionSelect" onchange="updateLogRetention(this.value)" class="bg-transparent text-[10px] font-bold text-purple-600 dark:text-purple-400 outline-none cursor-pointer border-none p-1 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-md transition-colors">
+        <option value="1">1 день</option>
+        <option value="3">3 дня</option>
+        <option value="7">7 дней</option>
+        <option value="14">14 дней</option>
+      </select>
+    </div>
     <div id="activityList" class="flex-1 overflow-y-auto p-4 space-y-3 hide-scroll relative"></div>
   </aside>
 
@@ -1497,14 +1506,30 @@ function toggleActivityLogState(isChecked) {
   setTimeout(renderActivityLog, 100);
 }
 
+// ЭНТЕРПРАЙЗ: Глобальный диспетчер ротации и очистки логов
+function updateLogRetention(days) {
+  const retention = parseInt(days);
+  updateBoardData({ logRetention: retention });
+  showSystemToast('Настройки', `Срок хранения логов изменен: ${retention} дн.`, 'clock', 'text-purple-500', 'bg-purple-50');
+}
+
 function logActivity(text, icon = 'activity') {
-  // ЭНТЕРПРАЙЗ: Универсальный логгер для онлайн и офлайн сред
+  const retentionDays = boardData.logRetention || 1;
+  const now = Date.now();
+  const expiryMs = retentionDays * 24 * 60 * 60 * 1000;
+
   if (isLocalBoard) {
-    // Логика для Device-проектов (localStorage)
     const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
     if (localBoards[BOARD_ID]) {
       if (!localBoards[BOARD_ID].localActivity) localBoards[BOARD_ID].localActivity = [];
       
+      // 1. Очистка старых записей перед добавлением новой (Умная ротация)
+      localBoards[BOARD_ID].localActivity = localBoards[BOARD_ID].localActivity.filter(entry => {
+        const entryTime = new Date(entry.timestamp).getTime();
+        return (now - entryTime) < expiryMs;
+      });
+
+      // 2. Добавление новой записи
       const newEntry = {
         id: 'act_' + Date.now(),
         text: text,
@@ -1519,27 +1544,33 @@ function logActivity(text, icon = 'activity') {
         timestamp: new Date().toISOString()
       };
 
-      // Храним последние 50 записей для экономии памяти устройства
       localBoards[BOARD_ID].localActivity.unshift(newEntry);
-      localBoards[BOARD_ID].localActivity = localBoards[BOARD_ID].localActivity.slice(0, 50);
-      
       localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
       boardData = localBoards[BOARD_ID];
       
-      // Мгновенное обновление UI, если шторка открыта
-      if (!document.getElementById('activitySidebar').classList.contains('translate-x-full')) {
-        renderActivityLog();
-      }
+      if (!document.getElementById('activitySidebar').classList.contains('translate-x-full')) renderActivityLog();
     }
   } else {
-    // Логика для Cloud-проектов (Firestore)
     if (boardData.isActivityEnabled !== true) return;
+    
+    // Cloud: Добавляем запись с TTL (Time To Live)
     db.collection("boards").doc(BOARD_ID).collection("activity").add({
       text: text,
       icon: icon,
       user: currentUser,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
+
+    // Cloud: Авто-очистка просроченных записей при каждом действии (Гранулярное удаление)
+    const thresholdDate = new Date(now - expiryMs);
+    db.collection("boards").doc(BOARD_ID).collection("activity")
+      .where("timestamp", "<", thresholdDate)
+      .get()
+      .then(snapshot => {
+        const batch = db.batch();
+        snapshot.forEach(doc => batch.delete(doc.ref));
+        batch.commit();
+      }).catch(err => console.error("Retention error:", err));
   }
 }
 
@@ -1736,6 +1767,14 @@ async function uploadImageToImgbb(file) {
 function processBoardData(data) {
   const headerTitle = document.getElementById('boardTitleHeader');
   headerTitle.innerText = data.title;
+
+  // ЭНТЕРПРАЙЗ: Синхронизация селектора очистки с данными доски
+  const retentionSelect = document.getElementById('logRetentionSelect');
+  if (retentionSelect && data.logRetention) {
+    retentionSelect.value = data.logRetention;
+  } else if (retentionSelect) {
+    retentionSelect.value = "1"; // Дефолтное значение
+  }
   
   const myRole = data.users && data.users[currentUser.id] ? data.users[currentUser.id].role : 'editor';
   const isViewer = myRole === 'viewer' && !isLocalBoard;
