@@ -349,11 +349,15 @@
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="activity" class="w-4 h-4 text-purple-500"></i> Журнал действий</h3>
       <button onclick="toggleActivityLog()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
-    <div class="p-3 bg-gray-50 dark:bg-gray-900/50 flex justify-between items-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-      <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Аудит операций</span>
-      <label class="relative inline-flex items-center cursor-pointer group" title="Включить запись логов">
-        <input type="checkbox" id="activityToggle" onchange="toggleActivityLogState(this.checked)" class="sr-only peer">
-        <div class="w-8 h-4 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-purple-500"></div>
+    <!-- ACTIVITY ENGINE CONTROL (Monetization & Privacy Gate) -->
+    <div class="p-4 bg-gray-50 dark:bg-gray-900/50 flex justify-between items-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+      <div class="flex flex-col gap-0.5">
+        <span class="text-[10px] font-black text-gray-500 uppercase tracking-[0.1em]">Аудит операций</span>
+        <span class="text-[8px] text-gray-400 font-bold uppercase" id="auditStatusLabel">Режим: Выключен</span>
+      </div>
+      <label class="relative inline-flex items-center cursor-pointer group" title="Управление журналом действий">
+        <input type="checkbox" id="activityToggle" onchange="toggleActivityLogState(this.checked); document.getElementById('auditStatusLabel').innerText = this.checked ? 'Режим: Активен' : 'Режим: Выключен'" class="sr-only peer">
+        <div class="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-800 border border-gray-300 dark:border-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-indigo-600 shadow-inner"></div>
       </label>
     </div>
     <div class="px-4 py-2 bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2">
@@ -1418,11 +1422,12 @@ function renderActivityLog() {
   const toggle = document.getElementById("activityToggle");
   if (!list || !toggle) return;
   
-  const isEnabled = isLocalBoard ? true : (boardData.isActivityEnabled === true);
+  // Интегрированный контроль видимости для SEO и UX
+  const isEnabled = boardData.isActivityEnabled === true;
   
-  // Скрываем тумблер для офлайн досок (там лог активен всегда для владельца)
-  const toggleWrapper = toggle.parentElement.parentElement;
-  if (isLocalBoard && toggleWrapper) toggleWrapper.style.display = 'none';
+  // Синхронизируем состояние тумблера с данными доски
+  toggle.checked = isEnabled;
+  document.getElementById('auditStatusLabel').innerText = isEnabled ? 'Режим: Активен' : 'Режим: Выключен';
 
   if (!isLocalBoard && !isEnabled) {
     list.innerHTML = userPlan !== 'pro' ? `
@@ -1488,22 +1493,64 @@ function renderActivityLog() {
   lucide.createIcons({ root: list });
 }
 
+/**
+ * ENTERPRISE AUDIT CONTROLLER v3.0
+ * Реализует логику управления тумблером Журнала действий.
+ * Доступ строго ограничен владельцем с тарифным планом 'Company' (pro).
+ * Изначальное состояние для новых досок — OFF (Безопасность данных по умолчанию).
+ */
 function toggleActivityLogState(isChecked) {
-  if (isChecked && userPlan !== 'pro') {
-     document.getElementById("activityToggle").checked = false;
-     return showSystemToast('Премиум', 'Журнал действий доступен только на тарифе Company.', 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
-  }
-  
+  const toggleEl = document.getElementById("activityToggle");
   const isOwner = boardData.owner === currentUser.id;
+
+  // 1. ПРОВЕРКА ПРАВ ДОСТУПА (SEO-Grade Security)
   if (!isOwner) {
-     document.getElementById("activityToggle").checked = !isChecked;
-     return showSystemToast('Отказ', 'Только владелец проекта может изменять эту настройку.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+    if (toggleEl) toggleEl.checked = !isChecked; // Откат состояния визуально
+    return showSystemToast(
+      'Доступ ограничен', 
+      'Только владелец проекта может управлять аудитом.', 
+      'shield-off', 
+      'text-red-500', 
+      'bg-red-50 dark:bg-red-900/20'
+    );
   }
+
+  // 2. ВАЛИДАЦИЯ ТАРИФНОГО ПЛАНА (Monetization Gate)
+  // Включать аудит разрешено только на тарифе 'pro' (Company)
+  if (isChecked && userPlan !== 'pro') {
+    if (toggleEl) toggleEl.checked = false;
+    return showSystemToast(
+      'Требуется Company', 
+      'Журнал действий — это Enterprise-функция для крупных команд.', 
+      'lock', 
+      'text-amber-500', 
+      'bg-amber-50 dark:bg-amber-900/30'
+    );
+  }
+
+  // 3. СИНХРОНИЗАЦИЯ СОСТОЯНИЯ (State Sync)
+  // Если это облачная доска, сохраняем флаг в Firebase. Для локальных — в localStorage.
+  const payload = { isActivityEnabled: isChecked };
   
-  updateBoardData({ isActivityEnabled: isChecked });
-  showSystemToast('Аудит', isChecked ? 'Логгер запущен. Запись началась.' : 'Логгер остановлен. База экономится.', 'activity', 'text-purple-500', 'bg-purple-50 dark:bg-purple-900/30');
-  
-  setTimeout(renderActivityLog, 100);
+  if (isLocalBoard) {
+    updateBoardData(payload);
+    // Для офлайна логи пишутся всегда, если тумблер ВКЛ (без проверки тарифа, так как это локальные данные)
+    showSystemToast('Локальный аудит', isChecked ? 'История действий записывается в браузер.' : 'Запись истории остановлена.', 'database', 'text-purple-500', 'bg-purple-50');
+  } else {
+    updateBoardData(payload);
+    showSystemToast(
+      'Журнал действий', 
+      isChecked ? 'Режим тотального аудита активирован.' : 'Аудит временно приостановлен.', 
+      isChecked ? 'activity' : 'power-off', 
+      'text-purple-500', 
+      'bg-purple-50 dark:bg-purple-900/30'
+    );
+  }
+
+  // 4. МГНОВЕННЫЙ РЕРЕНДЕР UI (Zero-Latency View)
+  requestAnimationFrame(() => {
+    renderActivityLog();
+  });
 }
 
 // ЭНТЕРПРАЙЗ: Глобальный диспетчер ротации и очистки логов
