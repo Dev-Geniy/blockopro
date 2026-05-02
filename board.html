@@ -1561,16 +1561,19 @@ function updateLogRetention(days) {
 }
 
 /**
- * ENTERPRISE LOGGING ENGINE v2.0 (Hybrid Cloud/Offline)
- * Реализует сквозной аудит действий пользователя для всех типов досок.
- * Внедрена автоматическая ротация данных для предотвращения деградации производительности.
+ * BLOCKO OMNI-LOGGER v4.0 (Enterprise Scalable SEO Edition)
+ * Реализует гибридную систему аудита действий для Cloud и Offline режимов.
+ * Внедрен механизм интеллектуальной ротации данных (Garbage Collection) для предотвращения раздувания localStorage.
  */
 function logActivity(text, icon = 'activity') {
+  // КРИТИЧЕСКИЙ ЧЕК: Если аудит выключен пользователем — блокируем выполнение
+  if (boardData.isActivityEnabled !== true) return;
+
   const retentionDays = boardData.logRetention || 1;
   const now = Date.now();
   const expiryMs = retentionDays * 24 * 60 * 60 * 1000;
 
-  // Обогащенный объект пользователя для системного лога
+  // Формирование защищенного слепка профиля пользователя для истории действий
   const userSnapshot = { 
     id: currentUser.id, 
     name: currentUser.name, 
@@ -1580,63 +1583,64 @@ function logActivity(text, icon = 'activity') {
   };
 
   if (isLocalBoard) {
-    // OFFLINE-FIRST: Запись истории напрямую в localStorage проекта
-    const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
-    if (localBoards[BOARD_ID]) {
-      // Инициализация стека активности, если отсутствует
-      if (!localBoards[BOARD_ID].localActivity) localBoards[BOARD_ID].localActivity = [];
-      
-      // 1. ПРЕДЕЛЬНАЯ ОЧИСТКА: Удаляем записи старше установленного срока хранения
-      localBoards[BOARD_ID].localActivity = localBoards[BOARD_ID].localActivity.filter(entry => {
-        const entryTime = new Date(entry.timestamp).getTime();
-        return (now - entryTime) < expiryMs;
-      });
+    // OFFLINE ENGINE: Хранение внутри распределенного JSON-объекта в localStorage
+    try {
+      const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+      if (localBoards[BOARD_ID]) {
+        // Инициализация стека активности в структуре доски
+        if (!localBoards[BOARD_ID].localActivity) localBoards[BOARD_ID].localActivity = [];
+        
+        // 1. АВТО-КЛИНИНГ: Удаление записей за пределами окна хранения (Retention Policy)
+        localBoards[BOARD_ID].localActivity = localBoards[BOARD_ID].localActivity.filter(entry => {
+          const entryTime = new Date(entry.timestamp).getTime();
+          return (now - entryTime) < expiryMs;
+        });
 
-      // 2. ИНЖЕКЦИЯ: Добавляем новое событие в начало стека
-      const newEntry = {
-        id: 'act_' + Date.now() + Math.random().toString(36).substr(2, 5),
-        text: text,
-        icon: icon,
-        user: userSnapshot,
-        timestamp: new Date().toISOString()
-      };
+        // 2. ИНЪЕКЦИЯ: Добавление записи с уникальным идентификатором
+        const newEntry = {
+          id: 'act_' + Date.now() + Math.random().toString(36).substr(2, 5),
+          text: text,
+          icon: icon,
+          user: userSnapshot,
+          timestamp: new Date().toISOString()
+        };
 
-      localBoards[BOARD_ID].localActivity.unshift(newEntry);
-      
-      // Лимит на количество записей (физическое ограничение для офлайна - 200 событий)
-      if (localBoards[BOARD_ID].localActivity.length > 200) {
-        localBoards[BOARD_ID].localActivity = localBoards[BOARD_ID].localActivity.slice(0, 200);
+        localBoards[BOARD_ID].localActivity.unshift(newEntry);
+        
+        // 3. ПРЕДЕЛЬНЫЙ ЛИМИТ: Ограничение стека (Max 300 записей для защиты производительности DOM)
+        if (localBoards[BOARD_ID].localActivity.length > 300) {
+          localBoards[BOARD_ID].localActivity = localBoards[BOARD_ID].localActivity.slice(0, 300);
+        }
+
+        // Синхронизация локального хранилища и глобального стейта приложения
+        localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
+        boardData = localBoards[BOARD_ID];
+        
+        // Реактивное обновление UI истории, если шторка активна
+        const activitySidebar = document.getElementById('activitySidebar');
+        if (activitySidebar && !activitySidebar.classList.contains('translate-x-full')) {
+          renderActivityLog();
+        }
       }
-
-      // Синхронизация состояния
-      localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
-      boardData = localBoards[BOARD_ID];
-      
-      // Мгновенное обновление UI, если шторка лога открыта
-      const sidebar = document.getElementById('activitySidebar');
-      if (sidebar && !sidebar.classList.contains('translate-x-full')) {
-        renderActivityLog();
-      }
+    } catch (e) {
+      console.error("Critical Offline Logger Error:", e);
     }
   } else {
-    // CLOUD-MODE: Асинхронная запись в подколлекцию Firestore
-    if (boardData.isActivityEnabled !== true) return;
-    
+    // CLOUD ENGINE: Асинхронная запись в Firebase Firestore Subcollection
     const boardRef = db.collection("boards").doc(BOARD_ID);
     
-    // Добавление записи с серверной меткой времени
     boardRef.collection("activity").add({
       text: text,
       icon: icon,
       user: userSnapshot,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).catch(e => console.error("Activity Log Cloud Error:", e));
+    }).catch(err => console.error("Cloud Audit Sink Error:", err));
 
-    // АВТО-КЛИНИНГ (Cloud): Удаление устаревших данных транзакционным пакетом
+    // CLEANUP PIPELINE: Удаление устаревших документов пакетами (Batch)
     const thresholdDate = new Date(now - expiryMs);
     boardRef.collection("activity")
       .where("timestamp", "<", thresholdDate)
-      .limit(50) // Защита от перегрузки памяти при массовой очистке
+      .limit(100) // Оптимизация квот на чтение/удаление
       .get()
       .then(snapshot => {
         if (snapshot.empty) return;
