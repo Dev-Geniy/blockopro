@@ -185,7 +185,7 @@
     <button onclick="toggleMobileMenu()" class="md:hidden p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 transition-colors shadow-sm">
       <i data-lucide="menu" class="w-4 h-4"></i>
     </button>
-    <button id="btnActivityLog" onclick="toggleActivityLog()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Журнал действий">
+    <button onclick="toggleActivityLog()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Журнал действий">
       <i data-lucide="activity" class="w-4 h-4"></i>
     </button>
     <button onclick="toggleArchive()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Архив проекта">
@@ -355,15 +355,6 @@
         <input type="checkbox" id="activityToggle" onchange="toggleActivityLogState(this.checked)" class="sr-only peer">
         <div class="w-8 h-4 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-purple-500"></div>
       </label>
-    </div>
-    <div class="px-4 py-2 bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2">
-      <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Хранение:</span>
-      <select id="logRetentionSelect" onchange="updateLogRetention(this.value)" class="bg-transparent text-[10px] font-bold text-purple-600 dark:text-purple-400 outline-none cursor-pointer border-none p-1 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-md transition-colors">
-        <option value="1">1 день</option>
-        <option value="3">3 дня</option>
-        <option value="7">7 дней</option>
-        <option value="14">14 дней</option>
-      </select>
     </div>
     <div id="activityList" class="flex-1 overflow-y-auto p-4 space-y-3 hide-scroll relative"></div>
   </aside>
@@ -1418,22 +1409,24 @@ function renderActivityLog() {
   const toggle = document.getElementById("activityToggle");
   if (!list || !toggle) return;
   
-  const isEnabled = isLocalBoard ? true : (boardData.isActivityEnabled === true);
+  const isEnabled = boardData.isActivityEnabled === true;
+  toggle.checked = isEnabled;
   
-  // Скрываем тумблер для офлайн досок (там лог активен всегда для владельца)
-  const toggleWrapper = toggle.parentElement.parentElement;
-  if (isLocalBoard && toggleWrapper) toggleWrapper.style.display = 'none';
-
-  if (!isLocalBoard && !isEnabled) {
+  // 1. Обработка состояний доступа и тарифа
+  if (!isEnabled) {
     list.innerHTML = userPlan !== 'pro' ? `
         <div class="flex flex-col items-center justify-center p-8 text-center mt-12 animate-fade-in-up">
-          <div class="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-[2rem] flex items-center justify-center mb-6 shadow-xl border border-amber-100 dark:border-amber-800"><i data-lucide="lock" class="w-10 h-10 text-amber-500"></i></div>
+          <div class="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-[2rem] flex items-center justify-center mb-6 shadow-xl border border-amber-100 dark:border-amber-800">
+            <i data-lucide="lock" class="w-10 h-10 text-amber-500"></i>
+          </div>
           <h3 class="text-base font-bold text-gray-900 dark:text-white mb-2">Аудит заблокирован</h3>
           <p class="text-xs text-gray-500 mb-8 leading-relaxed px-4">Журнал действий — инструмент контроля уровня <b>Enterprise</b>. Доступен на тарифе Company.</p>
           <a href="store.html" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-2xl text-xs font-bold transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95"><i data-lucide="shopping-cart" class="w-4 h-4"></i> Перейти в магазин</a>
         </div>` : `
         <div class="flex flex-col items-center justify-center p-8 text-center mt-12 animate-fade-in-up">
-          <div class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner border border-gray-200 dark:border-gray-700"><i data-lucide="power-off" class="w-10 h-10 text-gray-400"></i></div>
+          <div class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner border border-gray-200 dark:border-gray-700">
+            <i data-lucide="power-off" class="w-10 h-10 text-gray-400"></i>
+          </div>
           <h3 class="text-base font-bold text-gray-900 dark:text-white mb-2">Логгер выключен</h3>
           <p class="text-xs text-gray-500 leading-relaxed px-4">Активируйте тумблер выше, чтобы начать запись истории изменений в реальном времени.</p>
         </div>`;
@@ -1441,31 +1434,34 @@ function renderActivityLog() {
     return;
   }
 
-  // Сбор данных: либо из Firestore Snapshot, либо из localStorage
-  let activityEntries = [];
-  if (isLocalBoard) {
-    activityEntries = boardData.localActivity || [];
-  } else {
-    const snapshot = window.currentActivitySnapshot;
-    if (snapshot && !snapshot.empty) {
-      snapshot.forEach(doc => activityEntries.push({ id: doc.id, ...doc.data() }));
-    }
-  }
-
-  if (activityEntries.length === 0) {
-    list.innerHTML = `<div class="flex flex-col items-center justify-center py-20 opacity-40"><i data-lucide="database" class="w-12 h-12 mb-4"></i><p class="text-sm font-bold uppercase tracking-widest">История пуста</p></div>`;
+  // 2. Рендеринг данных из снимка
+  const snapshot = window.currentActivitySnapshot;
+  if (!snapshot || snapshot.empty) {
+    list.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-20 opacity-40">
+        <i data-lucide="database" class="w-12 h-12 mb-4"></i>
+        <p class="text-sm font-bold uppercase tracking-widest">История пуста</p>
+      </div>`;
     lucide.createIcons({ root: list });
     return;
   }
   
   let html = '';
-  activityEntries.forEach(data => {
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    // ЭНТЕРПРАЙЗ: Резолюция пользователя по ID из метаданных доски для актуальности аватара
     const actualUser = (data.user && boardData.users && boardData.users[data.user.id]) ? boardData.users[data.user.id] : data.user;
     
+    // Форматирование времени
     let timeStr = 'Недавно';
     if (data.timestamp) {
-      const date = isLocalBoard ? new Date(data.timestamp) : data.timestamp.toDate();
-      timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const date = data.timestamp.toDate();
+      const now = new Date();
+      if (date.toDateString() === now.toDateString()) {
+        timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } else {
+        timeStr = date.toLocaleDateString([], { day: '2-digit', month: 'short' });
+      }
     }
 
     html += `
@@ -1481,7 +1477,8 @@ function renderActivityLog() {
             <span class="line-clamp-2">${data.text}</span>
           </div>
         </div>
-      </div>`;
+      </div>
+    `;
   });
   
   list.innerHTML = `<div class="space-y-3 pb-6">${html}</div>`;
@@ -1506,74 +1503,16 @@ function toggleActivityLogState(isChecked) {
   setTimeout(renderActivityLog, 100);
 }
 
-// ЭНТЕРПРАЙЗ: Глобальный диспетчер ротации и очистки логов
-function updateLogRetention(days) {
-  const retention = parseInt(days);
-  updateBoardData({ logRetention: retention });
-  showSystemToast('Настройки', `Срок хранения логов изменен: ${retention} дн.`, 'clock', 'text-purple-500', 'bg-purple-50');
-}
-
 function logActivity(text, icon = 'activity') {
-  const retentionDays = boardData.logRetention || 1;
-  const now = Date.now();
-  const expiryMs = retentionDays * 24 * 60 * 60 * 1000;
-
-  if (isLocalBoard) {
-    const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
-    if (localBoards[BOARD_ID]) {
-      if (!localBoards[BOARD_ID].localActivity) localBoards[BOARD_ID].localActivity = [];
-      
-      // 1. Очистка старых записей перед добавлением новой (Умная ротация)
-      localBoards[BOARD_ID].localActivity = localBoards[BOARD_ID].localActivity.filter(entry => {
-        const entryTime = new Date(entry.timestamp).getTime();
-        return (now - entryTime) < expiryMs;
-      });
-
-      // 2. Добавление новой записи
-      const newEntry = {
-        id: 'act_' + Date.now(),
-        text: text,
-        icon: icon,
-        user: { 
-          id: currentUser.id, 
-          name: currentUser.name, 
-          avatar: currentUser.avatar,
-          badgeConfig: currentUser.badgeConfig,
-          badgeStatus: currentUser.badgeStatus
-        },
-        timestamp: new Date().toISOString()
-      };
-
-      localBoards[BOARD_ID].localActivity.unshift(newEntry);
-      localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
-      boardData = localBoards[BOARD_ID];
-      
-      if (!document.getElementById('activitySidebar').classList.contains('translate-x-full')) renderActivityLog();
-    }
-  } else {
-    if (boardData.isActivityEnabled !== true) return;
-    
-    // Cloud: Добавляем запись с TTL (Time To Live)
-    db.collection("boards").doc(BOARD_ID).collection("activity").add({
-      text: text,
-      icon: icon,
-      user: currentUser,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Cloud: Авто-очистка просроченных записей при каждом действии (Гранулярное удаление)
-    const thresholdDate = new Date(now - expiryMs);
-    db.collection("boards").doc(BOARD_ID).collection("activity")
-      .where("timestamp", "<", thresholdDate)
-      .get()
-      .then(snapshot => {
-        const batch = db.batch();
-        snapshot.forEach(doc => batch.delete(doc.ref));
-        batch.commit();
-      }).catch(err => console.error("Retention error:", err));
-  }
+  if (isLocalBoard || boardData.isActivityEnabled !== true) return;
+  db.collection("boards").doc(BOARD_ID).collection("activity").add({
+    text: text,
+    icon: icon,
+    user: currentUser,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
 }
-  
+
 // Склеиваем структуру колонок с карточками из подколлекции через Batching DOM Updates
 function syncAndRender() {
   if (renderFrameId) cancelAnimationFrame(renderFrameId);
@@ -1767,28 +1706,6 @@ async function uploadImageToImgbb(file) {
 function processBoardData(data) {
   const headerTitle = document.getElementById('boardTitleHeader');
   headerTitle.innerText = data.title;
-
-  // ЭНТЕРПРАЙЗ: Управление правами доступа к аудиту (RBAC)
-  const myRole = data.users && data.users[currentUser.id] ? data.users[currentUser.id].role : 'editor';
-  const isViewer = myRole === 'viewer' && !isLocalBoard;
-  
-  // Скрываем кнопку вызова журнала для читателей
-  const btnActivity = document.getElementById('btnActivityLog');
-  if (btnActivity) btnActivity.style.display = isViewer ? 'none' : 'block';
-
-  // Принудительно закрываем шторку истории, если она была открыта (защита от смены ролей в рантайме)
-  const activitySidebar = document.getElementById('activitySidebar');
-  if (isViewer && activitySidebar && !activitySidebar.classList.contains('translate-x-full')) {
-    activitySidebar.classList.add('translate-x-full');
-  }
-
-  // ЭНТЕРПРАЙЗ: Синхронизация селектора очистки с данными доски
-  const retentionSelect = document.getElementById('logRetentionSelect');
-  if (retentionSelect && data.logRetention) {
-    retentionSelect.value = data.logRetention;
-  } else if (retentionSelect) {
-    retentionSelect.value = "1"; // Дефолтное значение
-  }
   
   const myRole = data.users && data.users[currentUser.id] ? data.users[currentUser.id].role : 'editor';
   const isViewer = myRole === 'viewer' && !isLocalBoard;
@@ -2072,19 +1989,8 @@ const SidebarManager = {
 // Замороженные публичные методы (toggle)
 window.toggleAiSidebar = () => SidebarManager.toggle('aiSidebar', () => setTimeout(() => document.getElementById('aiChatInput')?.focus(), 100));
 window.toggleArchive = () => SidebarManager.toggle('archiveSidebar', () => { if (typeof renderArchiveSidebar === 'function') renderArchiveSidebar(); });
-window.toggleActivityLog = () => {
-  // ЭНТЕРПРАЙЗ: Блокировка доступа к шторке на уровне логики (Double-Check Security)
-  const myRole = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role : 'editor';
-  if (myRole === 'viewer' && !isLocalBoard) {
-    showSystemToast('Отказ', 'История действий доступна только владельцам и редакторам.', 'shield-alert', 'text-red-500', 'bg-red-50');
-    return;
-  }
-  
-  SidebarManager.toggle('activitySidebar', () => { 
-    if (typeof renderActivityLog === 'function') renderActivityLog(); 
-  });
-};
-  window.toggleSettings = () => SidebarManager.toggle('settingsSidebar');
+window.toggleActivityLog = () => SidebarManager.toggle('activitySidebar', () => { if (typeof renderActivityLog === 'function') renderActivityLog(); });
+window.toggleSettings = () => SidebarManager.toggle('settingsSidebar');
 window.toggleMembers = () => SidebarManager.toggle('membersSidebar');
 window.toggleChat = () => SidebarManager.toggle('chatSidebar', () => {
   const chatBox = document.getElementById('chatMessages');
@@ -2600,14 +2506,10 @@ async function addCommentToContent() {
 
 function addColumn() { 
   const newName = "Новая колонка";
-  const newCol = { id: Date.now(), name: newName, color: 'default', cards: [] };
-  columns.push(newCol); 
+  columns.push({ id: Date.now(), name: newName, color: 'default', cards: [] }); 
   persist(); 
-  
-  // ЭНТЕРПРАЙЗ: Универсальное логирование создания структуры
-  logActivity(`Добавил(а) новую колонку: "${newName}"`, 'layout-template');
-  
-  render(); 
+  if (!isLocalBoard) logActivity(`Создал(а) колонку "${newName}"`, 'layout-template');
+  render(); // Обновляем UI после добавления
 }
 
 function openColModal(id) { 
@@ -3477,15 +3379,11 @@ function render() {
                   });
                 });
                 
-                // ЭНТЕРПРАЙЗ: Аудит-лог при перемещении между этапами
+                // ЭНТЕРПРАЙЗ: Аудит-лог при перемещении (Activity Log)
                 const cardTitle = evt.item.querySelector('.font-bold')?.innerText || 'Задачу';
                 const fromColName = columns.find(c => c.id == fromColId)?.name || '...';
                 const toColName = columns.find(c => c.id == toColId)?.name || '...';
-                logActivity(`Сменил(а) статус "${cardTitle}": ${fromColName} → ${toColName}`, 'arrow-right-left');
-              } else {
-                // Логируем изменение приоритета/порядка внутри одной колонки
-                const cardTitle = evt.item.querySelector('.font-bold')?.innerText || 'Задачу';
-                logActivity(`Изменил(а) приоритет задачи "${cardTitle}" в списке`, 'sort-asc');
+                logActivity(`Переместил(а) "${cardTitle}" из "${fromColName}" в "${toColName}"`, 'move');
               }
 
               await batch.commit();
