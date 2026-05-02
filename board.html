@@ -3515,42 +3515,52 @@ function deleteCustomTag(tagId) {
 }
 
 async function checkAILimit() {
-  // ЭНТЕРПРАЙЗ: Безопасное получение лимитов. Ищем тариф по точному ID, обходя разногласия в ключах (COMPANY vs pro)
+  // ЭНТЕРПРАЙЗ: Система динамического квотирования ресурсов.
+  // 1. Идентификация тарифа и базовых лимитов
   const currentPlanData = Object.values(PLANS).find(p => p.id === userPlan) || PLANS.FREE;
   let baseLimit = currentPlanData.aiLimit; 
   
+  // Безлимит для тарифа Company
   if (baseLimit === 999) return true; 
 
   try {
-    const userDoc = await db.collection('users').doc(currentUser.id).get();
+    const userRef = db.collection('users').doc(currentUser.id);
+    const userDoc = await userRef.get();
     const data = userDoc.exists ? userDoc.data() : {};
     
-    // Проверка активной подписки AI Безлимит (Месяц) из магазина
+    // 2. Проверка активных аддонов и бустеров
     const now = Date.now();
     if (data.aiDailySub && data.aiSubExpires && data.aiSubExpires > now) {
-      baseLimit = 250; // Ставим дневной лимит 250 запросов
+      baseLimit = Math.max(baseLimit, 250); 
     }
     
-    const bonusLimit = data.bonusAiLimit || 0; // Сюда плюсуются разовые пакеты +50
+    const bonusLimit = data.bonusAiLimit || 0;
     const totalLimit = baseLimit + bonusLimit;
 
+    // 3. Локальный счетчик с защитой от рассинхрона
     let aiUsage = JSON.parse(localStorage.getItem('blocko_ai_usage')) || { date: new Date().toDateString(), count: 0 };
-    
-    // Логика ежедневного обнуления лимитов
     if (aiUsage.date !== new Date().toDateString()) {
       aiUsage = { date: new Date().toDateString(), count: 0 };
     }
     
+    // 4. ТЕХНИЧЕСКИЙ ВЕНТИЛЬ: Проверка лимитов на стороне UI
     if (aiUsage.count >= totalLimit) {
-      showSystemToast('Лимит исчерпан', `Доступно на сегодня: ${totalLimit}. Обновите тариф в Магазине или подождите до завтра!`, 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/20');
+      // Визуальный триггер достижения лимита
+      showSystemToast('Ресурс исчерпан', `Лимит тарифа: ${totalLimit} запр./день. Дождитесь обновления или повысьте тариф.`, 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/20');
+      
+      // Перенаправление на страницу оплаты, если лимит достигнут критически
+      if (aiUsage.count > totalLimit + 2) {
+          setTimeout(() => { window.location.href = 'store.html?reason=ai_limit'; }, 2000);
+      }
       return false;
     }
     
+    // 5. Инкремент квоты
     aiUsage.count++;
     localStorage.setItem('blocko_ai_usage', JSON.stringify(aiUsage));
     return true;
   } catch (e) {
-    console.error("Ошибка проверки лимита:", e);
+    console.error("Critical Limit Check Error:", e);
     return false;
   }
 }
