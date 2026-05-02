@@ -289,15 +289,6 @@
           <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400">Фокус</span>
         </button>
       </div>
-      
-      <div id="publicBoardSettingsBlock" class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 mb-6">
-        <div class="flex items-center gap-2 mb-2">
-          <i data-lucide="globe" class="w-4 h-4 text-indigo-500"></i>
-          <h4 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Публичный портал</h4>
-        </div>
-        <p class="text-[10px] text-gray-500 leading-relaxed mb-3">Настройте публичный доступ к доске для клиентов и команды.</p>
-        <button onclick="openPublicBoardModal()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"><i data-lucide="settings" class="w-3.5 h-3.5"></i> Настроить доступ</button>
-      </div>
 
       <div id="bgSettingsBlock">
         <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Обои проекта</h4>
@@ -1252,34 +1243,8 @@ auth.onAuthStateChanged(async (user) => {
     if (!BOARD_ID) window.location.href = 'index.html'; 
     else { loadBoard(); hideGlobalLoader(); }
   } else {
-    // ЛОГИКА ДЛЯ ГОСТЕЙ (Публичные доски)
-    if (!BOARD_ID || isLocalBoard) {
-      window.location.href = 'index.html'; 
-      return;
-    }
-    
-    try {
-      const docSnap = await db.collection("boards").doc(BOARD_ID).get();
-      if (docSnap.exists && docSnap.data().isPublic === true) {
-        currentUser = { 
-          id: 'guest_' + Date.now(), 
-          name: 'Гость (Read-Only)', 
-          role: 'viewer', 
-          avatar: 'https://ui-avatars.com/api/?name=Guest&background=6b7280&color=fff' 
-        };
-        userPlan = 'free';
-        
-        const commentAvatarEl = document.getElementById('commentMyAvatar');
-        if (commentAvatarEl) { commentAvatarEl.outerHTML = getAvatarHTML(currentUser, 'w-10 h-10 flex-shrink-0', 'commentMyAvatar'); lucide.createIcons(); }
-        
-        loadBoard();
-        hideGlobalLoader();
-      } else {
-        window.location.href = 'index.html'; 
-      }
-    } catch (e) {
-      window.location.href = 'index.html'; 
-    }
+    // ЖЕСТКАЯ ЗАЩИТА: Никаких гостей на рабочих досках
+    window.location.href = 'index.html'; 
   }
 });
   
