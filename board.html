@@ -350,14 +350,14 @@
       <button onclick="toggleActivityLog()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     <!-- ACTIVITY ENGINE CONTROL (Monetization & Privacy Gate) -->
-    <div class="p-4 bg-gray-50 dark:bg-gray-900/50 flex justify-between items-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-      <div class="flex flex-col gap-0.5">
-        <span class="text-[10px] font-black text-gray-500 uppercase tracking-[0.1em]">Аудит операций</span>
-        <span class="text-[8px] text-gray-400 font-bold uppercase" id="auditStatusLabel">Режим: Выключен</span>
+    <div class="p-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md flex justify-between items-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0 transition-colors">
+      <div class="flex flex-col gap-1">
+        <span class="text-[11px] font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="shield-check" class="w-4 h-4 text-purple-500"></i> Журнал действий</span>
+        <span id="auditStatusLabel" class="text-[9px] text-gray-500 font-bold uppercase">Режим: Выключен</span>
       </div>
-      <label class="relative inline-flex items-center cursor-pointer group" title="Управление журналом действий">
-        <input type="checkbox" id="activityToggle" onchange="toggleActivityLogState(this.checked); document.getElementById('auditStatusLabel').innerText = this.checked ? 'Режим: Активен' : 'Режим: Выключен'" class="sr-only peer">
-        <div class="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-800 border border-gray-300 dark:border-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-indigo-600 shadow-inner"></div>
+      <label class="relative inline-flex items-center cursor-pointer group hover:scale-105 transition-transform active:scale-95" title="Управление журналом действий">
+        <input type="checkbox" id="activityToggle" onchange="toggleActivityLogState(this.checked)" class="sr-only peer">
+        <div class="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-indigo-500 shadow-inner"></div>
       </label>
     </div>
     <div class="px-4 py-2 bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2">
@@ -1420,16 +1420,16 @@ function initActivityListener(docRef) {
 function renderActivityLog() {
   const list = document.getElementById("activityList");
   const toggle = document.getElementById("activityToggle");
+  const statusLabel = document.getElementById("auditStatusLabel");
   if (!list || !toggle) return;
   
-  // Интегрированный контроль видимости для SEO и UX
+  // УНИФИЦИРОВАННАЯ ЛОГИКА: Теперь офлайн доски тоже управляются тумблером (по умолчанию OFF для всех)
   const isEnabled = boardData.isActivityEnabled === true;
-  
-  // Синхронизируем состояние тумблера с данными доски
   toggle.checked = isEnabled;
-  document.getElementById('auditStatusLabel').innerText = isEnabled ? 'Режим: Активен' : 'Режим: Выключен';
+  if (statusLabel) statusLabel.innerText = isEnabled ? 'Режим: Активен' : 'Режим: Выключен';
 
-  if (!isLocalBoard && !isEnabled) {
+  // Если аудит отключен — показываем заглушку
+  if (!isEnabled) {
     list.innerHTML = userPlan !== 'pro' ? `
         <div class="flex flex-col items-center justify-center p-8 text-center mt-12 animate-fade-in-up">
           <div class="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-[2rem] flex items-center justify-center mb-6 shadow-xl border border-amber-100 dark:border-amber-800"><i data-lucide="lock" class="w-10 h-10 text-amber-500"></i></div>
@@ -1440,13 +1440,13 @@ function renderActivityLog() {
         <div class="flex flex-col items-center justify-center p-8 text-center mt-12 animate-fade-in-up">
           <div class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner border border-gray-200 dark:border-gray-700"><i data-lucide="power-off" class="w-10 h-10 text-gray-400"></i></div>
           <h3 class="text-base font-bold text-gray-900 dark:text-white mb-2">Логгер выключен</h3>
-          <p class="text-xs text-gray-500 leading-relaxed px-4">Активируйте тумблер выше, чтобы начать запись истории изменений в реальном времени.</p>
+          <p class="text-xs text-gray-500 leading-relaxed px-4">Активируйте тумблер выше, чтобы начать запись истории изменений.</p>
         </div>`;
     lucide.createIcons({ root: list });
     return;
   }
 
-  // Сбор данных: либо из Firestore Snapshot, либо из localStorage
+  // Сбор данных из источника истины (Offline & Cloud)
   let activityEntries = [];
   if (isLocalBoard) {
     activityEntries = boardData.localActivity || [];
@@ -1465,12 +1465,20 @@ function renderActivityLog() {
   
   let html = '';
   activityEntries.forEach(data => {
-    const actualUser = (data.user && boardData.users && boardData.users[data.user.id]) ? boardData.users[data.user.id] : data.user;
+    // Безопасное извлечение пользователя из кэша (или профиля)
+    let actualUser = data.user;
+    if (actualUser && boardData.users && boardData.users[actualUser.id]) {
+      actualUser = boardData.users[actualUser.id];
+    } else if (!actualUser) {
+      actualUser = { name: 'User', avatar: '' };
+    }
     
     let timeStr = 'Недавно';
     if (data.timestamp) {
-      const date = isLocalBoard ? new Date(data.timestamp) : data.timestamp.toDate();
-      timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      try {
+        const date = typeof data.timestamp === 'string' ? new Date(data.timestamp) : (data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp));
+        timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } catch(e){}
     }
 
     html += `
@@ -1478,12 +1486,12 @@ function renderActivityLog() {
         <div class="flex-shrink-0">${getAvatarHTML(actualUser, 'w-10 h-10')}</div>
         <div class="flex flex-col min-w-0 flex-1 justify-center">
           <div class="flex items-center justify-between gap-2 mb-1">
-            <span class="text-[11px] font-black text-gray-900 dark:text-gray-100 truncate">${actualUser.name}</span>
+            <span class="text-[11px] font-black text-gray-900 dark:text-gray-100 truncate">${actualUser.name || 'User'}</span>
             <span class="text-[9px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded-md">${timeStr}</span>
           </div>
           <div class="text-xs text-gray-600 dark:text-gray-400 leading-snug flex items-start gap-1.5">
             <i data-lucide="${data.icon || 'activity'}" class="w-3.5 h-3.5 text-purple-500 mt-0.5 flex-shrink-0"></i>
-            <span class="line-clamp-2">${data.text}</span>
+            <span class="line-clamp-2">${data.text || '...'}</span>
           </div>
         </div>
       </div>`;
@@ -1503,54 +1511,28 @@ function toggleActivityLogState(isChecked) {
   const toggleEl = document.getElementById("activityToggle");
   const isOwner = boardData.owner === currentUser.id;
 
-  // 1. ПРОВЕРКА ПРАВ ДОСТУПА (SEO-Grade Security)
-  if (!isOwner) {
-    if (toggleEl) toggleEl.checked = !isChecked; // Откат состояния визуально
-    return showSystemToast(
-      'Доступ ограничен', 
-      'Только владелец проекта может управлять аудитом.', 
-      'shield-off', 
-      'text-red-500', 
-      'bg-red-50 dark:bg-red-900/20'
-    );
+  // Офлайн-доска всегда принадлежит тому, кто ее открыл на устройстве, поэтому обходим проверку владельца для isLocalBoard
+  if (!isOwner && !isLocalBoard) {
+     if (toggleEl) toggleEl.checked = !isChecked;
+     return showSystemToast('Отказ', 'Только владелец проекта может изменять эту настройку.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
   }
 
-  // 2. ВАЛИДАЦИЯ ТАРИФНОГО ПЛАНА (Monetization Gate)
-  // Включать аудит разрешено только на тарифе 'pro' (Company)
+  // Gatekeeper: Блокируем доступ без тарифа
   if (isChecked && userPlan !== 'pro') {
-    if (toggleEl) toggleEl.checked = false;
-    return showSystemToast(
-      'Требуется Company', 
-      'Журнал действий — это Enterprise-функция для крупных команд.', 
-      'lock', 
-      'text-amber-500', 
-      'bg-amber-50 dark:bg-amber-900/30'
-    );
+     if (toggleEl) toggleEl.checked = false;
+     return showSystemToast('Премиум', 'Журнал действий доступен только на тарифе Company.', 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
   }
-
-  // 3. СИНХРОНИЗАЦИЯ СОСТОЯНИЯ (State Sync)
-  // Если это облачная доска, сохраняем флаг в Firebase. Для локальных — в localStorage.
-  const payload = { isActivityEnabled: isChecked };
   
-  if (isLocalBoard) {
-    updateBoardData(payload);
-    // Для офлайна логи пишутся всегда, если тумблер ВКЛ (без проверки тарифа, так как это локальные данные)
-    showSystemToast('Локальный аудит', isChecked ? 'История действий записывается в браузер.' : 'Запись истории остановлена.', 'database', 'text-purple-500', 'bg-purple-50');
-  } else {
-    updateBoardData(payload);
-    showSystemToast(
-      'Журнал действий', 
-      isChecked ? 'Режим тотального аудита активирован.' : 'Аудит временно приостановлен.', 
-      isChecked ? 'activity' : 'power-off', 
-      'text-purple-500', 
-      'bg-purple-50 dark:bg-purple-900/30'
-    );
-  }
+  // Сохраняем стейт в облако или localStorage (в зависимости от типа доски)
+  updateBoardData({ isActivityEnabled: isChecked });
+  showSystemToast('Аудит', isChecked ? 'Логгер запущен. Запись началась.' : 'Логгер остановлен. База экономится.', 'activity', 'text-purple-500', 'bg-purple-50 dark:bg-purple-900/30');
+  
+  // Визуальное обновление индикатора
+  const statusLabel = document.getElementById("auditStatusLabel");
+  if (statusLabel) statusLabel.innerText = isChecked ? 'Режим: Активен' : 'Режим: Выключен';
 
-  // 4. МГНОВЕННЫЙ РЕРЕНДЕР UI (Zero-Latency View)
-  requestAnimationFrame(() => {
-    renderActivityLog();
-  });
+  // Плавный ре-рендер истории
+  setTimeout(renderActivityLog, 100);
 }
 
 // ЭНТЕРПРАЙЗ: Глобальный диспетчер ротации и очистки логов
