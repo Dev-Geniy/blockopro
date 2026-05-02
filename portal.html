@@ -50,12 +50,23 @@
     const urlParams = new URLSearchParams(window.location.search);
     const cid = urlParams.get('cid');
 
-    if (!cid) window.location.href = 'index.html';
-
     async function loadPortal() {
+       if (!cid) {
+         document.getElementById('portalHeaderName').innerText = 'Ошибка доступа';
+         document.getElementById('companyTitle').innerText = 'Неверная ссылка';
+         document.getElementById('companyDesc').innerText = 'В ссылке отсутствует ID компании (?cid=...). Пожалуйста, перейдите по корректной ссылке, которую вам предоставили.';
+         document.getElementById('publicBoardsList').innerHTML = '';
+         document.getElementById('publicJobsList').innerHTML = '';
+         return;
+       }
+
        try {
          const userDoc = await db.collection('users').doc(cid).get();
-         if (!userDoc.exists) return alert('Компания не найдена');
+         if (!userDoc.exists) {
+           document.getElementById('companyTitle').innerText = 'Компания не найдена';
+           document.getElementById('companyDesc').innerText = 'Возможно, ссылка устарела или профиль был удален.';
+           return;
+         }
          const data = userDoc.data();
          
          document.getElementById('portalHeaderName').innerText = data.companyName || 'Компания';
