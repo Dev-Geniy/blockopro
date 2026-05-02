@@ -2487,19 +2487,37 @@ function openColModal(id) {
 function closeColModal() { toggleModal('colModal', false); }
 
 function saveColumn() { 
+  const newName = document.getElementById('colNameInput').value.trim();
   const wipLimit = parseInt(document.getElementById('colWipInput').value) || 0;
-  columns = columns.map(c => c.id == editingColId ? {...c, name: document.getElementById('colNameInput').value, color: selectedColColor, wipLimit: wipLimit} : c); 
+  
+  const col = columns.find(c => c.id == editingColId);
+  const oldName = col ? col.name : "";
+
+  columns = columns.map(c => c.id == editingColId ? {...c, name: newName, color: selectedColColor, wipLimit: wipLimit} : c); 
   persist(); 
+  
+  if (!isLocalBoard) {
+    if (oldName !== newName) {
+      logActivity(`Переименовал(а) колонку "${oldName}" в "${newName}"`, 'type');
+    } else {
+      logActivity(`Изменил(а) настройки колонки "${newName}"`, 'settings-2');
+    }
+  }
+  
   closeColModal(); 
   render(); 
 }
 
 function deleteColumn() { 
+  const col = columns.find(c => c.id == editingColId);
+  const colName = col ? col.name : "колонку";
+
   openConfirmModal('Удалить колонку?', 'Все задачи внутри колонки также будут удалены навсегда!', 'Удалить', true, () => {
     columns = columns.filter(c => c.id != editingColId); 
     persist(); 
+    if (!isLocalBoard) logActivity(`Удалил(а) колонку "${colName}" и весь её контент`, 'layout-x');
     closeColModal(); 
-    render(); // Мгновенно убираем колонку из UI
+    render(); 
   });
 }
 
@@ -2653,7 +2671,6 @@ function handleImageSelection(file) {
 function renderTagsPicker() { document.getElementById('editTagsContainer').innerHTML = getBoardTags().map(t => `<button onclick="toggleTag('${t.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTags.includes(t.id) ? 'border-transparent shadow-sm ' + t.color : 'border-gray-200 dark:border-gray-700 text-gray-500'}">${t.name}</button>`).join(''); }
 function toggleTag(tagId) { activeTags.includes(tagId) ? activeTags = activeTags.filter(t => t !== tagId) : activeTags.push(tagId); renderTagsPicker(); }
 
-// ПОЛНОСТЬЮ ПЕРЕРАБОТАННАЯ ЛОГИКА КАРТОЧЕК (FIX: Дублирование, Удаление, Архив)
 // GRANULAR WRITE: Сохранение отдельного документа в подколлекцию
 async function saveCard() {
   const titleVal = document.getElementById('editTitle').value.trim();
@@ -2709,6 +2726,13 @@ async function saveCard() {
       ...cardData,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
+    
+    // ЭНТЕРПРАЙЗ: Запись в журнал действий
+    if (!editingCard) {
+      logActivity(`Создал(а) задачу "${cardData.title}"`, 'plus-circle');
+    } else {
+      logActivity(`Обновил(а) детали задачи "${cardData.title}"`, 'edit-3');
+    }
   }
 
   closeEditModal();
@@ -2717,8 +2741,10 @@ async function saveCard() {
   
 function deleteCard() { 
   if (!editingCard) return;
+  const title = editingCard.title;
   openConfirmModal('Удалить навсегда?', 'Карточка будет удалена без возможности восстановления.', 'Удалить задачу', true, () => {
     dispatchCardDelete(editingCard.id, currentColumn);
+    if (!isLocalBoard) logActivity(`Удалил(а) задачу "${title}" навсегда`, 'trash-2');
     closeEditModal();
     showSystemToast('Удалено', 'Карточка стерта из базы.', 'trash-2', 'text-red-500', 'bg-red-50');
   });
@@ -2726,8 +2752,10 @@ function deleteCard() {
   
 function archiveCard() {
   if (!editingCard) return;
+  const title = editingCard.title;
   openConfirmModal('Отправить в архив?', 'Задача исчезнет с доски, но останется в разделе "Архив".', 'В архив', false, () => {
     dispatchCardUpdate(editingCard.id, currentColumn, { archived: true });
+    if (!isLocalBoard) logActivity(`Отправил(а) задачу "${title}" в архив`, 'archive');
     closeEditModal(); 
     showSystemToast('Архивировано', 'Задача перемещена в хранилище.', 'archive', 'text-amber-500', 'bg-amber-50');
   });
