@@ -185,7 +185,7 @@
     <button onclick="toggleMobileMenu()" class="md:hidden p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 transition-colors shadow-sm">
       <i data-lucide="menu" class="w-4 h-4"></i>
     </button>
-    <button onclick="toggleActivityLog()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Журнал действий">
+    <button id="btnActivityLog" onclick="toggleActivityLog()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Журнал действий">
       <i data-lucide="activity" class="w-4 h-4"></i>
     </button>
     <button onclick="toggleArchive()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Архив проекта">
@@ -1768,6 +1768,20 @@ function processBoardData(data) {
   const headerTitle = document.getElementById('boardTitleHeader');
   headerTitle.innerText = data.title;
 
+  // ЭНТЕРПРАЙЗ: Управление правами доступа к аудиту (RBAC)
+  const myRole = data.users && data.users[currentUser.id] ? data.users[currentUser.id].role : 'editor';
+  const isViewer = myRole === 'viewer' && !isLocalBoard;
+  
+  // Скрываем кнопку вызова журнала для читателей
+  const btnActivity = document.getElementById('btnActivityLog');
+  if (btnActivity) btnActivity.style.display = isViewer ? 'none' : 'block';
+
+  // Принудительно закрываем шторку истории, если она была открыта (защита от смены ролей в рантайме)
+  const activitySidebar = document.getElementById('activitySidebar');
+  if (isViewer && activitySidebar && !activitySidebar.classList.contains('translate-x-full')) {
+    activitySidebar.classList.add('translate-x-full');
+  }
+
   // ЭНТЕРПРАЙЗ: Синхронизация селектора очистки с данными доски
   const retentionSelect = document.getElementById('logRetentionSelect');
   if (retentionSelect && data.logRetention) {
@@ -2058,8 +2072,19 @@ const SidebarManager = {
 // Замороженные публичные методы (toggle)
 window.toggleAiSidebar = () => SidebarManager.toggle('aiSidebar', () => setTimeout(() => document.getElementById('aiChatInput')?.focus(), 100));
 window.toggleArchive = () => SidebarManager.toggle('archiveSidebar', () => { if (typeof renderArchiveSidebar === 'function') renderArchiveSidebar(); });
-window.toggleActivityLog = () => SidebarManager.toggle('activitySidebar', () => { if (typeof renderActivityLog === 'function') renderActivityLog(); });
-window.toggleSettings = () => SidebarManager.toggle('settingsSidebar');
+window.toggleActivityLog = () => {
+  // ЭНТЕРПРАЙЗ: Блокировка доступа к шторке на уровне логики (Double-Check Security)
+  const myRole = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role : 'editor';
+  if (myRole === 'viewer' && !isLocalBoard) {
+    showSystemToast('Отказ', 'История действий доступна только владельцам и редакторам.', 'shield-alert', 'text-red-500', 'bg-red-50');
+    return;
+  }
+  
+  SidebarManager.toggle('activitySidebar', () => { 
+    if (typeof renderActivityLog === 'function') renderActivityLog(); 
+  });
+};
+  window.toggleSettings = () => SidebarManager.toggle('settingsSidebar');
 window.toggleMembers = () => SidebarManager.toggle('membersSidebar');
 window.toggleChat = () => SidebarManager.toggle('chatSidebar', () => {
   const chatBox = document.getElementById('chatMessages');
