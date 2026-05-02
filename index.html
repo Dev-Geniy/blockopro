@@ -576,16 +576,12 @@
     <button onclick="closeProfileModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-5 h-5"></i></button>
     
     <div class="overflow-y-auto hide-scroll pb-2 px-1">
-      <div class="flex justify-between items-center mb-6 px-1">
-        <h2 id="profileModalTitle" class="text-2xl font-extrabold text-gray-900 dark:text-white">Ваш Профиль</h2>
-        <button onclick="toggleCompanyProfileView()" id="companyProfileToggleBtn" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors border border-indigo-100 dark:border-indigo-800/50 text-xs font-bold active:scale-95">
-          <i data-lucide="building-2" class="w-4 h-4"></i> <span id="companyToggleText">Компания</span>
-        </button>
-      </div>
+      <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-6 text-center border-b border-gray-200 dark:border-gray-800 pb-4">Настройки аккаунта</h2>
 
       <!-- Секция личного профиля -->
-      <div id="personalProfileSection" class="transition-all duration-300 opacity-100">
-        <div class="flex items-center gap-6 mb-8">
+      <div id="personalProfileSection" class="mb-8">
+        <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Личный профиль</h3>
+        <div class="flex items-center gap-6 mb-6">
           <div id="profilePreviewArea" class="flex-shrink-0"></div>
           <div class="flex flex-col gap-3 flex-1">
             <button onclick="logout()" class="w-full py-2.5 border border-red-200 dark:border-red-900/50 text-red-500 font-bold rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm text-xs">
@@ -597,7 +593,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 mb-8">
+        <div class="grid grid-cols-2 gap-3 mb-6">
           <div class="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-800/50 text-left flex flex-col justify-between">
             <span class="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block mb-1">Монеты</span>
             <div class="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
@@ -611,7 +607,7 @@
           </div>
         </div>
 
-        <div class="space-y-6 text-left">
+        <div class="space-y-6 text-left border-b border-gray-200 dark:border-gray-800 pb-8">
           <div id="avatarUploadBlock" class="hidden">
             <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Фото профиля (URL или Файл)</label>
             <div class="flex gap-2">
@@ -642,14 +638,16 @@
       </div>
 
       <!-- Секция профиля компании (для тарифа Company) -->
-      <div id="companyProfileSection" class="hidden transition-all duration-300 opacity-0">
-        <div id="companyLockedState" class="hidden flex-col items-center justify-center py-10 text-center">
-          <div class="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4 shadow-sm border border-amber-100 dark:border-amber-800">
-            <i data-lucide="lock" class="w-8 h-8 text-amber-500"></i>
+      <div id="companyProfileSection">
+        <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><i data-lucide="building-2" class="w-4 h-4 text-indigo-500"></i> Профиль компании</h3>
+        
+        <div id="companyLockedState" class="hidden flex-col items-center justify-center py-6 text-center bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-dashed border-amber-200 dark:border-amber-800/50">
+          <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center mb-3 shadow-sm border border-amber-200 dark:border-amber-700">
+            <i data-lucide="lock" class="w-5 h-5 text-amber-500"></i>
           </div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Профиль Компании заблокирован</h3>
-          <p class="text-xs text-gray-500 mb-6 leading-relaxed max-w-sm mx-auto">Публичные доски, размещение вакансий и создание портала компании доступны только на тарифе <b>Company</b>.</p>
-          <button onclick="closeProfileModal(); setTimeout(openPricingModal, 300)" class="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-amber-500/25 active:scale-95 flex items-center gap-2 mx-auto"><i data-lucide="zap" class="w-4 h-4"></i> Улучшить тариф</button>
+          <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-2">Функция заблокирована</h3>
+          <p class="text-[10px] text-gray-500 mb-4 leading-relaxed max-w-[250px] mx-auto">Публичные доски и портал найма доступны только на тарифе <b>Company</b>.</p>
+          <button onclick="closeProfileModal(); setTimeout(openPricingModal, 300)" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 mx-auto"><i data-lucide="zap" class="w-3.5 h-3.5"></i> Улучшить тариф</button>
         </div>
         
         <div id="companyActiveState" class="hidden flex-col gap-4 text-left">
@@ -665,7 +663,7 @@
               </div>
               <div>
                 <h4 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Публичный портал</h4>
-                <p class="text-[10px] text-gray-500 leading-relaxed">Создайте внешнюю страницу для найма сотрудников и публикации RoadMap'ов.</p>
+                <p class="text-[10px] text-gray-500 leading-relaxed">Внешняя страница для найма сотрудников и публикации RoadMap'ов.</p>
               </div>
             </div>
             <div>
@@ -701,7 +699,7 @@
 
           <div class="flex gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
             <button onclick="saveCompanyProfile()" id="saveCompanyBtn" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/25 active:scale-95 transition-all flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Сохранить</button>
-            <button onclick="openMyPortal()" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 border border-gray-200 dark:border-gray-700"><i data-lucide="external-link" class="w-4 h-4"></i> Портал</button>
+            <button onclick="openMyPortal()" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 border border-gray-200 dark:border-gray-700"><i data-lucide="external-link" class="w-4 h-4"></i> Открыть Портал</button>
           </div>
         </div>
       </div>
@@ -1457,7 +1455,20 @@ grid.innerHTML = filtered.map(data => {
 }
 
 // Модальное окно
-function openCreateModal() { document.getElementById('createBoardModal').classList.remove('hidden'); }
+// Модальное окно
+async function openCreateModal() { 
+  document.getElementById('createBoardModal').classList.remove('hidden'); 
+  
+  // Автозаполнение названия компании
+  if (currentUser && userPlan === 'pro') {
+    try {
+      const userDoc = await db.collection('users').doc(currentUser.id).get();
+      if (userDoc.exists && userDoc.data().companyName) {
+        document.getElementById('newBoardCompany').value = userDoc.data().companyName;
+      }
+    } catch(e) {}
+  }
+}
 function closeCreateModal() { document.getElementById('createBoardModal').classList.add('hidden'); }
 
 // --- ЛОГИКА ТАРИФОВ И ЛИМИТОВ ---
@@ -2618,56 +2629,7 @@ async function loadAffiliateStats() {
   }
 }
 
-let isCompanyProfileActive = false;
 let currentCompanyJobs = [];
-
-function toggleCompanyProfileView() {
-  isCompanyProfileActive = !isCompanyProfileActive;
-  const personalSec = document.getElementById('personalProfileSection');
-  const companySec = document.getElementById('companyProfileSection');
-  const title = document.getElementById('profileModalTitle');
-  const toggleText = document.getElementById('companyToggleText');
-  const toggleBtn = document.getElementById('companyProfileToggleBtn');
-  
-  if (isCompanyProfileActive) {
-    title.innerText = 'Профиль Компании';
-    toggleText.innerText = 'Личный';
-    toggleBtn.querySelector('i').setAttribute('data-lucide', 'user');
-    
-    personalSec.classList.remove('opacity-100');
-    personalSec.classList.add('opacity-0');
-    setTimeout(() => {
-      personalSec.classList.add('hidden');
-      companySec.classList.remove('hidden');
-      
-      if (userPlan === 'pro') {
-        document.getElementById('companyLockedState').classList.add('hidden');
-        document.getElementById('companyLockedState').classList.remove('flex');
-        document.getElementById('companyActiveState').classList.remove('hidden');
-        document.getElementById('companyActiveState').classList.add('flex');
-      } else {
-        document.getElementById('companyLockedState').classList.remove('hidden');
-        document.getElementById('companyLockedState').classList.add('flex');
-        document.getElementById('companyActiveState').classList.add('hidden');
-        document.getElementById('companyActiveState').classList.remove('flex');
-      }
-      
-      setTimeout(() => { companySec.classList.remove('opacity-0'); companySec.classList.add('opacity-100'); lucide.createIcons(); }, 50);
-    }, 300);
-  } else {
-    title.innerText = 'Ваш Профиль';
-    toggleText.innerText = 'Компания';
-    toggleBtn.querySelector('i').setAttribute('data-lucide', 'building-2');
-    
-    companySec.classList.remove('opacity-100');
-    companySec.classList.add('opacity-0');
-    setTimeout(() => {
-      companySec.classList.add('hidden');
-      personalSec.classList.remove('hidden');
-      setTimeout(() => { personalSec.classList.remove('opacity-0'); personalSec.classList.add('opacity-100'); lucide.createIcons(); }, 50);
-    }, 300);
-  }
-}
 
 function switchCompanyTab(tab) {
   const btnInfo = document.getElementById('tabBtnInfo');
@@ -2767,7 +2729,6 @@ async function openProfileSettings() {
   const modal = document.getElementById('profileModal');
   const content = document.getElementById('profileContent');
   
-  if (isCompanyProfileActive) toggleCompanyProfileView();
   switchCompanyTab('info');
   
   try {
@@ -2776,6 +2737,19 @@ async function openProfileSettings() {
     const rewards = data.rewardsClaimed || [];
 
     document.getElementById('profileCoinsVal').innerText = data.coins || 0;
+    
+    // Блокировка или разблокировка секции компании
+    if (userPlan === 'pro') {
+      document.getElementById('companyLockedState').classList.add('hidden');
+      document.getElementById('companyLockedState').classList.remove('flex');
+      document.getElementById('companyActiveState').classList.remove('hidden');
+      document.getElementById('companyActiveState').classList.add('flex');
+    } else {
+      document.getElementById('companyLockedState').classList.remove('hidden');
+      document.getElementById('companyLockedState').classList.add('flex');
+      document.getElementById('companyActiveState').classList.add('hidden');
+      document.getElementById('companyActiveState').classList.remove('flex');
+    }
     
     let planText = (data.plan || 'free').toUpperCase();
     if (data.planExpiresAt) {
