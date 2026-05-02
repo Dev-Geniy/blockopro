@@ -651,55 +651,35 @@
         </div>
         
         <div id="companyActiveState" class="hidden flex-col gap-4 text-left">
-          <div class="flex gap-1.5 p-1.5 bg-gray-100 dark:bg-gray-800/80 rounded-xl border border-gray-200 dark:border-gray-700">
-            <button onclick="switchCompanyTab('info')" id="tabBtnInfo" class="flex-1 py-2 text-xs font-bold bg-white dark:bg-gray-700 shadow-sm rounded-lg transition-all text-indigo-600 dark:text-indigo-400">Информация</button>
-            <button onclick="switchCompanyTab('jobs')" id="tabBtnJobs" class="flex-1 py-2 text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all rounded-lg">Вакансии <span id="jobsCountBadge" class="ml-1 bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded text-[9px]">0</span></button>
+          <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 flex items-start gap-4">
+            <div class="w-10 h-10 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center shadow-sm border border-gray-100 dark:border-gray-700 flex-shrink-0">
+              <i data-lucide="globe" class="w-5 h-5 text-indigo-500"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Глобальный профиль</h4>
+              <p class="text-[10px] text-gray-500 leading-relaxed">Эти данные используются для визитки на портале и автозаполнения.</p>
+            </div>
           </div>
-
-          <div id="companyTabInfo" class="flex flex-col gap-4 animate-fade-in-up">
-            <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 flex items-start gap-4">
-              <div class="w-10 h-10 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center shadow-sm border border-gray-100 dark:border-gray-700 flex-shrink-0">
-                <i data-lucide="globe" class="w-5 h-5 text-indigo-500"></i>
-              </div>
-              <div>
-                <h4 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Публичный портал</h4>
-                <p class="text-[10px] text-gray-500 leading-relaxed">Внешняя страница для найма сотрудников и публикации RoadMap'ов.</p>
-              </div>
-            </div>
-            <div>
-              <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Название компании</label>
-              <input type="text" id="companyProfileName" placeholder="ООО Инновации" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow dark:text-white">
-            </div>
-            <div>
-              <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Короткое описание (Слоган)</label>
-              <input type="text" id="companyProfileDesc" placeholder="Меняем мир к лучшему" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow dark:text-white">
-            </div>
-            <div>
-              <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Веб-сайт</label>
-              <div class="relative">
-                <i data-lucide="link" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                <input type="url" id="companyProfileWebsite" placeholder="https://" class="w-full pl-9 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow dark:text-white">
-              </div>
+          <div>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Название компании</label>
+            <input type="text" id="companyProfileName" placeholder="ООО Инновации" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow dark:text-white">
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Короткое описание (Слоган)</label>
+            <input type="text" id="companyProfileDesc" placeholder="Меняем мир к лучшему" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow dark:text-white">
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Веб-сайт</label>
+            <div class="relative">
+              <i data-lucide="link" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+              <input type="url" id="companyProfileWebsite" placeholder="https://" class="w-full pl-9 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow dark:text-white">
             </div>
           </div>
 
-          <div id="companyTabJobs" class="hidden flex-col gap-4 animate-fade-in-up">
-             <div class="flex gap-2">
-               <input type="text" id="newJobTitle" placeholder="Должность (Напр: Frontend Dev)" class="flex-[2] px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white">
-               <input type="text" id="newJobSalary" placeholder="Зарплата ($)" class="flex-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white">
-             </div>
-             <div class="flex gap-2">
-               <input type="text" id="newJobLink" placeholder="Ссылка на анкету / Контакт" class="flex-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white">
-               <button onclick="addCompanyJob()" class="px-4 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:hover:bg-indigo-800/60 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl text-xs transition-colors flex-shrink-0 shadow-sm"><i data-lucide="plus" class="w-4 h-4"></i></button>
-             </div>
-             <div id="companyJobsList" class="flex flex-col gap-2 max-h-48 overflow-y-auto hide-scroll p-1 border-t border-gray-100 dark:border-gray-800 mt-2 pt-3">
-               <!-- Вакансии -->
-             </div>
-          </div>
-
-          <div class="flex gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-            <button onclick="saveCompanyProfile()" id="saveCompanyBtn" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/25 active:scale-95 transition-all flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Сохранить</button>
-            <button onclick="openMyPortal()" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 border border-gray-200 dark:border-gray-700"><i data-lucide="external-link" class="w-4 h-4"></i> Открыть Портал</button>
+          <div class="flex flex-col gap-3 pt-3 border-t border-gray-100 dark:border-gray-800 mt-2">
+            <button onclick="saveCompanyProfile()" id="saveCompanyBtn" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Сохранить данные</button>
+            <button onclick="window.location.href='portal-editor.html'" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/25 active:scale-95 transition-all flex items-center justify-center gap-2"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Конструктор портала</button>
+            <button onclick="openMyPortal()" class="w-full py-2 bg-transparent text-gray-500 hover:text-indigo-500 font-bold text-xs transition-colors">Посмотреть визитку</button>
           </div>
         </div>
       </div>
@@ -2627,67 +2607,6 @@ async function loadAffiliateStats() {
   if (affData.signups >= 50 && (affData.paidSignups || 0) >= 10) {
      checkTier('Ambassador', 50, 'ambassador');
   }
-}
-
-let currentCompanyJobs = [];
-
-function switchCompanyTab(tab) {
-  const btnInfo = document.getElementById('tabBtnInfo');
-  const btnJobs = document.getElementById('tabBtnJobs');
-  const tabInfo = document.getElementById('companyTabInfo');
-  const tabJobs = document.getElementById('companyTabJobs');
-
-  if (tab === 'info') {
-    btnInfo.className = "flex-1 py-2 text-xs font-bold bg-white dark:bg-gray-700 shadow-sm rounded-lg transition-all text-indigo-600 dark:text-indigo-400";
-    btnJobs.className = "flex-1 py-2 text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all rounded-lg";
-    tabInfo.classList.remove('hidden'); tabInfo.classList.add('flex');
-    tabJobs.classList.add('hidden'); tabJobs.classList.remove('flex');
-  } else {
-    btnJobs.className = "flex-1 py-2 text-xs font-bold bg-white dark:bg-gray-700 shadow-sm rounded-lg transition-all text-indigo-600 dark:text-indigo-400";
-    btnInfo.className = "flex-1 py-2 text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all rounded-lg";
-    tabJobs.classList.remove('hidden'); tabJobs.classList.add('flex');
-    tabInfo.classList.add('hidden'); tabInfo.classList.remove('flex');
-  }
-}
-
-function renderCompanyJobs() {
-  const list = document.getElementById('companyJobsList');
-  document.getElementById('jobsCountBadge').innerText = currentCompanyJobs.length;
-  
-  if (currentCompanyJobs.length === 0) {
-    list.innerHTML = '<div class="text-center text-xs text-gray-400 py-4 italic">Нет открытых вакансий</div>';
-    return;
-  }
-  
-  list.innerHTML = currentCompanyJobs.map((job, idx) => `
-    <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm">
-      <div class="flex flex-col min-w-0">
-        <span class="font-bold text-xs text-gray-900 dark:text-white truncate">${job.title}</span>
-        <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-black">${job.salary}</span>
-      </div>
-      <button onclick="removeCompanyJob(${idx})" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-    </div>
-  `).join('');
-  lucide.createIcons();
-}
-
-function addCompanyJob() {
-  const title = document.getElementById('newJobTitle').value.trim();
-  const salary = document.getElementById('newJobSalary').value.trim();
-  const link = document.getElementById('newJobLink').value.trim();
-  
-  if (!title) return showSystemToast('Ошибка', 'Укажите должность', 'alert-circle', 'text-red-500', 'bg-red-50');
-  
-  currentCompanyJobs.push({ title, salary, link });
-  document.getElementById('newJobTitle').value = '';
-  document.getElementById('newJobSalary').value = '';
-  document.getElementById('newJobLink').value = '';
-  renderCompanyJobs();
-}
-
-function removeCompanyJob(idx) {
-  currentCompanyJobs.splice(idx, 1);
-  renderCompanyJobs();
 }
 
 function openMyPortal() {
