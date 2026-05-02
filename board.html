@@ -3210,32 +3210,33 @@ function render() {
       // Вместо прямой вставки в board, добавляем в DocumentFragment
       fragment.appendChild(wrap);
       
-      // Инициализация SortableJS для текущей колонки (Enterprise Ultimate Physics)
       // Инициализация SortableJS для текущей колонки (Enterprise Smart Invert Physics)
       const colEl = wrap.querySelector(`#cards-${col.id}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
         animation: 250, 
-        easing: "cubic-bezier(0.25, 1, 0.5, 1)", // Премиальная физика примагничивания
+        easing: "cubic-bezier(0.25, 1, 0.5, 1)", 
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
         
-        // ВЕРНУЛИ КАК БЫЛО: Фикс для карточек разного размера (Аудио над Картинкой)
-        invertSwap: true, // Вычисляет пересечение по физическим краям (top/bottom), а не по центру мыши
-        direction: 'vertical', // Требуется для правильной работы invertSwap в строгих колонках
-        swapThreshold: 0.6, // Идеальная чувствительность для инвертированного обмена
+        invertSwap: true, 
+        direction: 'vertical', 
+        swapThreshold: 0.6, 
         
         disabled: isViewer,
-        delay: 150, 
+        delay: 100, 
         delayOnTouchOnly: true, 
         filter: '.empty-state-placeholder', 
-        emptyInsertThreshold: 100, // Глубокий магнит для пустых колонок
-        
-        // Умная зона прокрутки
+        emptyInsertThreshold: 150, 
+
+        // ЭНТЕРПРАЙЗ СКРОЛЛ: Карточка тянется за границами и активирует скролл окна
         scroll: true, 
-        scrollSensitivity: 150, // Сохраняем увеличенную зону чувствительности от краев экрана
-        scrollSpeed: 30, // Слегка ускоренная плавная прокрутка
-        bubbleScroll: true,
+        forceFallback: true, // Позволяет тянуть объект за пределы окна браузера
+        fallbackTolerance: 3, 
+        scrollSensitivity: 250, // Значительно увеличиваем зону захвата скролла у границ
+        scrollSpeed: 40, 
+        bubbleScroll: true, // Скроллит родительские контейнеры, если колонка закончилась
+        releaseOnBlur: false, // Не прерывать перетаскивание, если фокус потерян
         
         // Интерактивная подсветка скролл-зон
         onStart: function (evt) {
