@@ -944,55 +944,8 @@
     <span class="relative inline-flex rounded-full h-4 w-4 bg-purple-500 border-2 border-white dark:border-gray-900"></span>
   </span>
 </button>
-  
-<div id="publicBoardModal" class="hidden fixed inset-0 z-[600] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2rem] w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700 transform transition-transform scale-95" id="publicBoardModalContent">
-    <button onclick="closePublicBoardModal()" class="absolute top-6 right-6 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
-    
-    <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm border border-indigo-100 dark:border-indigo-800">
-      <i data-lucide="globe" class="w-8 h-8"></i>
-    </div>
-    
-    <h2 class="text-2xl font-black mb-2 text-gray-900 dark:text-white tracking-tight">Публичный RoadMap</h2>
-    <p class="text-sm text-gray-500 mb-6 leading-relaxed">Сделайте этот проект видимым для всех посетителей портала вашей компании. Гости смогут смотреть карточки, но не смогут их редактировать.</p>
-    
-    <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700 flex justify-between items-center mb-6">
-      <span class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest">Активировать</span>
-      <label class="relative inline-flex items-center cursor-pointer group" title="Сделать доску публичной">
-        <input type="checkbox" id="publicBoardToggleModal" onchange="togglePublicBoardState(this.checked)" class="sr-only peer">
-        <div class="w-10 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-400 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-500"></div>
-      </label>
-    </div>
-
-    <button onclick="closePublicBoardModal()" class="w-full py-3 text-sm font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors">Готово</button>
-  </div>
-</div>
 
 <script>
-function openPublicBoardModal() {
-  const modal = document.getElementById('publicBoardModal');
-  const content = document.getElementById('publicBoardModalContent');
-  const toggle = document.getElementById('publicBoardToggleModal');
-  
-  if (toggle) toggle.checked = boardData.isPublic === true;
-  
-  modal.classList.remove('hidden');
-  setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
-}
-
-function closePublicBoardModal() {
-  const modal = document.getElementById('publicBoardModal');
-  const content = document.getElementById('publicBoardModalContent');
-  modal.classList.add('opacity-0');
-  content.classList.add('scale-95');
-  setTimeout(() => modal.classList.add('hidden'), 300);
-}
-
-// Добавляем в глобальный обработчик кликов (фон)
-window.addEventListener('click', (e) => {
-  if (e.target.id === 'publicBoardModal') closePublicBoardModal();
-});
-
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
 
