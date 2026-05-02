@@ -1320,6 +1320,8 @@ function loadBoard() {
       }
       boardData = data;
       columns = data.columns || [];
+      // ЭНТЕРПРАЙЗ: Авто-генерация персонального тега пользователя при входе на доску
+      ensureUserTag(boardData);
       processBoardData(boardData);
     }
   } else {
@@ -1340,17 +1342,19 @@ function loadBoard() {
         return;
       }
 
-      // ЭНТЕРПРАЙЗ: Маршрутизация на ввод пароля с сохранением Deep Link (если перешли по ссылке на карточку)
+      // ЭНТЕРПРАЙЗ: Маршрутизация на ввод пароля с сохранением Deep Link
       if (!isOwner && boardData.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== boardData.password) {
         const cParam = new URLSearchParams(window.location.search).get('c');
         window.location.href = `index.html?auth_board=${BOARD_ID}${cParam ? '&c=' + cParam : ''}`; 
         return;
       }
 
-      // 2. Оптимизированный поток: Гранулярное чтение всех карточек (для работы шторки Архива)
+      // ЭНТЕРПРАЙЗ: Авто-создание тега пользователя для системы "My Tasks"
+      ensureUserTag(boardData);
+
+      // 2. Оптимизированный поток: Гранулярное чтение всех карточек
       if (!cardsUnsubscribe) {
         cardsUnsubscribe = docRef.collection("cards").onSnapshot((querySnapshot) => {
-          // Гранулярная обработка: обновляем в Map только то, что реально изменилось
           querySnapshot.docChanges().forEach((change) => {
             if (change.type === "added" || change.type === "modified") {
               allCardsMap.set(change.doc.id, { id: change.doc.id, ...change.doc.data() });
@@ -1362,7 +1366,7 @@ function loadBoard() {
           syncAndRender();
         });
       } else {
-        syncAndRender(); // Пересобираем при изменении метаданных
+        syncAndRender(); 
       }
 
       renderMembersSidebar();
