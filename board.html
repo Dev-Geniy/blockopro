@@ -185,6 +185,9 @@
     <button onclick="toggleMobileMenu()" class="md:hidden p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 transition-colors shadow-sm">
       <i data-lucide="menu" class="w-4 h-4"></i>
     </button>
+    <button onclick="toggleActivityLog()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Журнал действий">
+      <i data-lucide="activity" class="w-4 h-4"></i>
+    </button>
     <button onclick="toggleArchive()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Архив проекта">
       <i data-lucide="archive" class="w-4 h-4"></i>
     </button>
@@ -198,8 +201,8 @@
       <i data-lucide="message-square" class="w-4 h-4"></i>
       <span id="chatBadge" class="hidden absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse border-2 border-white dark:border-gray-900 shadow-sm">0</span>
     </button>
-    <button id="addColumnBtn" onclick="addColumn()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
-      <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden sm:inline">Колонку</span>
+    <button id="addColumnBtn" onclick="addColumn()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white p-2.5 rounded-xl flex items-center justify-center text-sm shadow-lg shadow-blue-500/25 active:scale-95 transition-all" title="Добавить колонку">
+      <i data-lucide="plus" class="w-5 h-5"></i>
     </button>
   </div>
 </header>
@@ -341,6 +344,21 @@
     <div id="archiveSidebarList" class="flex-1 overflow-y-auto p-4 space-y-3 hide-scroll"></div>
   </aside>
 
+  <aside id="activitySidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-purple-50/50 dark:bg-purple-900/20">
+      <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="activity" class="w-4 h-4 text-purple-500"></i> Журнал действий</h3>
+      <button onclick="toggleActivityLog()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="p-3 bg-gray-50 dark:bg-gray-900/50 flex justify-between items-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+      <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Аудит операций</span>
+      <label class="relative inline-flex items-center cursor-pointer group" title="Включить запись логов">
+        <input type="checkbox" id="activityToggle" onchange="toggleActivityLogState(this.checked)" class="sr-only peer">
+        <div class="w-8 h-4 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-purple-500"></div>
+      </label>
+    </div>
+    <div id="activityList" class="flex-1 overflow-y-auto p-4 space-y-3 hide-scroll relative"></div>
+  </aside>
+
   <!-- ЭНТЕРПРАЙЗ: Шторка AI Ассистента (Жесткая изоляция z-50 для защиты от наложения) -->
   <aside id="aiSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-[400px] border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-50 shadow-2xl">
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-900/20">
@@ -421,10 +439,21 @@
     </div>
     <div class="flex-1 overflow-y-auto pr-2 space-y-6">
       <div><span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Теги (Labels)</span><div id="editTagsContainer" class="flex gap-2 flex-wrap"></div></div>
-      <div><span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Дедлайн</span><input type="date" id="editDueDate" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-medium dark:text-white focus:ring-2 focus:ring-blue-500" /></div>
+      <div class="grid grid-cols-3 gap-4">
+        <div><span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Дедлайн</span><input type="date" id="editDueDate" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-medium dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" /></div>
+        <div>
+          <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Приоритет</span>
+          <select id="editPriority" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-medium dark:text-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none transition-shadow">
+            <option value="low">Низкий</option>
+            <option value="normal" selected>Обычный</option>
+            <option value="high">Высокий</option>
+            <option value="critical">Критичный</option>
+          </select>
+        </div>
+        <div><span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3" title="Оценка сложности (Story Points)">Story Points</span><input type="number" min="0" max="99" id="editStoryPoints" placeholder="SP" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-medium dark:text-white focus:ring-2 focus:ring-blue-500 text-center transition-shadow" /></div>
+      </div>
       <div>
-        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Обложка</span>
-        <label id="dropzoneLabel" class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-2xl cursor-pointer h-36 relative overflow-hidden transition-all group bg-gray-50/50 dark:bg-gray-900/30">
+        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Обложка</span>        <label id="dropzoneLabel" class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-2xl cursor-pointer h-36 relative overflow-hidden transition-all group bg-gray-50/50 dark:bg-gray-900/30">
           <div id="dropzoneText" class="flex flex-col items-center"><div class="p-3 bg-white dark:bg-gray-800 rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform"><i data-lucide="image-plus" class="w-6 h-6 text-blue-500"></i></div><span class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-blue-500">Нажмите или перетащите картинку</span></div>
           <img id="editImagePreview" class="absolute inset-0 w-full h-full object-cover hidden" />
           <input type="file" id="editImage" class="hidden" accept="image/*" />
@@ -446,19 +475,23 @@
             <button onclick="generateAIChecklistFromDesc()" id="aiGenChecklistBtn" class="text-[10px] hover:bg-white dark:hover:bg-indigo-800 text-indigo-600 dark:text-indigo-400 px-2.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95" title="Извлечь физический чек-лист из описания"><i data-lucide="list-todo" class="w-3 h-3"></i> Чек-лист</button>
           </div>
         </div>
-        <div class="flex flex-wrap items-center gap-1 mb-2 bg-gray-100 dark:bg-gray-900/80 p-1.5 rounded-xl w-full border border-gray-200 dark:border-gray-700/50">          <button onclick="insertMarkdown('**', '**')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm font-black text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Жирный">B</button>
-          <button onclick="insertMarkdown('*', '*')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm italic font-serif text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Курсив">I</button>
-          <button onclick="insertMarkdown('~~', '~~')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm line-through text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Зачеркнутый">S</button>
-          <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
-          <button onclick="insertMarkdown('### ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-xs font-black text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Заголовок H3">H</button>
-          <button onclick="insertMarkdown('> ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Цитата"><i data-lucide="quote" class="w-4 h-4"></i></button>
-          <button onclick="insertMarkdown('\n```\n', '\n```\n')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Код"><i data-lucide="code" class="w-4 h-4"></i></button>
-          <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
-          <button onclick="insertMarkdown('- ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Маркированный список"><i data-lucide="list" class="w-4 h-4"></i></button>
-          <button onclick="insertMarkdown('1. ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Нумерованный список"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
-          <button onclick="insertMarkdown('- [ ] ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Чек-лист"><i data-lucide="check-square" class="w-4 h-4"></i></button>
-          <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
-          <button onclick="insertMarkdown('[Текст ссылки](https://', ')')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Ссылка"><i data-lucide="link" class="w-4 h-4"></i></button>
+        <div class="flex flex-wrap items-center justify-between gap-1 mb-2 bg-gray-100 dark:bg-gray-900/80 p-1.5 rounded-xl w-full border border-gray-200 dark:border-gray-700/50">          
+          <div class="flex flex-wrap items-center gap-1">
+            <button onclick="insertMarkdown('**', '**')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm font-black text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Жирный">B</button>
+            <button onclick="insertMarkdown('*', '*')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm italic font-serif text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Курсив">I</button>
+            <button onclick="insertMarkdown('~~', '~~')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm line-through text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Зачеркнутый">S</button>
+            <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
+            <button onclick="insertMarkdown('### ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-xs font-black text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Заголовок H3">H</button>
+            <button onclick="insertMarkdown('> ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Цитата"><i data-lucide="quote" class="w-4 h-4"></i></button>
+            <button onclick="insertMarkdown('\n```\n', '\n```\n')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Код"><i data-lucide="code" class="w-4 h-4"></i></button>
+            <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
+            <button onclick="insertMarkdown('- ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Маркированный список"><i data-lucide="list" class="w-4 h-4"></i></button>
+            <button onclick="insertMarkdown('1. ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Нумерованный список"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
+            <button onclick="insertMarkdown('- [ ] ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Чек-лист"><i data-lucide="check-square" class="w-4 h-4"></i></button>
+            <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
+            <button onclick="insertMarkdown('[Текст ссылки](https://', ')')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Ссылка"><i data-lucide="link" class="w-4 h-4"></i></button>
+          </div>
+          <button id="descMicBtn" onclick="toggleDescVoiceInput()" class="p-1.5 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 rounded-lg transition-all w-8 h-8 flex items-center justify-center shadow-sm border border-gray-200 dark:border-gray-700 active:scale-95" title="Голосовая диктовка описания"><i data-lucide="mic" class="w-4 h-4 pointer-events-none"></i></button>
         </div>
         <textarea id="editDescription" placeholder="Пишите свободно... Нажмите Enter для переноса строки.&#10;&#10;Текст больше не будет сплошным монолитом. Выделяйте фрагменты и применяйте форматирование сверху." rows="6" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-mono dark:text-gray-300 resize-y focus:ring-2 focus:ring-blue-500 transition-shadow leading-relaxed whitespace-pre-wrap"></textarea>
       </div>
@@ -482,7 +515,11 @@
   <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-sm shadow-2xl border border-gray-200 dark:border-gray-700">
     <div class="flex justify-between items-center mb-5"><h2 class="text-xl font-bold dark:text-white">Настройки колонки</h2><button onclick="closeColModal()" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button></div>
     <span class="text-xs font-bold text-gray-500 uppercase block mb-2">Название</span>
-    <input id="colNameInput" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none mb-5 dark:text-white focus:ring-2 focus:ring-blue-500" />
+    <input id="colNameInput" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none mb-4 dark:text-white focus:ring-2 focus:ring-blue-500" />
+    
+    <span class="text-xs font-bold text-gray-500 uppercase block mb-2 flex items-center justify-between">Лимит задач (WIP) <span class="text-[9px] text-blue-500 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md font-black">0 = Без лимита</span></span>
+    <input id="colWipInput" type="number" min="0" max="99" placeholder="Например: 5" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none mb-5 dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
+    
     <span class="text-xs font-bold text-gray-500 uppercase block mb-3">Цвет шапки</span>
     <div class="flex justify-between mb-6 px-1" id="colorPicker"></div>
     
@@ -964,7 +1001,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// --- 3. MARKDOWN HELPER ---
+// --- 3. MARKDOWN HELPER & VOICE DICTATION ---
 function insertMarkdown(prefix, suffix) {
   const textarea = document.getElementById('editDescription');
   const start = textarea.selectionStart;
@@ -972,16 +1009,62 @@ function insertMarkdown(prefix, suffix) {
   const text = textarea.value;
   const selected = text.substring(start, end);
   
-  // Вставляем префикс, текст и суффикс
   textarea.value = text.substring(0, start) + prefix + selected + suffix + text.substring(end);
   
-  // Умный фокус: возвращаем курсор внутрь тега или в конец выделения для бесшовной работы
   textarea.focus();
   const newCursorPos = start + prefix.length + selected.length;
   textarea.setSelectionRange(newCursorPos, newCursorPos);
   
-  // Триггерим эвент инпута, если в будущем привяжем автосохранение
   textarea.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+let descSpeechRecognition = null;
+let isDescListening = false;
+
+function toggleDescVoiceInput() {
+  if (isLocalBoard) return showSystemToast('Офлайн', 'Голосовой ввод недоступен без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
+  
+  const micBtn = document.getElementById('descMicBtn');
+  const input = document.getElementById('editDescription');
+  
+  if (isDescListening && descSpeechRecognition) {
+    descSpeechRecognition.stop();
+    return;
+  }
+  
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    return showSystemToast('Ошибка', 'Голосовой ввод не поддерживается вашим браузером.', 'mic-off', 'text-red-500', 'bg-red-50');
+  }
+  
+  descSpeechRecognition = new SpeechRecognition();
+  descSpeechRecognition.lang = 'ru-RU';
+  descSpeechRecognition.interimResults = true;
+  
+  const initialText = input.value ? input.value + (input.value.endsWith(' ') || input.value.endsWith('\n') ? '' : ' ') : '';
+  
+  descSpeechRecognition.onstart = () => {
+    isDescListening = true;
+    micBtn.classList.remove('text-gray-400', 'bg-white', 'dark:bg-gray-800');
+    micBtn.classList.add('text-red-500', 'bg-red-50', 'dark:bg-red-900/20', 'animate-pulse', 'border-red-200', 'dark:border-red-800');
+  };
+  
+  descSpeechRecognition.onresult = (event) => {
+    let transcript = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+    input.value = initialText + transcript;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  
+  descSpeechRecognition.onend = () => {
+    isDescListening = false;
+    micBtn.classList.add('text-gray-400', 'bg-white', 'dark:bg-gray-800');
+    micBtn.classList.remove('text-red-500', 'bg-red-50', 'dark:bg-red-900/20', 'animate-pulse', 'border-red-200', 'dark:border-red-800');
+  };
+  
+  try { descSpeechRecognition.start(); } catch (e) { console.error(e); }
 }
 
 // --- 4. ГЛОБАЛЬНЫЙ DRAG AND DROP ---
@@ -1283,9 +1366,108 @@ function loadBoard() {
       }
 
       renderMembersSidebar();
-      if (isFirstChatLoad) initChatListener(docRef);
+      if (isFirstChatLoad) {
+        initChatListener(docRef);
+        initActivityListener(docRef);
+      }
     });
   }
+}
+
+function initActivityListener(docRef) {
+  docRef.collection("activity").orderBy("timestamp", "desc").limit(50).onSnapshot((snapshot) => {
+    window.currentActivitySnapshot = snapshot;
+    renderActivityLog();
+  });
+}
+
+function renderActivityLog() {
+  const list = document.getElementById("activityList");
+  const toggle = document.getElementById("activityToggle");
+  if (!list || !toggle) return;
+  
+  const isEnabled = boardData.isActivityEnabled === true;
+  toggle.checked = isEnabled;
+  
+  if (!isEnabled) {
+    if (userPlan !== 'pro') {
+      list.innerHTML = `
+        <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in-up mt-10">
+          <div class="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4 shadow-sm border border-amber-100 dark:border-amber-800">
+            <i data-lucide="lock" class="w-8 h-8 text-amber-500"></i>
+          </div>
+          <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-2">Логгер заблокирован</h3>
+          <p class="text-xs text-gray-500 mb-6 leading-relaxed">Детальный аудит действий доступен эксклюзивно на тарифе <b>Company</b>. Контролируйте каждый шаг команды.</p>
+          <a href="store.html" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 mx-auto"><i data-lucide="shopping-cart" class="w-4 h-4"></i> Магазин</a>
+        </div>`;
+    } else {
+      list.innerHTML = `
+        <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in-up mt-10">
+          <div class="w-16 h-16 bg-gray-50 dark:bg-gray-800/80 rounded-full flex items-center justify-center mb-4 shadow-sm border border-gray-200 dark:border-gray-700">
+            <i data-lucide="power-off" class="w-8 h-8 text-gray-400"></i>
+          </div>
+          <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-2">Логгер отключен</h3>
+          <p class="text-xs text-gray-500 leading-relaxed">Включите тумблер сверху, чтобы начать записывать историю перемещений и изменений на доске.</p>
+        </div>`;
+    }
+    lucide.createIcons({ root: list });
+    return;
+  }
+
+  const snapshot = window.currentActivitySnapshot;
+  if (!snapshot || snapshot.empty) {
+    list.innerHTML = '<div class="text-center py-10 text-gray-400 text-sm">Журнал пока пуст.</div>';
+    return;
+  }
+  
+  let html = '';
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const actualUser = (data.user && boardData.users && boardData.users[data.user.id]) ? boardData.users[data.user.id] : data.user;
+    const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString('ru-RU', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}) : '';
+    html += `
+      <div class="flex gap-3 bg-white dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm animate-fade-in-up">
+        ${getAvatarHTML(actualUser, 'w-8 h-8 flex-shrink-0')}
+        <div class="flex flex-col min-w-0 flex-1">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-bold text-gray-900 dark:text-white truncate">${actualUser.name}</span>
+            <span class="text-[9px] text-gray-400">${time}</span>
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed"><i data-lucide="${data.icon}" class="w-3.5 h-3.5 inline pb-0.5 text-purple-500 mr-1"></i>${data.text}</div>
+        </div>
+      </div>
+    `;
+  });
+  list.innerHTML = html;
+  lucide.createIcons({ root: list });
+}
+
+function toggleActivityLogState(isChecked) {
+  if (isChecked && userPlan !== 'pro') {
+     document.getElementById("activityToggle").checked = false;
+     return showSystemToast('Премиум', 'Журнал действий доступен только на тарифе Company.', 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+  }
+  
+  const isOwner = boardData.owner === currentUser.id;
+  if (!isOwner) {
+     document.getElementById("activityToggle").checked = !isChecked;
+     return showSystemToast('Отказ', 'Только владелец проекта может изменять эту настройку.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+  }
+  
+  updateBoardData({ isActivityEnabled: isChecked });
+  showSystemToast('Аудит', isChecked ? 'Логгер запущен. Запись началась.' : 'Логгер остановлен. База экономится.', 'activity', 'text-purple-500', 'bg-purple-50 dark:bg-purple-900/30');
+  
+  setTimeout(renderActivityLog, 100);
+}
+
+function logActivity(text, icon = 'activity') {
+  if (isLocalBoard || boardData.isActivityEnabled !== true) return;
+  db.collection("boards").doc(BOARD_ID).collection("activity").add({
+    text: text,
+    icon: icon,
+    user: currentUser,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
 }
 
 // Склеиваем структуру колонок с карточками из подколлекции через Batching DOM Updates
@@ -1705,7 +1887,7 @@ function updateTagFilterDropdown() {
 
 // ЭНТЕРПРАЙЗ: АБСОЛЮТНАЯ ИЗОЛЯЦИЯ ШТОРОК (С аппаратным скрытием через CSS display)
 const SidebarManager = {
-  sidebars: ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar'],
+  sidebars: ['chatSidebar', 'settingsSidebar', 'membersSidebar', 'archiveSidebar', 'aiSidebar', 'activitySidebar'],
   
   closeAll: function() {
     this.sidebars.forEach(id => {
@@ -1764,6 +1946,7 @@ const SidebarManager = {
 // Замороженные публичные методы (toggle)
 window.toggleAiSidebar = () => SidebarManager.toggle('aiSidebar', () => setTimeout(() => document.getElementById('aiChatInput')?.focus(), 100));
 window.toggleArchive = () => SidebarManager.toggle('archiveSidebar', () => { if (typeof renderArchiveSidebar === 'function') renderArchiveSidebar(); });
+window.toggleActivityLog = () => SidebarManager.toggle('activitySidebar', () => { if (typeof renderActivityLog === 'function') renderActivityLog(); });
 window.toggleSettings = () => SidebarManager.toggle('settingsSidebar');
 window.toggleMembers = () => SidebarManager.toggle('membersSidebar');
 window.toggleChat = () => SidebarManager.toggle('chatSidebar', () => {
@@ -2279,18 +2462,20 @@ async function addCommentToContent() {
 }
 
 function addColumn() { 
-  columns.push({ id: Date.now(), name: "Новая колонка", color: 'default', cards: [] }); 
+  const newName = "Новая колонка";
+  columns.push({ id: Date.now(), name: newName, color: 'default', cards: [] }); 
   persist(); 
+  if (!isLocalBoard) logActivity(`Создал(а) колонку "${newName}"`, 'layout-template');
   render(); // Обновляем UI после добавления
 }
 
 function openColModal(id) { 
   editingColId = id; 
-  // ЭНТЕРПРАЙЗ: Используем нестрогое равенство (==) для обхода конфликта типов String/Number из data-атрибутов
   const col = columns.find(c => c.id == id); 
   if (!col) return;
   selectedColColor = col.color || 'default'; 
   document.getElementById('colNameInput').value = col.name; 
+  document.getElementById('colWipInput').value = col.wipLimit || 0; 
   renderColorPicker(); 
   toggleModal('colModal', true); 
 }
@@ -2298,10 +2483,11 @@ function openColModal(id) {
 function closeColModal() { toggleModal('colModal', false); }
 
 function saveColumn() { 
-  columns = columns.map(c => c.id == editingColId ? {...c, name: document.getElementById('colNameInput').value, color: selectedColColor} : c); 
+  const wipLimit = parseInt(document.getElementById('colWipInput').value) || 0;
+  columns = columns.map(c => c.id == editingColId ? {...c, name: document.getElementById('colNameInput').value, color: selectedColColor, wipLimit: wipLimit} : c); 
   persist(); 
   closeColModal(); 
-  render(); // Мгновенно перерисовываем шапку колонки
+  render(); 
 }
 
 function deleteColumn() { 
@@ -2372,7 +2558,9 @@ function openEditModal(colId, cardId = null) {
   document.getElementById('editTitle').value = editingCard?.title || ''; 
   document.getElementById('editDescription').value = editingCard?.description || '';
   document.getElementById('editDueDate').value = editingCard?.dueDate || '';
-  document.getElementById('uploadStatus').innerText = ''; 
+  document.getElementById('editPriority').value = editingCard?.priority || 'normal';
+  document.getElementById('editStoryPoints').value = editingCard?.storyPoints || '';
+  document.getElementById('uploadStatus').innerText = '';
   const preview = document.getElementById('editImagePreview');
 
   if (editingCard?.image) { 
@@ -2467,6 +2655,8 @@ async function saveCard() {
   const titleVal = document.getElementById('editTitle').value.trim();
   const descVal = document.getElementById('editDescription').value;
   const dateVal = document.getElementById('editDueDate').value;
+  const priorityVal = document.getElementById('editPriority').value;
+  const spVal = document.getElementById('editStoryPoints').value;
   let imageUrl = editingCard ? editingCard.image : null;
 
   if (pendingImageFile) { 
@@ -2491,6 +2681,8 @@ async function saveCard() {
     comments: editingCard ? (editingCard.comments || []) : [], 
     author: editingCard ? editingCard.author : currentUser, 
     dueDate: dateVal || "", 
+    priority: priorityVal,
+    storyPoints: spVal,
     checklist: activeChecklist || [],
     columnId: currentColumn,
     order: editingCard ? (editingCard.order || 0) : allCards.length,
@@ -2722,11 +2914,18 @@ function render() {
 
     columns.forEach(col => {
       const colorStyle = BOARD_UI_COLORS[col.color] || BOARD_UI_COLORS['default'];
+      const safeCards = col.cards || [];
+      const wipLimit = col.wipLimit || 0;
+      
+      // Считаем только активные (неархивные) карточки для WIP-лимита
+      const activeCardsCount = safeCards.filter(c => !c.archived).length;
+      const isOverWip = wipLimit > 0 && activeCardsCount > wipLimit;
+      
+      const overWipBg = isOverWip ? 'bg-red-50/50 dark:bg-red-900/10 border-red-300 dark:border-red-800/80 shadow-red-500/10' : `bg-gray-100 dark:bg-gray-800/60 ${colorStyle.border}`;
+
       const wrap = document.createElement('div');
       wrap.dataset.id = col.id; 
-      wrap.className = `flex-shrink-0 w-[320px] rounded-2xl border flex flex-col max-h-full shadow-sm bg-gray-100 dark:bg-gray-800/60 ${colorStyle.border}`;
-      
-      const safeCards = col.cards || [];
+      wrap.className = `flex-shrink-0 w-[320px] rounded-2xl border flex flex-col max-h-full shadow-sm transition-all duration-300 ${overWipBg}`;
 
       const filteredCards = safeCards.filter(card => {
         const matchesSearch = card.title.toLowerCase().includes(searchQuery) || (card.description || "").toLowerCase().includes(searchQuery);
@@ -2945,14 +3144,28 @@ function render() {
             </div>`;
         }
         let dueDateHtml = c.dueDate ? `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'} pointer-events-none"><i data-lucide="clock" class="w-3 h-3"></i> ${new Date(c.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</div>` : '';
-        const tagsHtml = c.tags?.length ? `<div class="flex gap-1 mb-2 pointer-events-none">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; }).join('')}</div>` : '';
+        const tagsHtml = c.tags?.length ? `<div class="flex gap-1 pointer-events-none">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; }).join('')}</div>` : '';
         const normalComments = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400 pointer-events-none"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
+        
+        let priorityHtml = '';
+        // ЭНТЕРПРАЙЗ UX: Заменяем эмодзи на стилизованные векторные иконки
+        if (c.priority === 'low') {
+          priorityHtml = `<div class="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800" title="Приоритет: Низкий"><i data-lucide="arrow-down-to-line" class="w-3.5 h-3.5 text-blue-500 dark:text-blue-400"></i></div>`;
+        } else if (c.priority === 'high') {
+          priorityHtml = `<div class="flex items-center justify-center w-6 h-6 rounded-lg bg-orange-50 dark:bg-orange-900/30 border border-orange-100 dark:border-orange-800" title="Приоритет: Высокий"><i data-lucide="arrow-up-from-line" class="w-3.5 h-3.5 text-orange-500 dark:text-orange-400"></i></div>`;
+        } else if (c.priority === 'critical') {
+          priorityHtml = `<div class="flex items-center justify-center w-6 h-6 rounded-lg bg-red-100 dark:bg-red-900 border border-red-200 dark:border-red-700 animate-pulse" title="Приоритет: КРИТИЧНЫЙ"><i data-lucide="zap" class="w-3.5 h-3.5 text-red-600 dark:text-red-400 fill-current"></i></div>`;
+        }        
+        const spHtml = c.storyPoints ? `<span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black px-1.5 py-0.5 rounded-md" title="Story Points">${c.storyPoints}</span>` : '';
 
         return `
           <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none flex flex-col">
             ${isViewer ? '' : `<button data-action="editCard" data-col="${col.id}" data-card="${c.id}" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
             ${c.image ? `<div class="mb-3 w-full h-32 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0 bg-gray-50 dark:bg-gray-900/50"><img src="${c.image}" loading="lazy" class="w-full h-full object-cover block" /></div>` : ''}
-            ${tagsHtml}
+            <div class="flex items-start justify-between mb-2">
+              ${tagsHtml}
+              <div class="flex items-center gap-1.5 pointer-events-none">${priorityHtml}${spHtml}</div>
+            </div>
             <div class="font-bold text-sm leading-tight pr-8 mb-3 text-gray-900 dark:text-white pointer-events-none flex-1">${displayTitle}</div>
             ${checklistHtml}
             <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0">
@@ -2967,15 +3180,19 @@ function render() {
         ? `<div class="empty-state-placeholder w-full min-h-[100px] flex-1 border-2 border-dashed border-gray-300 dark:border-gray-700/50 rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-xs font-bold gap-2 select-none opacity-50 pointer-events-none mt-0 mb-auto"><i data-lucide="download-cloud" class="w-5 h-5 pointer-events-none"></i> Перетащите сюда</div>` 
         : '';
         
-      wrap.innerHTML = `
-        <div class="p-4 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center col-handle ${isViewer ? '' : 'cursor-grab'} select-none">
-          <div class="flex items-center gap-2 pointer-events-none">
-            <div class="w-3 h-3 rounded-full shadow-sm" style="background-color: ${colorStyle.hex}"></div>
-            <h2 class="font-bold text-sm text-gray-900 dark:text-white">${col.name}</h2>
-            <span class="text-xs font-bold px-2 py-0.5 rounded-full border bg-white/50 dark:bg-black/20 text-gray-600 dark:text-gray-400 border-gray-200/50 dark:border-gray-700/50">${filteredCards.length}</span>
+      const countColor = isOverWip ? 'text-red-600 bg-red-100 dark:bg-red-900/40 border-red-200 dark:border-red-800' : 'text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-black/20 border-gray-200/50 dark:border-gray-700/50';
+        const wipText = wipLimit > 0 ? `${filteredCards.length} / ${wipLimit}` : `${filteredCards.length}`;
+        const warningIcon = isOverWip ? `<i data-lucide="alert-triangle" class="w-3 h-3 text-red-500 animate-pulse ml-0.5"></i>` : '';
+
+        wrap.innerHTML = `
+          <div class="p-4 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center col-handle ${isViewer ? '' : 'cursor-grab'} select-none">
+            <div class="flex items-center gap-2 pointer-events-none">
+              <div class="w-3 h-3 rounded-full shadow-sm" style="background-color: ${colorStyle.hex}"></div>
+              <h2 class="font-bold text-sm text-gray-900 dark:text-white truncate max-w-[130px]" title="${col.name}">${col.name}</h2>
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full border ${countColor} flex items-center shadow-sm transition-colors" title="${wipLimit > 0 ? 'Задач / Лимит (WIP)' : 'Количество задач'}">${wipText} ${warningIcon}</span>
+            </div>
+            ${isViewer ? '' : `<button data-action="editCol" data-col="${col.id}" class="text-gray-400 hover:text-blue-500 p-1 rounded transition-colors"><i data-lucide="more-horizontal" class="w-5 h-5 pointer-events-none"></i></button>`}
           </div>
-          ${isViewer ? '' : `<button data-action="editCol" data-col="${col.id}" class="text-gray-400 hover:text-blue-500 p-1 rounded transition-colors"><i data-lucide="more-horizontal" class="w-5 h-5 pointer-events-none"></i></button>`}
-        </div>
         <div id="cards-${col.id}" ${isViewer ? '' : `data-dblaction="quickAdd" data-col="${col.id}"`} class="p-3 flex-1 overflow-y-auto hide-scroll gap-3 min-h-[120px] flex flex-col ${isViewer ? '' : 'cursor-pointer'} relative">
           ${cardsHtml}
           ${emptyStateHtml}
@@ -3090,6 +3307,12 @@ function render() {
                     updatedAt: ts
                   });
                 });
+                
+                // ЭНТЕРПРАЙЗ: Аудит-лог при перемещении (Activity Log)
+                const cardTitle = evt.item.querySelector('.font-bold')?.innerText || 'Задачу';
+                const fromColName = columns.find(c => c.id == fromColId)?.name || '...';
+                const toColName = columns.find(c => c.id == toColId)?.name || '...';
+                logActivity(`Переместил(а) "${cardTitle}" из "${fromColName}" в "${toColName}"`, 'move');
               }
 
               await batch.commit();
@@ -3193,6 +3416,8 @@ function confirmQuickAdd() {
       ...newCard,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    const colName = columns.find(c => c.id == quickAddTargetColId)?.name || '...';
+    logActivity(`Создал(а) быструю задачу "${title}" в "${colName}"`, 'plus-circle');
   }
   closeQuickAdd();
 }
