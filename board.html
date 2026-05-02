@@ -4255,16 +4255,16 @@ function savePoll() {
       render();
     }
   } else {
-    // Пишем напрямую в подколлекцию
     db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({
       ...pollData,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    // ЭНТЕРПРАЙЗ: Регистрация события создания опроса
+    logActivity(`Запустил(а) новый опрос: "${question}"`, 'bar-chart-3');
   }
   closePollConstructor();
 }
 
-// Оптимизированная логика голосования через Store Dispatcher
 // FIX: Исправлена логика голосования. Теперь клик по варианту срабатывает корректно через делегирование
 function votePoll(colId, cardId, optionIndex) {
   if (!currentUser || !currentUser.id) return;
@@ -4326,11 +4326,15 @@ function saveTimer() {
 
   if (editingSpecificCardId) {
     dispatchCardUpdate(editingSpecificCardId, activeColForMore, { title, targetDate });
+    if (!isLocalBoard) logActivity(`Обновил(а) время в таймере "${title}"`, 'timer');
   } else {
     const cardId = 'timer_' + Date.now();
     const cardData = { id: cardId, title, type: 'timer', targetDate, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
     if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
-    else { db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+    else { 
+      db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); 
+      logActivity(`Установил(а) таймер дедлайна: "${title}"`, 'alarm-clock');
+    }
   }
   closeTimerConstructor();
 }
@@ -4383,7 +4387,10 @@ function saveLink() {
     const cardId = 'link_' + Date.now();
     const cardData = { id: cardId, title, type: 'link', url, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
     if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
-    else { db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+    else { 
+      db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); 
+      logActivity(`Добавил(а) важную ссылку: "${title}"`, 'link-2');
+    }
   }
   closeLinkConstructor();
 }
@@ -4918,7 +4925,6 @@ function saveNewTable() {
   const emptyData = {};
   for(let i = 0; i < rows; i++) emptyData[i] = Array(cols).fill("");
   
-  // Инициализация заголовков
   const colHeaders = Array.from({length: cols}, (_, i) => `Колонка ${i + 1}`);
   const rowHeaders = Array.from({length: rows}, (_, i) => `${i + 1}`);
 
@@ -4934,6 +4940,8 @@ function saveNewTable() {
     if (col) { if (!col.cards) col.cards = []; col.cards.push(tableCard); persist(); render(); }
   } else {
     db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...tableCard, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    // ЭНТЕРПРАЙЗ: Регистрация создания таблицы
+    logActivity(`Создал(а) таблицу данных "${title}"`, 'table');
   }
   closeTableConstructor();
 }
