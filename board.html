@@ -3210,59 +3210,32 @@ function render() {
       // Вместо прямой вставки в board, добавляем в DocumentFragment
       fragment.appendChild(wrap);
       
+      // Инициализация SortableJS для текущей колонки (Enterprise Ultimate Physics)
       // Инициализация SortableJS для текущей колонки (Enterprise Smart Invert Physics)
       const colEl = wrap.querySelector(`#cards-${col.id}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
         animation: 250, 
-        easing: "cubic-bezier(0.25, 1, 0.5, 1)", 
+        easing: "cubic-bezier(0.25, 1, 0.5, 1)", // Премиальная физика примагничивания
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
         
-        // Возврат к стандартной физике без инверсии для точности позиционирования
-        invertSwap: true, 
-        direction: 'vertical', 
-        swapThreshold: 0.6, 
+        // ВЕРНУЛИ КАК БЫЛО: Фикс для карточек разного размера (Аудио над Картинкой)
+        invertSwap: true, // Вычисляет пересечение по физическим краям (top/bottom), а не по центру мыши
+        direction: 'vertical', // Требуется для правильной работы invertSwap в строгих колонках
+        swapThreshold: 0.6, // Идеальная чувствительность для инвертированного обмена
         
         disabled: isViewer,
         delay: 150, 
         delayOnTouchOnly: true, 
         filter: '.empty-state-placeholder', 
-        emptyInsertThreshold: 100, 
+        emptyInsertThreshold: 100, // Глубокий магнит для пустых колонок
         
-        // ЭНТЕРПРАЙЗ СКРОЛЛ: ГИБРИДНАЯ СИСТЕМА ПРОКРУТКИ
+        // Умная зона прокрутки
         scroll: true, 
-        scrollSensitivity: 150, // Стандартная зона внутри колонки
-        scrollSpeed: 18, // Замедленная в 2 раза базовая скорость для точности
-        bubbleScroll: true, 
-        
-        onStart: function (evt) {
-          document.body.classList.add('is-dragging-card');
-          // ЭНТЕРПРАЙЗ UX: Подключение перехвата колесика мыши при захвате
-          window.addEventListener('wheel', handleDragWheel, { passive: false });
-        },
-        onMove: function(evt) {
-            // ДИНАМИЧЕСКИЙ УСКОРИТЕЛЬ (BOUNDARY PROPULSION)
-            const rect = evt.to.getBoundingClientRect();
-            const y = evt.dragEvent.clientY;
-            
-            // Если карточка поднята выше или опущена ниже границ текущего столбика
-            if (y < rect.top || y > rect.bottom) {
-                // Активируем режим форсажа: увеличиваем скорость и зону захвата
-                evt.target.options.scrollSpeed = 35;
-                evt.target.options.scrollSensitivity = 1000; 
-            } else {
-                // Возвращаемся к прецизионному режиму внутри границ
-                evt.target.options.scrollSpeed = 18;
-                evt.target.options.scrollSensitivity = 150;
-            }
-        },
-        onEnd: async function (evt) {
-          document.body.classList.remove('is-dragging-card');
-          // Деактивация перехвата колесика
-          window.removeEventListener('wheel', handleDragWheel);
-          
-          const cardId = evt.item.dataset.id;
+        scrollSensitivity: 150, // Сохраняем увеличенную зону чувствительности от краев экрана
+        scrollSpeed: 30, // Слегка ускоренная плавная прокрутка
+        bubbleScroll: true,
         
         // Интерактивная подсветка скролл-зон
         onStart: function (evt) {
@@ -3931,12 +3904,12 @@ function toggleChat() {
   }
 }
 
-// ЭНТЕРПРАЙЗ КОНТРОЛЛЕР: Глобальные события и перехват управления
+// Закрытие модалок по клику на фон и умное скрытие боковых панелей
 window.addEventListener('click', (e) => {
-  // Защита от кликов по удаленным элементам
+  // КРИТИЧЕСКИЙ ФИКС: Игнорируем клики по элементам, которые были удалены из DOM (например, при замене иконок Lucide)
   if (!document.body.contains(e.target)) return;
 
-  // 1. УПРАВЛЕНИЕ МЕНЮ ПРИГЛАШЕНИЙ
+  // ЭНТЕРПРАЙЗ: Закрытие дропдауна приглашений при клике вне его области
   if (!e.target.closest('#shareMenuWrapper')) {
     const shareMenu = document.getElementById('shareMenuDropdown');
     if (shareMenu && !shareMenu.classList.contains('hidden')) {
@@ -3944,25 +3917,21 @@ window.addEventListener('click', (e) => {
     }
   }
 
-  // 2. ЗАКРЫТИЕ МОДАЛЬНЫХ ОКОН ПО ФОНУ
-  const modalMap = {
-    'viewCardModal': typeof closeViewModal === 'function' ? closeViewModal : null,
-    'editCardModal': typeof closeEditModal === 'function' ? closeEditModal : null,
-    'colModal': typeof closeColModal === 'function' ? closeColModal : null,
-    'quickAddModal': typeof closeQuickAdd === 'function' ? closeQuickAdd : null,
-    'fileTypeModal': typeof closeFileTypeModal === 'function' ? closeFileTypeModal : null,
-    'customConfirmModal': typeof closeConfirmModal === 'function' ? closeConfirmModal : null,
-    'voiceMemoModal': typeof closeVoiceMemoModal === 'function' ? closeVoiceMemoModal : null,
-    'pollStatsModal': typeof closePollStatsModal === 'function' ? closePollStatsModal : null
-  };
+  // 1. Обработка кликов по фону модальных окон
+  if (e.target.id === 'viewCardModal') closeViewModal();
+  if (e.target.id === 'editCardModal') closeEditModal();
+  if (e.target.id === 'colModal') closeColModal();
+  if (e.target.id === 'quickAddModal') closeQuickAdd();
+  if (e.target.id === 'fileTypeModal') closeFileTypeModal();
+  if (e.target.id === 'customConfirmModal') closeConfirmModal();
+  if (e.target.id === 'voiceMemoModal') closeVoiceMemoModal();
+  if (e.target.id === 'pollStatsModal') closePollStatsModal();
 
-  if (modalMap[e.target.id]) modalMap[e.target.id]();
-
-  // 3. УМНОЕ СКРЫТИЕ БОКОВЫХ ПАНЕЛЕЙ (SIDEBARS)
+  // 2. ЭНТЕРПРАЙЗ UX: Автоматическое скрытие открытых шторок при клике в рабочую область
   const isSidebar = e.target.closest('aside');
   const isHeader = e.target.closest('header');
   const isMobileMenu = e.target.closest('#mobileMenuDropdown');
-  const isModal = e.target.closest('.glass-modal') || e.target.closest('[id$="Modal"]');
+  const isModal = e.target.closest('.glass-modal');
   
   if (!isSidebar && !isHeader && !isMobileMenu && !isModal) {
     if (typeof closeOtherSidebars === 'function') {
@@ -3970,24 +3939,6 @@ window.addEventListener('click', (e) => {
     }
   }
 });
-
-/**
- * ЭНТЕРПРАЙЗ UX: Функция интеллектуальной прокрутки колонки колесиком при Drag-n-Drop.
- * Позволяет пользователю мгновенно перемещаться по длинным спискам без движения мыши к краям.
- */
-function handleDragWheel(e) {
-  if (!document.body.classList.contains('is-dragging-card')) return;
-  
-  // Находим активную колонку под курсором или ту, в которую сейчас "целится" фантом
-  const activeCol = e.target.closest('[id^="cards-"]') || document.querySelector('.sortable-ghost')?.parentElement;
-  
-  if (activeCol) {
-    e.preventDefault(); // Блокируем скролл всей страницы для стабильности захвата
-    
-    // Плавная математическая прокрутка с учетом дельты колеса
-    activeCol.scrollTop += e.deltaY;
-  }
-}
 
 let toastTimeout;
 function showSystemToast(title, desc, iconName, iconColor, bgColor) {
