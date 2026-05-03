@@ -309,22 +309,26 @@
       
       <!-- Быстрые действия (Quick Actions) -->
       <div class="grid grid-cols-3 gap-3">
-        <button onclick="toggleTheme()" class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-gray-800 transition-all group active:scale-95 shadow-sm hover:shadow">
-          <div class="text-gray-500 group-hover:text-blue-500 transition-colors mb-1.5">
+        <button onclick="toggleTheme()" class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all group active:scale-95 shadow-sm hover:shadow">
+          <div class="text-gray-500 group-hover:text-amber-500 transition-colors mb-1.5">
             <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
             <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
           </div>
           <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400">Тема</span>
         </button>
         
-        <button onclick="toggleCompactMode()" class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-gray-800 transition-all group active:scale-95 shadow-sm hover:shadow" title="Сжать карточки для обзора">
-          <i data-lucide="align-justify" class="w-5 h-5 text-gray-500 group-hover:text-blue-500 transition-colors mb-1.5"></i>
-          <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400">Компакт</span>
+        <button onclick="toggleCompactMode()" id="btnCompactToggle" class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group active:scale-95 shadow-sm hover:shadow" title="Сжать карточки для обзора">
+          <div id="compactIconWrap" class="text-gray-500 group-hover:text-blue-500 transition-colors mb-1.5">
+            <i data-lucide="align-justify" class="w-5 h-5"></i>
+          </div>
+          <span id="compactTextLabel" class="text-[10px] font-bold text-gray-600 dark:text-gray-400">Компакт</span>
         </button>
         
-        <button onclick="toggleFocusMode()" class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-gray-800 transition-all group active:scale-95 shadow-sm hover:shadow" title="Полноэкранный режим работы">
-          <i data-lucide="maximize" class="w-5 h-5 text-gray-500 group-hover:text-blue-500 transition-colors mb-1.5"></i>
-          <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400">Фокус</span>
+        <button onclick="toggleFocusMode()" id="btnFocusToggle" class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group active:scale-95 shadow-sm hover:shadow" title="Полноэкранный режим работы">
+          <div id="focusIconWrap" class="text-gray-500 group-hover:text-indigo-500 transition-colors mb-1.5">
+            <i data-lucide="maximize" class="w-5 h-5"></i>
+          </div>
+          <span id="focusTextLabel" class="text-[10px] font-bold text-gray-600 dark:text-gray-400">Фокус</span>
         </button>
       </div>
       
@@ -5336,24 +5340,62 @@ function toggleTheme() {
   localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); 
 }
 
-// ЭНТЕРПРАЙЗ: Компактный режим (High-Density View)
+// ЭНТЕРПРАЙЗ: Интерактивный Компактный режим (High-Density View)
 function toggleCompactMode() {
   document.body.classList.toggle('compact-mode');
   const isCompact = document.body.classList.contains('compact-mode');
   localStorage.setItem('blocko_compact', isCompact ? 'true' : 'false');
   
+  updateCompactUI(isCompact);
+  
   showSystemToast(
     'Отображение', 
     isCompact ? 'Включен компактный вид доски.' : 'Включен стандартный вид доски.', 
-    'align-justify', 
+    isCompact ? 'list' : 'align-justify', 
     'text-blue-500', 
     'bg-blue-50 dark:bg-blue-900/30'
   );
   
-  // ЭНТЕРПРАЙЗ: Вызываем перерасчет хитбоксов SortableJS, так как высоты карточек изменились
+  // Вызываем перерасчет хитбоксов SortableJS, так как высоты карточек изменились
   if (typeof render === 'function') {
     setTimeout(() => render(), 150);
   }
+}
+
+// Служебная функция для обновления визуального состояния кнопки
+function updateCompactUI(isCompact) {
+  const iconWrap = document.getElementById('compactIconWrap');
+  const textLabel = document.getElementById('compactTextLabel');
+  const btn = document.getElementById('btnCompactToggle');
+  
+  if (iconWrap && textLabel && btn) {
+    iconWrap.innerHTML = `<i data-lucide="${isCompact ? 'list' : 'align-justify'}" class="w-5 h-5 pointer-events-none"></i>`;
+    textLabel.innerText = isCompact ? 'Стандарт' : 'Компакт';
+    
+    if (isCompact) {
+      btn.classList.add('bg-blue-50', 'dark:bg-blue-900/30', 'border-blue-200', 'dark:border-blue-800/50');
+      btn.classList.remove('bg-gray-50', 'dark:bg-gray-900/50', 'border-gray-100', 'dark:border-gray-800');
+      iconWrap.classList.add('text-blue-500');
+      iconWrap.classList.remove('text-gray-500');
+      textLabel.classList.add('text-blue-600', 'dark:text-blue-400');
+      textLabel.classList.remove('text-gray-600', 'dark:text-gray-400');
+    } else {
+      btn.classList.remove('bg-blue-50', 'dark:bg-blue-900/30', 'border-blue-200', 'dark:border-blue-800/50');
+      btn.classList.add('bg-gray-50', 'dark:bg-gray-900/50', 'border-gray-100', 'dark:border-gray-800');
+      iconWrap.classList.remove('text-blue-500');
+      iconWrap.classList.add('text-gray-500');
+      textLabel.classList.remove('text-blue-600', 'dark:text-blue-400');
+      textLabel.classList.add('text-gray-600', 'dark:text-gray-400');
+    }
+    lucide.createIcons({ root: btn });
+  }
+}
+
+// Инициализация компактного режима при загрузке
+if (localStorage.getItem('blocko_compact') === 'true') {
+  document.body.classList.add('compact-mode');
+  // Отложенное обновление UI, чтобы DOM шторки успел сформироваться
+  setTimeout(() => updateCompactUI(true), 100);
 }
 
 // Инициализация компактного режима при загрузке
@@ -5361,7 +5403,7 @@ if (localStorage.getItem('blocko_compact') === 'true') {
   document.body.classList.add('compact-mode');
 }
 
-// ЭНТЕРПРАЙЗ: Режим Фокуса (Fullscreen API)
+// ЭНТЕРПРАЙЗ: Интерактивный Режим Фокуса (Fullscreen API)
 function toggleFocusMode() {
   if (!document.fullscreenElement) {
     document.documentElement.requestFullscreen().catch(err => {
@@ -5377,6 +5419,40 @@ function toggleFocusMode() {
     }
   }
 }
+
+// Глобальный слушатель изменений полноэкранного режима (Отрабатывает даже при нажатии ESC)
+function updateFocusUI() {
+  const isFocus = !!document.fullscreenElement;
+  const iconWrap = document.getElementById('focusIconWrap');
+  const textLabel = document.getElementById('focusTextLabel');
+  const btn = document.getElementById('btnFocusToggle');
+  
+  if (iconWrap && textLabel && btn) {
+    iconWrap.innerHTML = `<i data-lucide="${isFocus ? 'minimize' : 'maximize'}" class="w-5 h-5 pointer-events-none"></i>`;
+    textLabel.innerText = isFocus ? 'Свернуть' : 'Фокус';
+    
+    if (isFocus) {
+      btn.classList.add('bg-indigo-50', 'dark:bg-indigo-900/30', 'border-indigo-200', 'dark:border-indigo-800/50');
+      btn.classList.remove('bg-gray-50', 'dark:bg-gray-900/50', 'border-gray-100', 'dark:border-gray-800');
+      iconWrap.classList.add('text-indigo-500');
+      iconWrap.classList.remove('text-gray-500');
+      textLabel.classList.add('text-indigo-600', 'dark:text-indigo-400');
+      textLabel.classList.remove('text-gray-600', 'dark:text-gray-400');
+    } else {
+      btn.classList.remove('bg-indigo-50', 'dark:bg-indigo-900/30', 'border-indigo-200', 'dark:border-indigo-800/50');
+      btn.classList.add('bg-gray-50', 'dark:bg-gray-900/50', 'border-gray-100', 'dark:border-gray-800');
+      iconWrap.classList.remove('text-indigo-500');
+      iconWrap.classList.add('text-gray-500');
+      textLabel.classList.remove('text-indigo-600', 'dark:text-indigo-400');
+      textLabel.classList.add('text-gray-600', 'dark:text-gray-400');
+    }
+    lucide.createIcons({ root: btn });
+  }
+}
+
+// Вешаем глобального слушателя на браузер
+document.addEventListener('fullscreenchange', updateFocusUI);
+document.addEventListener('webkitfullscreenchange', updateFocusUI); // Поддержка Safari
 
 // ==========================================
 // ЭНТЕРПРАЙЗ: Встроенный AI-Ассистент (Polinations Integration + Commands)
