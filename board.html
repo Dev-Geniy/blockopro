@@ -97,6 +97,10 @@
     body.compact-mode .card-item .mb-3 { margin-bottom: 0.25rem !important; }
     body.compact-mode .card-item .gap-2 { gap: 0.25rem !important; }
     body.compact-mode [id^="cards-"] { gap: 0.35rem !important; }
+
+    /* ENTERPRISE: Оптимизация 60 FPS при быстром скролле (Debouncing) */
+    body.is-scrolling-fast .card-item { box-shadow: none !important; transform: none !important; transition: none !important; backdrop-filter: none !important; }
+    body.is-scrolling-fast .col-handle { backdrop-filter: none !important; }
   </style>
   
   <script>
@@ -917,63 +921,8 @@
   </div>
 </div>
   
-<!-- Конструкторы Элементов -->
-<div id="timerConstructorModal" class="hidden fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform" id="timerConstructorContent">
-    <div class="flex items-center gap-3 mb-6">
-      <div class="p-2.5 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-xl"><i data-lucide="timer" class="w-5 h-5"></i></div>
-      <h3 class="text-xl font-black dark:text-white">Настройки Таймера</h3>
-    </div>
-    <div class="space-y-4">
-      <input type="text" id="timerTitle" placeholder="Событие (Например: Запуск релиза)" class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:border-rose-500 font-bold dark:text-white">
-      <div>
-        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Дата и время завершения</label>
-        <input type="datetime-local" id="timerTargetDate" class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-sm dark:text-white font-bold">
-      </div>
-    </div>
-    <div class="flex gap-3 mt-8">
-      <button onclick="closeTimerConstructor()" class="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl transition-colors">Отмена</button>
-      <button onclick="saveTimer()" class="flex-1 py-3.5 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-2xl shadow-lg shadow-rose-500/30 active:scale-95 transition-all">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<div id="todoConstructorModal" class="hidden fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform" id="todoConstructorContent">
-    <div class="flex items-center gap-3 mb-6">
-      <div class="p-2.5 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-500 rounded-xl"><i data-lucide="list-todo" class="w-5 h-5"></i></div>
-      <h3 class="text-xl font-black dark:text-white">Быстрый Чек-лист</h3>
-    </div>
-    <div class="space-y-4">
-      <input type="text" id="todoFastTitle" placeholder="Название списка..." class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:border-cyan-500 font-bold dark:text-white">
-      <div>
-        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Пункты (Каждый с новой строки)</label>
-        <textarea id="todoFastItems" placeholder="Пункт 1&#10;Пункт 2&#10;Пункт 3" rows="4" class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-sm dark:text-white resize-none"></textarea>
-      </div>
-    </div>
-    <div class="flex gap-3 mt-8">
-      <button onclick="closeTodoConstructor()" class="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl transition-colors">Отмена</button>
-      <button onclick="saveTodoFast()" class="flex-1 py-3.5 bg-cyan-500 hover:bg-cyan-400 text-white font-bold rounded-2xl shadow-lg shadow-cyan-500/30 active:scale-95 transition-all">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<div id="linkConstructorModal" class="hidden fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform" id="linkConstructorContent">
-    <div class="flex items-center gap-3 mb-6">
-      <div class="p-2.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl"><i data-lucide="link" class="w-5 h-5"></i></div>
-      <h3 class="text-xl font-black dark:text-white">Закладка на ресурс</h3>
-    </div>
-    <div class="space-y-4">
-      <input type="text" id="linkTitle" placeholder="Короткое название..." class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:border-gray-900 dark:focus:border-white font-bold dark:text-white">
-      <input type="url" id="linkUrl" placeholder="https://..." class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-sm dark:text-white">
-    </div>
-    <div class="flex gap-3 mt-8">
-      <button onclick="closeLinkConstructor()" class="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl transition-colors">Отмена</button>
-      <button onclick="saveLink()" class="flex-1 py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl shadow-lg active:scale-95 transition-all">Сохранить</button>
-    </div>
-  </div>
-</div>
+<!-- Конструкторы Элементов (Инжектируются через JS для оптимизации DOM) -->
+<div id="dynamicConstructorContainer"></div>
 
 <div id="customConfirmModal" class="hidden fixed inset-0 z-[600] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
   <div class="bg-white dark:bg-gray-800 p-8 rounded-[2rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95" id="confirmModalContent">
@@ -1033,11 +982,17 @@
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
 
+// ЭНТЕРПРАЙЗ: Регистрация Service Worker для агрессивного кэширования медиа (ImgBB)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Reg Failed:', err));
+  });
+}
+
 // ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Защита от BFCache (Сброс стейта при возврате кнопкой "Назад" для предотвращения утечки данных без пароля)
 window.addEventListener('pageshow', (event) => {
   if (event.persisted) window.location.reload();
 });
-
 // ЭНТЕРПРАЙЗ: Продвинутый движок рендеринга Markdown с внедрением UI-компонентов Tailwind
 if (typeof marked !== 'undefined') {
   const renderer = new marked.Renderer();
@@ -4131,12 +4086,23 @@ function resetBoardBackground() {
   else { db.collection("boards").doc(BOARD_ID).update({ background: firebase.firestore.FieldValue.delete() }); }
 }
 
-// ЭНТЕРПРАЙЗ: Продвинутый Panning (Панорамирование доски мышью)
+// ЭНТЕРПРАЙЗ: Продвинутый Panning (Панорамирование доски мышью) + Adaptive Scroll Debouncing
 const mainScroll = document.getElementById('mainScroll'); 
 let isDown = false, startX, scrollLeft;
+let scrollTimeout;
+
+// Debouncing скролла: отключаем тяжелые тени при активном движении
+mainScroll.addEventListener('scroll', () => {
+  if (!document.body.classList.contains('is-scrolling-fast')) {
+    document.body.classList.add('is-scrolling-fast');
+  }
+  clearTimeout(scrollTimeout);
+  scrollTimeout = setTimeout(() => {
+    document.body.classList.remove('is-scrolling-fast');
+  }, 200); 
+}, { passive: true });
 
 mainScroll.addEventListener('mousedown', e => { 
-  // Игнорируем захват, если клик попал на карточку, кнопку, input или шапку колонки (Drag Handle)
   if(e.target.closest('.card-item') || e.target.closest('button') || e.target.closest('input') || e.target.closest('.col-handle')) return; 
   isDown = true; 
   mainScroll.style.cursor = 'grabbing'; 
@@ -4158,7 +4124,7 @@ mainScroll.addEventListener('mousemove', e => {
   if(!isDown) return; 
   e.preventDefault(); 
   const x = e.pageX - mainScroll.offsetLeft;
-  const walk = (x - startX) * 1.5; // Чувствительность панорамирования (Ускорение x1.5 для больших досок)
+  const walk = (x - startX) * 1.5; 
   mainScroll.scrollLeft = scrollLeft - walk; 
 });
   
@@ -5211,21 +5177,77 @@ function closeContentViewModal() {
 
 let editingSpecificCardId = null;
 
-// Универсальные контроллеры для всех новых сущностей (Через Store Dispatcher)
-function toggleModalAnimation(modalId, contentId, show) {
-  const modal = document.getElementById(modalId);
-  const content = document.getElementById(contentId);
-  if (show) {
-    modal.classList.remove('hidden');
-    setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
-  } else {
-    modal.classList.add('opacity-0'); content.classList.add('scale-95');
-    setTimeout(() => modal.classList.add('hidden'), 300);
+// ЭНТЕРПРАЙЗ: Динамический инжект шаблонов для снижения первичного веса DOM (Lazy Init)
+function renderDynamicModal(type) {
+  const container = document.getElementById('dynamicConstructorContainer');
+  let html = '';
+
+  if (type === 'timer') {
+    html = `
+      <div id="timerConstructorModal" class="fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300 px-4">
+        <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform" id="timerConstructorContent">
+          <div class="flex items-center gap-3 mb-6"><div class="p-2.5 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-xl"><i data-lucide="timer" class="w-5 h-5"></i></div><h3 class="text-xl font-black dark:text-white">Настройки Таймера</h3></div>
+          <div class="space-y-4">
+            <input type="text" id="timerTitle" placeholder="Событие (Например: Запуск релиза)" class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:border-rose-500 font-bold dark:text-white">
+            <div><label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Дата и время завершения</label><input type="datetime-local" id="timerTargetDate" class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-sm dark:text-white font-bold"></div>
+          </div>
+          <div class="flex gap-3 mt-8">
+            <button onclick="closeDynamicModal('timerConstructorModal', 'timerConstructorContent')" class="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl transition-colors">Отмена</button>
+            <button onclick="saveTimer()" class="flex-1 py-3.5 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-2xl shadow-lg shadow-rose-500/30 active:scale-95 transition-all">Сохранить</button>
+          </div>
+        </div>
+      </div>`;
+  } else if (type === 'todo') {
+    html = `
+      <div id="todoConstructorModal" class="fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300 px-4">
+        <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform" id="todoConstructorContent">
+          <div class="flex items-center gap-3 mb-6"><div class="p-2.5 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-500 rounded-xl"><i data-lucide="list-todo" class="w-5 h-5"></i></div><h3 class="text-xl font-black dark:text-white">Быстрый Чек-лист</h3></div>
+          <div class="space-y-4">
+            <input type="text" id="todoFastTitle" placeholder="Название списка..." class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:border-cyan-500 font-bold dark:text-white">
+            <div><label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Пункты (Каждый с новой строки)</label><textarea id="todoFastItems" placeholder="Пункт 1&#10;Пункт 2&#10;Пункт 3" rows="4" class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-sm dark:text-white resize-none"></textarea></div>
+          </div>
+          <div class="flex gap-3 mt-8">
+            <button onclick="closeDynamicModal('todoConstructorModal', 'todoConstructorContent')" class="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl transition-colors">Отмена</button>
+            <button onclick="saveTodoFast()" class="flex-1 py-3.5 bg-cyan-500 hover:bg-cyan-400 text-white font-bold rounded-2xl shadow-lg shadow-cyan-500/30 active:scale-95 transition-all">Сохранить</button>
+          </div>
+        </div>
+      </div>`;
+  } else if (type === 'link') {
+    html = `
+      <div id="linkConstructorModal" class="fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300 px-4">
+        <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform" id="linkConstructorContent">
+          <div class="flex items-center gap-3 mb-6"><div class="p-2.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl"><i data-lucide="link" class="w-5 h-5"></i></div><h3 class="text-xl font-black dark:text-white">Закладка на ресурс</h3></div>
+          <div class="space-y-4">
+            <input type="text" id="linkTitle" placeholder="Короткое название..." class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:border-gray-900 dark:focus:border-white font-bold dark:text-white">
+            <input type="url" id="linkUrl" placeholder="https://..." class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-sm dark:text-white">
+          </div>
+          <div class="flex gap-3 mt-8">
+            <button onclick="closeDynamicModal('linkConstructorModal', 'linkConstructorContent')" class="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl transition-colors">Отмена</button>
+            <button onclick="saveLink()" class="flex-1 py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl shadow-lg active:scale-95 transition-all">Сохранить</button>
+          </div>
+        </div>
+      </div>`;
   }
+  container.innerHTML = html;
+  lucide.createIcons({ root: container });
+  
+  const modal = container.firstElementChild;
+  const content = modal.querySelector('div[id$="Content"]');
+  setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
 }
 
-function prepareTimerCreation() { closeMoreAddModal(); editingSpecificCardId = null; document.getElementById('timerTitle').value = ''; document.getElementById('timerTargetDate').value = ''; toggleModalAnimation('timerConstructorModal', 'timerConstructorContent', true); }
-function closeTimerConstructor() { toggleModalAnimation('timerConstructorModal', 'timerConstructorContent', false); editingSpecificCardId = null; }
+function closeDynamicModal(modalId, contentId) {
+  const modal = document.getElementById(modalId);
+  const content = document.getElementById(contentId);
+  if (modal && content) {
+    modal.classList.add('opacity-0'); content.classList.add('scale-95');
+    setTimeout(() => document.getElementById('dynamicConstructorContainer').innerHTML = '', 300);
+  }
+  editingSpecificCardId = null;
+}
+
+function prepareTimerCreation() { closeMoreAddModal(); editingSpecificCardId = null; renderDynamicModal('timer'); }
+function closeTimerConstructor() { closeDynamicModal('timerConstructorModal', 'timerConstructorContent'); }
 function saveTimer() {
   const title = document.getElementById('timerTitle').value.trim() || 'Таймер';
   const targetDate = document.getElementById('timerTargetDate').value;
@@ -5242,8 +5264,8 @@ function saveTimer() {
   closeTimerConstructor();
 }
 
-function prepareTodoCreation() { closeMoreAddModal(); editingSpecificCardId = null; document.getElementById('todoFastTitle').value = ''; document.getElementById('todoFastItems').value = ''; toggleModalAnimation('todoConstructorModal', 'todoConstructorContent', true); }
-function closeTodoConstructor() { toggleModalAnimation('todoConstructorModal', 'todoConstructorContent', false); editingSpecificCardId = null; }
+function prepareTodoCreation() { closeMoreAddModal(); editingSpecificCardId = null; renderDynamicModal('todo'); }
+function closeTodoConstructor() { closeDynamicModal('todoConstructorModal', 'todoConstructorContent'); }
 function saveTodoFast() {
   const title = document.getElementById('todoFastTitle').value.trim() || 'Чек-лист';
   const itemsText = document.getElementById('todoFastItems').value.trim();
@@ -5270,8 +5292,8 @@ function toggleBoardTodo(colId, cardId, idx) {
   dispatchCardUpdate(cardId, colId, { checklist: card.checklist });
 }
 
-function prepareLinkCreation() { closeMoreAddModal(); editingSpecificCardId = null; document.getElementById('linkTitle').value = ''; document.getElementById('linkUrl').value = ''; toggleModalAnimation('linkConstructorModal', 'linkConstructorContent', true); }
-function closeLinkConstructor() { toggleModalAnimation('linkConstructorModal', 'linkConstructorContent', false); editingSpecificCardId = null; }
+function prepareLinkCreation() { closeMoreAddModal(); editingSpecificCardId = null; renderDynamicModal('link'); }
+function closeLinkConstructor() { closeDynamicModal('linkConstructorModal', 'linkConstructorContent'); }
 function saveLink() {
   const title = document.getElementById('linkTitle').value.trim() || 'Ссылка';
   let url = document.getElementById('linkUrl').value.trim();
