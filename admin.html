@@ -984,13 +984,17 @@
          expiresAt = d.toISOString();
      }
 
+     // ЭНТЕРПРАЙЗ ИСПРАВЛЕНИЕ: Используем auth.currentUser.uid напрямую,
+     // так как глобальная переменная currentUser не инициализируется в admin.html
+     const adminUid = auth.currentUser ? auth.currentUser.uid : 'admin_system';
+
      const promoData = {
          type: type,
          maxUses: maxUses,
          uses: 0,
          expiresAt: expiresAt,
          createdAt: new Date().toISOString(),
-         createdBy: currentUser.id // Ссылка на админа
+         createdBy: adminUid
      };
 
      try {
@@ -1001,7 +1005,8 @@
          document.getElementById('promoLimitInput').value = '';
          document.getElementById('promoExpireInput').value = '';
          
-         loadPromos();
+         // Мгновенная перезагрузка промокодов для отображения в таблице
+         await loadPromos();
      } catch(e) {
          alert("Ошибка запуска: " + e.message);
      }
