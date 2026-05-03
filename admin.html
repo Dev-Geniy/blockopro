@@ -45,6 +45,16 @@
     <button id="navPromo" onclick="switchTab('viewPromo')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
       <i data-lucide="ticket" class="w-5 h-5"></i><span class="hidden lg:block text-sm">Промо акции</span>
     </button>
+    <button id="navSupport" onclick="switchTab('viewSupport')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
+      <div class="relative">
+        <i data-lucide="life-buoy" class="w-5 h-5"></i>
+        <span id="supportBadge" class="hidden absolute -top-1 -right-1 flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+        </span>
+      </div>
+      <span class="hidden lg:block text-sm">Саппорт</span>
+    </button>
     <button id="navLogs" onclick="switchTab('viewLogs')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
       <i data-lucide="activity" class="w-5 h-5"></i><span class="hidden lg:block text-sm">Логи системы</span>
     </button>
@@ -149,22 +159,54 @@
              
              <div>
                 <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Тип бонуса</label>
-                <select id="promoTypeInput" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-amber-500 font-bold transition-colors cursor-pointer appearance-none">
-                   <option value="plan_pro_2m">🎁 2 Месяца PRO (Бесплатно)</option>
-                   <option value="plan_fl_1m">🎁 1 Месяц Freelancer (Бесплатно)</option>
-                   <option value="discount_50">💸 Скидка -50% на покупку тарифа</option>
-                   <option value="coins_1000">💰 1000 B-Coins на баланс</option>
+                <select id="promoTypeInput" onchange="togglePromoFields()" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-amber-500 font-bold transition-colors cursor-pointer appearance-none mb-4">
+                   <option value="plan">🎁 Премиум Тариф (Бесплатно)</option>
+                   <option value="discount">💸 Скидка на покупку (%)</option>
+                   <option value="coins">💰 Начисление B-Coins</option>
                 </select>
+
+                <!-- ЭНТЕРПРАЙЗ: Динамические поля конфигуратора -->
+                <div id="promoPlanFields" class="grid grid-cols-2 gap-3 mb-4 animate-fade-in-up">
+                   <div>
+                     <label class="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1 block">Тариф</label>
+                     <select id="promoPlanSelect" class="w-full px-4 py-3 bg-gray-800 border border-purple-500/30 rounded-xl outline-none text-white focus:border-purple-500 font-bold transition-colors cursor-pointer appearance-none">
+                        <option value="freelancer">Freelancer</option>
+                        <option value="pro" selected>Company (Pro)</option>
+                        <option value="infinity">Infinity</option>
+                     </select>
+                   </div>
+                   <div>
+                     <label class="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1 block">Длительность</label>
+                     <select id="promoDurationSelect" class="w-full px-4 py-3 bg-gray-800 border border-purple-500/30 rounded-xl outline-none text-white focus:border-purple-500 font-bold transition-colors cursor-pointer appearance-none">
+                        <option value="1">1 месяц</option>
+                        <option value="2" selected>2 месяца</option>
+                        <option value="3">3 месяца</option>
+                        <option value="6">6 месяцев</option>
+                        <option value="12">1 год</option>
+                        <option value="999">Навсегда</option>
+                     </select>
+                   </div>
+                </div>
+
+                <div id="promoDiscountFields" class="hidden mb-4 animate-fade-in-up">
+                   <label class="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1 block">Размер скидки (%)</label>
+                   <input type="number" id="promoDiscountValue" placeholder="Например: 50" min="1" max="100" class="w-full px-4 py-3 bg-gray-800 border border-emerald-500/30 rounded-xl outline-none text-white focus:border-emerald-500 font-bold transition-colors shadow-inner" />
+                </div>
+
+                <div id="promoCoinsFields" class="hidden mb-4 animate-fade-in-up">
+                   <label class="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1 block">Сумма B-Coins</label>
+                   <input type="number" id="promoCoinsValue" placeholder="Например: 1000" min="1" class="w-full px-4 py-3 bg-gray-800 border border-amber-500/30 rounded-xl outline-none text-white focus:border-amber-500 font-bold transition-colors shadow-inner" />
+                </div>
              </div>
 
-             <div class="grid grid-cols-2 gap-3">
+             <div class="grid grid-cols-2 gap-3 pt-3 border-t border-gray-800">
                 <div>
                   <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Лимит активаций</label>
-                  <input type="number" id="promoLimitInput" placeholder="Безлимит (0)" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-amber-500 font-bold transition-colors shadow-inner" />
+                  <input type="number" id="promoLimitInput" placeholder="Безлимит (0)" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-gray-500 font-bold transition-colors shadow-inner" />
                 </div>
                 <div>
-                  <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Срок действия</label>
-                  <input type="date" id="promoExpireInput" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-gray-400 focus:text-white focus:border-amber-500 font-bold transition-colors shadow-inner cursor-pointer" />
+                  <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Срок сгорания кода</label>
+                  <input type="date" id="promoExpireInput" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-gray-400 focus:text-white focus:border-gray-500 font-bold transition-colors shadow-inner cursor-pointer" />
                 </div>
              </div>
              
@@ -239,8 +281,98 @@
         </button>
       </div>
     </div>
+
+    <!-- VIEW: SUPPORT HELPDESK -->
+    <div id="viewSupport" class="hidden animate-fade-in-up relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Folders Sidebar -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-5 shadow-2xl backdrop-blur-md lg:col-span-1 h-fit flex flex-col gap-1.5 select-none">
+           <h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 px-2">Категории обращений</h3>
+           
+           <button onclick="setSupportFolder('all')" id="folder_all" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+             <div class="flex items-center gap-2.5 text-sm"><i data-lucide="inbox" class="w-4 h-4"></i> Входящие</div>
+             <span id="count_all" class="text-[10px] bg-indigo-500/20 px-2 py-0.5 rounded-md">0</span>
+           </button>
+           
+           <button onclick="setSupportFolder('bug')" id="folder_bug" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-400 hover:bg-gray-800 border border-transparent">
+             <div class="flex items-center gap-2.5 text-sm"><i data-lucide="bug" class="w-4 h-4 text-rose-500"></i> Ошибки (Bugs)</div>
+             <span id="count_bug" class="text-[10px] bg-gray-800 px-2 py-0.5 rounded-md">0</span>
+           </button>
+
+           <button onclick="setSupportFolder('idea')" id="folder_idea" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-400 hover:bg-gray-800 border border-transparent">
+             <div class="flex items-center gap-2.5 text-sm"><i data-lucide="lightbulb" class="w-4 h-4 text-purple-500"></i> Идеи и Фичи</div>
+             <span id="count_idea" class="text-[10px] bg-gray-800 px-2 py-0.5 rounded-md">0</span>
+           </button>
+
+           <button onclick="setSupportFolder('complaint')" id="folder_complaint" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-400 hover:bg-gray-800 border border-transparent">
+             <div class="flex items-center gap-2.5 text-sm"><i data-lucide="megaphone" class="w-4 h-4 text-amber-500"></i> Жалобы</div>
+             <span id="count_complaint" class="text-[10px] bg-gray-800 px-2 py-0.5 rounded-md">0</span>
+           </button>
+
+           <button onclick="setSupportFolder('thanks')" id="folder_thanks" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-400 hover:bg-gray-800 border border-transparent">
+             <div class="flex items-center gap-2.5 text-sm"><i data-lucide="heart-handshake" class="w-4 h-4 text-emerald-500"></i> Благодарности</div>
+             <span id="count_thanks" class="text-[10px] bg-gray-800 px-2 py-0.5 rounded-md">0</span>
+           </button>
+
+           <div class="h-px bg-gray-800 my-2"></div>
+
+           <button onclick="setSupportFolder('resolved')" id="folder_resolved" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-500 hover:bg-gray-800 hover:text-white border border-transparent">
+             <div class="flex items-center gap-2.5 text-sm"><i data-lucide="archive" class="w-4 h-4"></i> Решено (Архив)</div>
+             <span id="count_resolved" class="text-[10px] bg-gray-800 px-2 py-0.5 rounded-md">0</span>
+           </button>
+        </div>
+
+        <!-- Tickets List -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md lg:col-span-3 min-h-[500px] flex flex-col">
+           <div class="flex justify-between items-center mb-6">
+              <h3 class="text-xl font-black text-white flex items-center gap-2" id="supportViewTitle"><i data-lucide="inbox" class="w-5 h-5 text-indigo-400"></i> Входящие обращения</h3>
+              <button onclick="loadSupportTickets()" class="p-2 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg transition-colors border border-gray-700" title="Обновить"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+           </div>
+           
+           <div class="flex-1 overflow-y-auto pr-2 space-y-3 hide-scroll" id="supportTicketsList">
+              <!-- JS Injects -->
+           </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </main>
+
+<!-- Ticket Details Modal -->
+<div id="ticketModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-black/80 glass-panel opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-gray-900 p-8 rounded-[2rem] w-full max-w-2xl shadow-2xl border border-gray-800 transform scale-95 transition-transform relative flex flex-col max-h-[90vh]" id="ticketModalContent">
+    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+    <div class="flex justify-between items-start mb-6 flex-shrink-0">
+      <div class="flex items-center gap-4">
+         <img id="tmAvatar" src="" class="w-12 h-12 rounded-full border border-gray-700 object-cover shadow-sm" />
+         <div>
+            <h3 class="text-lg font-black text-white" id="tmName">Имя</h3>
+            <div class="text-[10px] text-gray-500 font-mono mt-0.5"><span id="tmEmail"></span> • UID: <span id="tmUid"></span></div>
+            <div class="text-[10px] font-bold mt-1.5" id="tmBadge"></div>
+         </div>
+      </div>
+      <button onclick="closeTicketModal()" class="text-gray-500 hover:text-white transition-colors bg-gray-800 p-2 rounded-xl border border-transparent hover:border-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto pr-2 mb-6 hide-scroll">
+       <div class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 flex justify-between"><span>Сообщение</span><span id="tmDate"></span></div>
+       <div class="bg-gray-800/50 border border-gray-700 p-6 rounded-2xl text-sm text-gray-200 leading-relaxed whitespace-pre-wrap font-medium" id="tmMessage">
+          <!-- Text -->
+       </div>
+    </div>
+
+    <div class="pt-6 border-t border-gray-800 flex items-center justify-between flex-shrink-0 gap-4">
+       <button id="tmMailBtn" class="px-5 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-bold transition-colors border border-gray-700 flex items-center gap-2 active:scale-95">
+         <i data-lucide="mail" class="w-4 h-4"></i> Ответить на Email
+       </button>
+       
+       <button id="tmStatusBtn" class="px-6 py-3 text-white rounded-xl text-xs font-bold shadow-lg active:scale-95 transition-all flex items-center gap-2">
+         <!-- Injected by JS -->
+       </button>
+    </div>
+  </div>
+</div>
 
 <!-- User Profile & Edit Modal -->
 <div id="userProfileModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 glass-panel opacity-0 transition-opacity duration-300 px-4">
@@ -463,6 +595,7 @@
 
       renderTable();
       loadPromos(); // ЭНТЕРПРАЙЗ: Загрузка модуля промо-кампаний
+      loadSupportTickets(); // ЭНТЕРПРАЙЗ: Загрузка Helpdesk
 
       // Убираем лоадер
       const loader = document.getElementById('loader');
@@ -879,13 +1012,14 @@
 
   // --- TAB ROUTER ---
   function switchTab(tabId) {
-     ['viewDatabase', 'viewPromo', 'viewLogs'].forEach(id => {
+     ['viewDatabase', 'viewPromo', 'viewSupport', 'viewLogs'].forEach(id => {
          document.getElementById(id).classList.add('hidden');
      });
      
      const baseClass = "flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start";
      document.getElementById('navDatabase').className = baseClass;
      document.getElementById('navPromo').className = baseClass;
+     document.getElementById('navSupport').className = baseClass;
      document.getElementById('navLogs').className = baseClass;
 
      document.getElementById(tabId).classList.remove('hidden');
@@ -894,6 +1028,8 @@
          document.getElementById('navDatabase').className = "flex items-center gap-3 p-3 lg:px-4 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold border border-indigo-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
      } else if (tabId === 'viewPromo') {
          document.getElementById('navPromo').className = "flex items-center gap-3 p-3 lg:px-4 bg-amber-500/10 text-amber-400 rounded-xl font-bold border border-amber-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
+     } else if (tabId === 'viewSupport') {
+         document.getElementById('navSupport').className = "flex items-center gap-3 p-3 lg:px-4 bg-rose-500/10 text-rose-400 rounded-xl font-bold border border-rose-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
      } else if (tabId === 'viewLogs') {
          document.getElementById('navLogs').className = "flex items-center gap-3 p-3 lg:px-4 bg-blue-500/10 text-blue-400 rounded-xl font-bold border border-blue-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
      }
@@ -913,6 +1049,33 @@
      } catch(e) { console.error("Promo load error:", e); }
   }
 
+  function togglePromoFields() {
+      const type = document.getElementById('promoTypeInput').value;
+      document.getElementById('promoPlanFields').classList.toggle('hidden', type !== 'plan');
+      document.getElementById('promoDiscountFields').classList.toggle('hidden', type !== 'discount');
+      document.getElementById('promoCoinsFields').classList.toggle('hidden', type !== 'coins');
+  }
+
+  function getPromoLabelHtml(promo) {
+      if (promo.rewardType === 'plan') {
+          const planNames = { 'freelancer': 'FL', 'pro': 'PRO', 'infinity': 'GOD' };
+          const pName = planNames[promo.rewardPlan] || 'План';
+          const dur = promo.rewardPlanDuration == 999 ? 'Навсегда' : `${promo.rewardPlanDuration} мес.`;
+          return `<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-inner whitespace-nowrap"><i data-lucide="zap" class="w-3 h-3"></i> ${pName} (${dur})</div>`;
+      } else if (promo.rewardType === 'discount') {
+          return `<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-inner whitespace-nowrap"><i data-lucide="percent" class="w-3 h-3"></i> Скидка -${promo.rewardDiscount}%</div>`;
+      } else if (promo.rewardType === 'coins') {
+          return `<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-inner whitespace-nowrap"><i data-lucide="coins" class="w-3 h-3"></i> ${promo.rewardCoins} B-Coins</div>`;
+      }
+      
+      // Обратная совместимость со старыми тестовыми кодами
+      const oldLabels = {
+         'plan_pro_2m': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-inner"><i data-lucide="zap" class="w-3 h-3"></i> PRO (2 мес)</div>',
+         'plan_fl_1m': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-inner"><i data-lucide="briefcase" class="w-3 h-3"></i> FL (1 мес)</div>'
+      };
+      return oldLabels[promo.type] || `<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-gray-500/10 text-gray-400 border border-gray-500/20 shadow-inner whitespace-nowrap"><i data-lucide="ticket" class="w-3 h-3"></i> ${promo.type || 'Бонус'}</div>`;
+  }
+
   function renderPromos() {
      const tbody = document.getElementById('promoTbody');
      if (!tbody) return;
@@ -921,13 +1084,6 @@
          tbody.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-xs text-gray-600 font-bold uppercase tracking-widest border-b border-transparent">Нет запущенных кампаний</td></tr>';
          return;
      }
-
-     const typeLabels = {
-         'plan_pro_2m': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-inner"><i data-lucide="zap" class="w-3 h-3"></i> 2 Месяца PRO</div>',
-         'plan_fl_1m': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-inner"><i data-lucide="briefcase" class="w-3 h-3"></i> 1 Месяц FL</div>',
-         'discount_50': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-inner"><i data-lucide="percent" class="w-3 h-3"></i> Скидка -50%</div>',
-         'coins_1000': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-inner"><i data-lucide="coins" class="w-3 h-3"></i> 1000 B-Coins</div>'
-     };
 
      // Сортируем: новые сверху
      allPromos.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
@@ -945,7 +1101,7 @@
          return `
             <tr class="hover:bg-gray-800/40 transition-colors group">
                <td class="px-4 py-4 font-mono font-bold text-white tracking-wider text-sm">${p.id}</td>
-               <td class="px-4 py-4 text-xs font-bold">${typeLabels[p.type] || p.type}</td>
+               <td class="px-4 py-4 text-xs font-bold">${getPromoLabelHtml(p)}</td>
                <td class="px-4 py-4 text-center text-xs text-white font-mono font-bold">${usesStr}</td>
                <td class="px-4 py-4 text-center">${statusHtml}</td>
                <td class="px-4 py-4 text-right">
@@ -968,13 +1124,29 @@
 
   async function createPromo() {
      const code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
-     const type = document.getElementById('promoTypeInput').value;
+     const rewardType = document.getElementById('promoTypeInput').value; // plan, discount, coins
      const maxUses = parseInt(document.getElementById('promoLimitInput').value) || 0;
      const expiresAtStr = document.getElementById('promoExpireInput').value;
      
      if (!code) {
          showToast('Введите или сгенерируйте код!');
          return;
+     }
+
+     // ЭНТЕРПРАЙЗ: Формирование Payload на основе выбранного типа бонуса
+     let rewardData = { rewardType: rewardType };
+     
+     if (rewardType === 'plan') {
+         rewardData.rewardPlan = document.getElementById('promoPlanSelect').value;
+         rewardData.rewardPlanDuration = parseInt(document.getElementById('promoDurationSelect').value) || 1;
+     } else if (rewardType === 'discount') {
+         const dVal = parseInt(document.getElementById('promoDiscountValue').value) || 0;
+         if (dVal < 1 || dVal > 100) return showToast('Ошибка: Скидка должна быть от 1% до 100%!');
+         rewardData.rewardDiscount = dVal;
+     } else if (rewardType === 'coins') {
+         const cVal = parseInt(document.getElementById('promoCoinsValue').value) || 0;
+         if (cVal < 1) return showToast('Ошибка: Сумма B-Coins должна быть больше 0!');
+         rewardData.rewardCoins = cVal;
      }
      
      let expiresAt = null;
@@ -984,12 +1156,11 @@
          expiresAt = d.toISOString();
      }
 
-     // ЭНТЕРПРАЙЗ ИСПРАВЛЕНИЕ: Используем auth.currentUser.uid напрямую,
-     // так как глобальная переменная currentUser не инициализируется в admin.html
      const adminUid = auth.currentUser ? auth.currentUser.uid : 'admin_system';
 
      const promoData = {
-         type: type,
+         ...rewardData,
+         type: rewardType, // для обратной совместимости старого API
          maxUses: maxUses,
          uses: 0,
          expiresAt: expiresAt,
@@ -1004,8 +1175,9 @@
          document.getElementById('promoCodeInput').value = '';
          document.getElementById('promoLimitInput').value = '';
          document.getElementById('promoExpireInput').value = '';
+         if (document.getElementById('promoDiscountValue')) document.getElementById('promoDiscountValue').value = '';
+         if (document.getElementById('promoCoinsValue')) document.getElementById('promoCoinsValue').value = '';
          
-         // Мгновенная перезагрузка промокодов для отображения в таблице
          await loadPromos();
      } catch(e) {
          alert("Ошибка запуска: " + e.message);
@@ -1019,6 +1191,218 @@
              showToast('Промокод отозван.');
              loadPromos();
          } catch(e) { alert("Ошибка: " + e.message); }
+     }
+  }
+
+  // --- SUPPORT ENGINE ---
+  let allTickets = [];
+  let currentSupportFolder = 'all';
+
+  async function loadSupportTickets() {
+     try {
+         const snap = await db.collection('support_tickets').get();
+         allTickets = [];
+         let unreadCount = 0;
+         snap.forEach(doc => {
+             const t = { id: doc.id, ...doc.data() };
+             allTickets.push(t);
+             if (t.status === 'open') unreadCount++;
+         });
+         
+         // Update notification badge
+         const badge = document.getElementById('supportBadge');
+         if (unreadCount > 0) badge.classList.remove('hidden');
+         else badge.classList.add('hidden');
+
+         renderSupportTickets();
+     } catch(e) { console.error("Tickets load error:", e); }
+  }
+
+  function setSupportFolder(folder) {
+     currentSupportFolder = folder;
+     
+     // Reset all buttons
+     const folders = ['all', 'bug', 'idea', 'complaint', 'thanks', 'resolved'];
+     folders.forEach(f => {
+         const btn = document.getElementById('folder_' + f);
+         if (f === 'all') btn.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-400 hover:bg-gray-800 border border-transparent";
+         else btn.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-400 hover:bg-gray-800 border border-transparent";
+     });
+
+     // Highlight active
+     const activeBtn = document.getElementById('folder_' + folder);
+     if (folder === 'all') activeBtn.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors bg-indigo-500/10 text-indigo-400 border border-indigo-500/20";
+     else if (folder === 'resolved') activeBtn.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors bg-gray-800 text-white border border-gray-700";
+     else {
+        const colorMap = { 'bug': 'rose', 'idea': 'purple', 'complaint': 'amber', 'thanks': 'emerald' };
+        const c = colorMap[folder];
+        activeBtn.className = `w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors bg-${c}-500/10 text-${c}-400 border border-${c}-500/20`;
+     }
+
+     // Update Titles
+     const titleMap = {
+         'all': '<i data-lucide="inbox" class="w-5 h-5 text-indigo-400"></i> Входящие обращения',
+         'bug': '<i data-lucide="bug" class="w-5 h-5 text-rose-500"></i> Ошибки и Баги',
+         'idea': '<i data-lucide="lightbulb" class="w-5 h-5 text-purple-500"></i> Идеи и Предложения',
+         'complaint': '<i data-lucide="megaphone" class="w-5 h-5 text-amber-500"></i> Жалобы пользователей',
+         'thanks': '<i data-lucide="heart-handshake" class="w-5 h-5 text-emerald-500"></i> Благодарности',
+         'resolved': '<i data-lucide="archive" class="w-5 h-5 text-gray-400"></i> Решенные (Архив)'
+     };
+     document.getElementById('supportViewTitle').innerHTML = titleMap[folder];
+
+     renderSupportTickets();
+  }
+
+  function renderSupportTickets() {
+     // Recalculate counts
+     document.getElementById('count_all').innerText = allTickets.filter(t => t.status === 'open').length;
+     document.getElementById('count_bug').innerText = allTickets.filter(t => t.status === 'open' && t.type === 'bug').length;
+     document.getElementById('count_idea').innerText = allTickets.filter(t => t.status === 'open' && t.type === 'idea').length;
+     document.getElementById('count_complaint').innerText = allTickets.filter(t => t.status === 'open' && t.type === 'complaint').length;
+     document.getElementById('count_thanks').innerText = allTickets.filter(t => t.status === 'open' && t.type === 'thanks').length;
+     document.getElementById('count_resolved').innerText = allTickets.filter(t => t.status === 'resolved').length;
+
+     const list = document.getElementById('supportTicketsList');
+     
+     let filtered = allTickets;
+     if (currentSupportFolder === 'resolved') {
+         filtered = allTickets.filter(t => t.status === 'resolved');
+     } else {
+         filtered = allTickets.filter(t => t.status === 'open');
+         if (currentSupportFolder !== 'all') {
+             filtered = filtered.filter(t => t.type === currentSupportFolder);
+         }
+     }
+
+     // Sort by date newest first
+     filtered.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+     if (filtered.length === 0) {
+         list.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-gray-600 opacity-50 py-20"><i data-lucide="check-circle" class="w-12 h-12 mb-4"></i><div class="text-sm font-bold uppercase tracking-widest">Папка пуста</div></div>`;
+         lucide.createIcons();
+         return;
+     }
+
+     list.innerHTML = filtered.map(t => {
+         const safeName = (t.user && t.user.name) ? t.user.name : 'Аноним';
+         const safeAvatar = (t.user && (t.user.customAvatar || t.user.avatar)) ? (t.user.customAvatar || t.user.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+         const dateStr = formatFirebaseDate(t.createdAt);
+         
+         const badgeMap = {
+             'bug': '<span class="text-[9px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded shadow-sm">Баг</span>',
+             'idea': '<span class="text-[9px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded shadow-sm">Идея</span>',
+             'complaint': '<span class="text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded shadow-sm">Жалоба</span>',
+             'thanks': '<span class="text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded shadow-sm">Спасибо</span>',
+             'other': '<span class="text-[9px] font-black uppercase tracking-widest bg-gray-500/10 text-gray-400 border border-gray-500/20 px-2 py-0.5 rounded shadow-sm">Прочее</span>'
+         };
+         const typeBadge = badgeMap[t.type] || badgeMap['other'];
+
+         return `
+            <div class="bg-gray-800/40 border border-gray-700/50 p-4 rounded-2xl hover:bg-gray-800 hover:border-indigo-500/30 transition-all cursor-pointer group flex items-start gap-4" onclick="openTicketModal('${t.id}')">
+               <img src="${safeAvatar}" class="w-10 h-10 rounded-full border border-gray-700 object-cover flex-shrink-0" />
+               <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-center mb-1">
+                     <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold text-white truncate">${safeName}</span>
+                        ${typeBadge}
+                     </div>
+                     <span class="text-[10px] text-gray-500 font-mono">${dateStr}</span>
+                  </div>
+                  <div class="text-xs text-gray-400 line-clamp-2 leading-relaxed group-hover:text-gray-300 transition-colors">${t.message || 'Без текста'}</div>
+               </div>
+            </div>
+         `;
+     }).join('');
+     lucide.createIcons();
+  }
+
+  function openTicketModal(id) {
+     const t = allTickets.find(x => x.id === id);
+     if (!t) return;
+
+     const safeName = (t.user && t.user.name) ? t.user.name : 'Аноним';
+     const safeEmail = (t.user && t.user.email) ? t.user.email : 'Email скрыт';
+     const safeUid = (t.user && t.user.id) ? t.user.id : 'Неизвестен';
+     const safeAvatar = (t.user && (t.user.customAvatar || t.user.avatar)) ? (t.user.customAvatar || t.user.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+     
+     document.getElementById('tmAvatar').src = safeAvatar;
+     document.getElementById('tmName').innerText = safeName;
+     document.getElementById('tmEmail').innerText = safeEmail;
+     document.getElementById('tmUid').innerText = safeUid;
+     document.getElementById('tmDate').innerText = formatFirebaseDate(t.createdAt);
+     document.getElementById('tmMessage').innerText = t.message || 'Без текста';
+
+     const badgeMap = {
+         'bug': '<span class="text-[10px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded shadow-sm">Ошибка / Баг</span>',
+         'idea': '<span class="text-[10px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2.5 py-1 rounded shadow-sm">Идея / Улучшение</span>',
+         'complaint': '<span class="text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded shadow-sm">Жалоба</span>',
+         'thanks': '<span class="text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded shadow-sm">Благодарность</span>',
+         'other': '<span class="text-[10px] font-black uppercase tracking-widest bg-gray-500/10 text-gray-400 border border-gray-500/20 px-2.5 py-1 rounded shadow-sm">Прочее</span>'
+     };
+     document.getElementById('tmBadge').innerHTML = badgeMap[t.type] || badgeMap['other'];
+
+     // Mail button setup
+     const mailBtn = document.getElementById('tmMailBtn');
+     if (t.user && t.user.email) {
+         mailBtn.style.display = 'flex';
+         mailBtn.onclick = () => window.open(`mailto:${t.user.email}?subject=RE: Ваш тикет в Blocko Pro Support`);
+     } else {
+         mailBtn.style.display = 'none';
+     }
+
+     // Status Button setup
+     const statusBtn = document.getElementById('tmStatusBtn');
+     if (t.status === 'resolved') {
+         statusBtn.className = "px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-bold border border-gray-700 active:scale-95 transition-all flex items-center gap-2";
+         statusBtn.innerHTML = '<i data-lucide="rotate-ccw" class="w-4 h-4"></i> Вернуть в работу';
+         statusBtn.onclick = () => updateTicketStatus(t.id, 'open');
+     } else {
+         statusBtn.className = "px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-2";
+         statusBtn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Пометить как решено';
+         statusBtn.onclick = () => updateTicketStatus(t.id, 'resolved');
+     }
+
+     lucide.createIcons();
+
+     const modal = document.getElementById('ticketModal');
+     const content = document.getElementById('ticketModalContent');
+     modal.classList.remove('hidden');
+     setTimeout(() => {
+       modal.classList.remove('opacity-0');
+       content.classList.remove('scale-95');
+     }, 10);
+  }
+
+  function closeTicketModal() {
+     const modal = document.getElementById('ticketModal');
+     const content = document.getElementById('ticketModalContent');
+     modal.classList.add('opacity-0');
+     content.classList.add('scale-95');
+     setTimeout(() => modal.classList.add('hidden'), 300);
+  }
+
+  async function updateTicketStatus(id, newStatus) {
+     try {
+         await db.collection('support_tickets').doc(id).update({
+             status: newStatus,
+             updatedAt: new Date().toISOString()
+         });
+         
+         const idx = allTickets.findIndex(t => t.id === id);
+         if (idx > -1) allTickets[idx].status = newStatus;
+
+         closeTicketModal();
+         renderSupportTickets();
+         
+         // Update badge
+         const unreadCount = allTickets.filter(t => t.status === 'open').length;
+         const badge = document.getElementById('supportBadge');
+         if (unreadCount > 0) badge.classList.remove('hidden');
+         else badge.classList.add('hidden');
+
+         showToast(newStatus === 'resolved' ? 'Тикет перенесен в Архив' : 'Тикет возвращен в работу');
+     } catch(e) {
+         alert("Ошибка обновления статуса: " + e.message);
      }
   }
 
