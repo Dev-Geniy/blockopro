@@ -123,14 +123,17 @@
     <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
     <div class="flex justify-between items-start mb-6 flex-shrink-0">
       <div class="flex items-center gap-4">
-         <img id="upAvatar" src="" class="w-16 h-16 rounded-full border-2 border-gray-700 object-cover shadow-lg" />
+         <div class="relative">
+            <img id="upAvatar" src="" class="w-16 h-16 rounded-full border-2 border-gray-700 object-cover shadow-lg" />
+            <div id="upBanBadge" class="hidden absolute -bottom-1 -right-1 bg-red-600 p-1 rounded-full border-2 border-gray-900" title="Аккаунт заблокирован"><i data-lucide="shield-off" class="w-3.5 h-3.5 text-white"></i></div>
+         </div>
          <div>
             <h3 class="text-2xl font-black text-white flex items-center gap-2">
                 <span id="upName">Имя</span>
                 <span id="upAdminBadge" class="hidden"><i data-lucide="shield-check" class="w-5 h-5 text-indigo-500"></i></span>
             </h3>
             <div class="text-xs text-gray-400 font-mono mt-1" id="upEmail">email@example.com</div>
-            <div class="text-[10px] text-gray-600 font-mono mt-0.5">UID: <span id="upUid"></span> • Зарегистрирован: <span id="upCreated"></span></div>
+            <div class="text-[10px] text-gray-600 font-mono mt-1 leading-tight">UID: <span id="upUid"></span><br>Рег: <span id="upCreated" class="text-gray-400"></span> • Онлайн: <span id="upLastLogin" class="text-gray-400"></span></div>
          </div>
       </div>
       <button onclick="closeUserProfile()" class="text-gray-500 hover:text-white transition-colors bg-gray-800 p-2 rounded-xl border border-transparent hover:border-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -159,7 +162,7 @@
       <!-- Management Form -->
       <div class="bg-gray-800/30 border border-gray-700/50 p-5 rounded-3xl">
         <h4 class="text-xs font-black text-indigo-400 uppercase tracking-widest mb-4 flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4"></i> Управление доступом</h4>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <div>
              <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Тарифный план</label>
              <select id="editPlan" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-indigo-500 appearance-none font-bold transition-colors shadow-inner">
@@ -185,6 +188,27 @@
           <div>
              <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 block">Бонусный AI Лимит</label>
              <input type="number" id="editAiLimit" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-indigo-500 font-bold transition-colors shadow-inner" />
+          </div>
+          <div>
+             <label class="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1 block">Рефералы (Ручная накрутка)</label>
+             <input type="number" id="editRefs" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-purple-500 font-bold transition-colors shadow-inner" />
+          </div>
+          
+          <!-- BAN MODULE -->
+          <div class="border border-red-500/20 bg-red-500/5 p-2 rounded-xl flex items-center justify-between gap-2">
+             <div class="flex-1">
+                <label class="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1 block">Ограничение аккаунта</label>
+                <select id="banDurationSelect" class="w-full px-3 py-2 bg-gray-900 border border-red-500/30 rounded-lg outline-none text-white text-xs font-bold focus:border-red-500 appearance-none transition-colors">
+                   <option value="1">На 1 день</option>
+                   <option value="7">На неделю</option>
+                   <option value="30">На месяц</option>
+                   <option value="999">Навсегда</option>
+                </select>
+             </div>
+             <div class="flex flex-col gap-1 w-20 mt-4">
+                <button onclick="adminBanUser()" class="w-full py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition-colors active:scale-95 shadow-md">Бан</button>
+                <button onclick="adminUnbanUser()" class="w-full py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 rounded-lg text-xs font-bold transition-colors active:scale-95">Снять</button>
+             </div>
           </div>
         </div>
       </div>
@@ -373,6 +397,18 @@
      lucide.createIcons();
   }
 
+  // Вспомогательная функция для парсинга любых Firebase-дат
+  function formatFirebaseDate(ts) {
+      if (!ts) return 'Нет данных';
+      try {
+          const date = ts.toDate ? ts.toDate() : new Date(ts);
+          if (isNaN(date.getTime())) return 'Нет данных';
+          return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+      } catch(e) {
+          return 'Нет данных';
+      }
+  }
+
   function openUserProfile(uid) {
      const user = allUsers.find(u => u.uid === uid);
      if(!user) return;
@@ -386,16 +422,15 @@
      document.getElementById('upEmail').innerText = user.email || 'Email скрыт';
      document.getElementById('upUid').innerText = uid;
      
-     let createdStr = 'Неизвестно';
-     if(user.createdAt) {
-         try {
-             createdStr = new Date(user.createdAt).toLocaleDateString('ru-RU');
-         } catch(e){}
-     }
-     document.getElementById('upCreated').innerText = createdStr;
+     // ИСПРАВЛЕНИЕ: Интеллектуальный парсинг дат + Последний онлайн
+     document.getElementById('upCreated').innerText = formatFirebaseDate(user.createdAt);
+     document.getElementById('upLastLogin').innerText = formatFirebaseDate(user.lastLogin || user.updatedAt);
      
      if (user.isAdmin) document.getElementById('upAdminBadge').classList.remove('hidden');
      else document.getElementById('upAdminBadge').classList.add('hidden');
+
+     if (user.isBanned) document.getElementById('upBanBadge').classList.remove('hidden');
+     else document.getElementById('upBanBadge').classList.add('hidden');
 
      // 2. Fill Readonly Stats
      document.getElementById('upBoardsCount').innerText = boardsMap[uid] || 0;
@@ -407,6 +442,10 @@
      document.getElementById('editCoins').value = user.coins || 0;
      document.getElementById('editBadge').value = user.badgeStatus || 'none';
      document.getElementById('editAiLimit').value = user.bonusAiLimit || 0;
+     
+     // ИСПРАВЛЕНИЕ: Добавлен инпут рефералов
+     const editRefsInput = document.getElementById('editRefs');
+     if(editRefsInput) editRefsInput.value = user.referralCount || 0;
 
      // 4. Extract Team
      const userBoards = allBoards.filter(b => b.owner === uid);
@@ -463,42 +502,90 @@
      setTimeout(() => { modal.classList.add('hidden'); currentEditUid = null; }, 300);
   }
 
+  async function adminBanUser() {
+      if(!currentEditUid) return;
+      const duration = parseInt(document.getElementById('banDurationSelect').value);
+      const timeLabels = {1: "1 день", 7: "неделю", 30: "месяц", 999: "навсегда"};
+      
+      if(confirm(`ВНИМАНИЕ! Блокировка аккаунта.\nВы уверены, что хотите забанить пользователя на ${timeLabels[duration]}?`)) {
+          let banUntil = "forever";
+          if (duration !== 999) {
+              banUntil = new Date(Date.now() + duration * 24 * 60 * 60 * 1000).toISOString();
+          }
+          
+          try {
+              await db.collection('users').doc(currentEditUid).update({ isBanned: true, banUntil: banUntil });
+              
+              const uIdx = allUsers.findIndex(u => u.uid === currentEditUid);
+              if(uIdx > -1) {
+                  allUsers[uIdx].isBanned = true;
+                  allUsers[uIdx].banUntil = banUntil;
+              }
+              document.getElementById('upBanBadge').classList.remove('hidden');
+              showToast("Пользователь заблокирован!");
+          } catch(e) {
+              alert("Ошибка: " + e.message);
+          }
+      }
+  }
+
+  async function adminUnbanUser() {
+      if(!currentEditUid) return;
+      if(confirm("Снять блокировку с этого аккаунта?")) {
+          try {
+              await db.collection('users').doc(currentEditUid).update({ isBanned: false, banUntil: firebase.firestore.FieldValue.delete() });
+              
+              const uIdx = allUsers.findIndex(u => u.uid === currentEditUid);
+              if(uIdx > -1) {
+                  allUsers[uIdx].isBanned = false;
+                  allUsers[uIdx].banUntil = null;
+              }
+              document.getElementById('upBanBadge').classList.add('hidden');
+              showToast("Блокировка снята!");
+          } catch(e) {
+              alert("Ошибка: " + e.message);
+          }
+      }
+  }
+
   async function saveUserChanges() {
-     if(!currentEditUid) return;
-     const plan = document.getElementById('editPlan').value;
-     const coins = parseInt(document.getElementById('editCoins').value) || 0;
-     const refs = parseInt(document.getElementById('editRefs').value) || 0;
-     const badge = document.getElementById('editBadge').value;
-     const bonusAi = parseInt(document.getElementById('editAiLimit').value) || 0;
+      if(!currentEditUid) return;
+      const plan = document.getElementById('editPlan').value;
+      const coins = parseInt(document.getElementById('editCoins').value) || 0;
+      const badge = document.getElementById('editBadge').value;
+      const bonusAi = parseInt(document.getElementById('editAiLimit').value) || 0;
+      
+      const editRefsInput = document.getElementById('editRefs');
+      const refs = editRefsInput ? parseInt(editRefsInput.value) || 0 : 0;
 
-     try {
-         // Сохранение в Firebase
-         await db.collection('users').doc(currentEditUid).update({
-             plan: plan,
-             coins: coins,
-             referralCount: refs,
-             badgeStatus: badge,
-             bonusAiLimit: bonusAi,
-             updatedByAdmin: new Date().toISOString()
-         });
+      try {
+          // Сохранение в Firebase
+          await db.collection('users').doc(currentEditUid).update({
+              plan: plan,
+              coins: coins,
+              referralCount: refs,
+              badgeStatus: badge,
+              bonusAiLimit: bonusAi,
+              updatedByAdmin: new Date().toISOString()
+          });
 
-         // Обновляем локальный стейт массива для перерисовки без рефетча
-         const uIdx = allUsers.findIndex(u => u.uid === currentEditUid);
-         if(uIdx > -1) {
-             allUsers[uIdx].plan = plan;
-             allUsers[uIdx].coins = coins;
-             allUsers[uIdx].referralCount = refs;
-             allUsers[uIdx].badgeStatus = badge;
-             allUsers[uIdx].bonusAiLimit = bonusAi;
-         }
+          // Обновляем локальный стейт массива для перерисовки без рефетча
+          const uIdx = allUsers.findIndex(u => u.uid === currentEditUid);
+          if(uIdx > -1) {
+              allUsers[uIdx].plan = plan;
+              allUsers[uIdx].coins = coins;
+              allUsers[uIdx].referralCount = refs;
+              allUsers[uIdx].badgeStatus = badge;
+              allUsers[uIdx].bonusAiLimit = bonusAi;
+          }
 
-         renderTable();
-         closeEditModal();
-         showToast('Профиль успешно обновлен!');
-     } catch(e) {
-         console.error(e);
-         alert("Ошибка при сохранении: " + e.message);
-     }
+          renderTable();
+          closeUserProfile();
+          showToast('Профиль успешно обновлен!');
+      } catch(e) {
+          console.error(e);
+          alert("Ошибка при сохранении: " + e.message);
+      }
   }
 
   function showToast(text) {
