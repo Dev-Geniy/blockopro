@@ -607,7 +607,19 @@
     <span class="text-xs font-bold text-gray-500 uppercase block mb-2">Название</span>
     <input id="colNameInput" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none mb-4 dark:text-white focus:ring-2 focus:ring-blue-500" />
     
-    <span class="text-xs font-bold text-gray-500 uppercase block mb-2 flex items-center justify-between">Лимит задач (WIP) <span class="text-[9px] text-blue-500 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md font-black">0 = Без лимита</span></span>
+    <span class="text-xs font-bold text-gray-500 uppercase block mb-2 flex items-center justify-between">Авто-сортировка <span class="text-[9px] text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-md font-black border border-indigo-100 dark:border-indigo-800/50">SMART</span></span>
+    <div class="relative mb-4">
+      <select id="colSortInput" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow appearance-none cursor-pointer text-sm font-bold text-gray-700 dark:text-gray-300">
+         <option value="manual">✋ Вручную (Drag & Drop)</option>
+         <option value="date_desc">✨ Новые сверху</option>
+         <option value="deadline">⏰ Ближайшие дедлайны</option>
+         <option value="priority_desc">🔥 По приоритету (Критичные)</option>
+         <option value="sp_desc">⚖️ По весу (Story Points)</option>
+      </select>
+      <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none"><i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i></div>
+    </div>
+
+    <span class="text-xs font-bold text-gray-500 uppercase block mb-2 flex items-center justify-between">Лимит задач (WIP) <span class="text-[9px] text-blue-500 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md font-black border border-blue-100 dark:border-blue-800/50">0 = Без лимита</span></span>
     <input id="colWipInput" type="number" min="0" max="99" placeholder="Например: 5" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none mb-5 dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
     
     <span class="text-xs font-bold text-gray-500 uppercase block mb-3">Цвет шапки</span>
@@ -2886,7 +2898,7 @@ async function addCommentToContent() {
 
 function addColumn() { 
   const newName = "Новая колонка";
-  columns.push({ id: Date.now(), name: newName, color: 'default', cards: [] }); 
+  columns.push({ id: Date.now(), name: newName, color: 'default', sortBy: 'date_desc', cards: [] }); 
   persist(); 
   if (!isLocalBoard) logActivity(`Создал(а) колонку "${newName}"`, 'layout-template');
   render(); // Обновляем UI после добавления
@@ -2899,6 +2911,7 @@ function openColModal(id) {
   selectedColColor = col.color || 'default'; 
   document.getElementById('colNameInput').value = col.name; 
   document.getElementById('colWipInput').value = col.wipLimit || 0; 
+  document.getElementById('colSortInput').value = col.sortBy || 'manual';
   renderColorPicker(); 
   toggleModal('colModal', true); 
 }
@@ -2908,11 +2921,12 @@ function closeColModal() { toggleModal('colModal', false); }
 function saveColumn() { 
   const newName = document.getElementById('colNameInput').value.trim();
   const wipLimit = parseInt(document.getElementById('colWipInput').value) || 0;
+  const sortBy = document.getElementById('colSortInput').value;
   
   const col = columns.find(c => c.id == editingColId);
   const oldName = col ? col.name : "";
 
-  columns = columns.map(c => c.id == editingColId ? {...c, name: newName, color: selectedColColor, wipLimit: wipLimit} : c); 
+  columns = columns.map(c => c.id == editingColId ? {...c, name: newName, color: selectedColColor, wipLimit: wipLimit, sortBy: sortBy} : c); 
   persist(); 
   
   if (!isLocalBoard) {
@@ -3514,7 +3528,7 @@ if (!window.blockoDelegationInited) {
     
     const { action, col, card, type, opt } = target.dataset;
     
-    switch(action) {
+switch(action) {
       case 'viewCard': openViewModal(col, card); break;
       case 'editCard': openEditModal(col, card); break;
       case 'deleteCard': deleteCardDirectly(col, card, type); break;
@@ -3523,6 +3537,10 @@ if (!window.blockoDelegationInited) {
       case 'toggleAudio': toggleAudioPlayer(target, col, card); break;
       case 'editCol': openColModal(col); break;
       case 'moreAdd': openMoreAddModal(col); break;
+      case 'setColSort': 
+        const updatedCols = columns.map(c => c.id == col ? {...c, sortBy: opt} : c);
+        updateBoardData({ columns: updatedCols });
+        break;
     }
   });
 
@@ -3601,7 +3619,38 @@ function render() {
         return matchesSearch && matchesTag && !card.archived; 
       });
 
-      const cardsHtml = filteredCards.map(c => {
+      // ЭНТЕРПРАЙЗ: Интеллектуальная система Auto-Sorting внутри колонки
+      let sortedCards = [...filteredCards];
+      const sortBy = col.sortBy || 'manual';
+      
+      if (sortBy === 'date_desc') {
+          sortedCards.sort((a,b) => {
+              const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return tb - ta || String(b.id).localeCompare(String(a.id));
+          });
+      } else if (sortBy === 'deadline') {
+          sortedCards.sort((a,b) => {
+              if (!a.dueDate && !b.dueDate) return 0;
+              if (!a.dueDate) return 1;
+              if (!b.dueDate) return -1;
+              return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+          });
+      } else if (sortBy === 'sp_desc') {
+          sortedCards.sort((a,b) => {
+              const sa = parseInt(a.storyPoints) || 0;
+              const sb = parseInt(b.storyPoints) || 0;
+              return sb - sa;
+          });
+      } else if (sortBy === 'priority_desc') {
+          const pMap = { 'critical': 4, 'high': 3, 'normal': 2, 'low': 1, '': 0, undefined: 0 };
+          sortedCards.sort((a,b) => (pMap[b.priority] || 0) - (pMap[a.priority] || 0));
+      } else {
+          // Manual Drag and Drop Order
+          sortedCards.sort((a,b) => (a.order || 0) - (b.order || 0));
+      }
+
+      const cardsHtml = sortedCards.map(c => {
         const displayTitle = highlightText(c.title, searchQuery);
         // ЭНТЕРПРАЙЗ: Динамическая резолюция пользователя. Берем актуальный профиль из меты доски, а не старый слепок
         const actualAuthor = (c.author && boardData.users && boardData.users[c.author.id]) ? boardData.users[c.author.id] : c.author;
@@ -3858,16 +3907,54 @@ function render() {
         const wipText = wipLimit > 0 ? `${filteredCards.length} / ${wipLimit}` : `${filteredCards.length}`;
         const warningIcon = isOverWip ? `<i data-lucide="alert-triangle" class="w-3 h-3 text-red-500 animate-pulse ml-0.5"></i>` : '';
 
+        const activeSortIcon = sortBy === 'date_desc' ? 'sparkles' : sortBy === 'deadline' ? 'clock' : sortBy === 'priority_desc' ? 'flame' : sortBy === 'sp_desc' ? 'scale' : 'arrow-up-down';
+        const isSorted = sortBy !== 'manual';
+        const sortBtnClass = isSorted ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50' : 'text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-800 border-transparent';
+
         wrap.innerHTML = `
-          <div class="p-4 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center col-handle ${isViewer ? '' : 'cursor-grab'} select-none">
+          <div class="p-4 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center col-handle ${isViewer ? '' : 'cursor-grab'} select-none relative z-20">
             <div class="flex items-center gap-2 pointer-events-none">
               <div class="w-3 h-3 rounded-full shadow-sm" style="background-color: ${colorStyle.hex}"></div>
-              <h2 class="font-bold text-sm text-gray-900 dark:text-white truncate max-w-[130px]" title="${col.name}">${col.name}</h2>
+              <h2 class="font-bold text-sm text-gray-900 dark:text-white truncate max-w-[120px]" title="${col.name}">${col.name}</h2>
               <span class="text-[11px] font-bold px-2 py-0.5 rounded-full border ${countColor} flex items-center shadow-sm transition-colors" title="${wipLimit > 0 ? 'Задач / Лимит (WIP)' : 'Количество задач'}">${wipText} ${warningIcon}</span>
             </div>
-            ${isViewer ? '' : `<button data-action="editCol" data-col="${col.id}" class="text-gray-400 hover:text-blue-500 p-1 rounded transition-colors"><i data-lucide="more-horizontal" class="w-5 h-5 pointer-events-none"></i></button>`}
+            ${isViewer ? '' : `
+            <div class="flex items-center gap-0.5 ml-auto relative">
+                <button onclick="document.querySelectorAll('.col-sort-menu').forEach(m => m !== this.nextElementSibling && m.classList.add('hidden')); this.nextElementSibling.classList.toggle('hidden'); event.stopPropagation();" class="p-1.5 rounded-lg border transition-all ${sortBtnClass}" title="Авто-сортировка задач">
+                    <i data-lucide="${activeSortIcon}" class="w-4 h-4 pointer-events-none"></i>
+                </button>
+                <div class="col-sort-menu hidden absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl z-50 overflow-hidden transform origin-top-right transition-all">
+                    <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
+                      <i data-lucide="arrow-up-down" class="w-3 h-3"></i> Сортировка колонки
+                    </div>
+                    <div class="p-1.5 flex flex-col gap-0.5">
+                        <button data-action="setColSort" data-col="${col.id}" data-opt="manual" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'manual' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
+                            <div class="flex items-center gap-2"><i data-lucide="hand" class="w-3.5 h-3.5 text-gray-400"></i> Вручную (DnD)</div>
+                            ${sortBy === 'manual' ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
+                        </button>
+                        <button data-action="setColSort" data-col="${col.id}" data-opt="date_desc" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'date_desc' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
+                            <div class="flex items-center gap-2"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> Новые сверху</div>
+                            ${sortBy === 'date_desc' ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
+                        </button>
+                        <button data-action="setColSort" data-col="${col.id}" data-opt="deadline" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'deadline' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
+                            <div class="flex items-center gap-2"><i data-lucide="clock" class="w-3.5 h-3.5 text-rose-500"></i> Дедлайны</div>
+                            ${sortBy === 'deadline' ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
+                        </button>
+                        <button data-action="setColSort" data-col="${col.id}" data-opt="priority_desc" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'priority_desc' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
+                            <div class="flex items-center gap-2"><i data-lucide="flame" class="w-3.5 h-3.5 text-red-500"></i> По приоритету</div>
+                            ${sortBy === 'priority_desc' ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
+                        </button>
+                        <button data-action="setColSort" data-col="${col.id}" data-opt="sp_desc" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'sp_desc' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
+                            <div class="flex items-center gap-2"><i data-lucide="scale" class="w-3.5 h-3.5 text-indigo-500"></i> По весу (SP)</div>
+                            ${sortBy === 'sp_desc' ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
+                        </button>
+                    </div>
+                </div>
+                <button data-action="editCol" data-col="${col.id}" class="text-gray-400 hover:text-blue-500 p-1.5 rounded-lg transition-colors"><i data-lucide="more-horizontal" class="w-4 h-4 pointer-events-none"></i></button>
+            </div>
+            `}
           </div>
-        <div id="cards-${col.id}" ${isViewer ? '' : `data-dblaction="quickAdd" data-col="${col.id}"`} class="p-3 flex-1 overflow-y-auto hide-scroll gap-3 min-h-[120px] flex flex-col ${isViewer ? '' : 'cursor-pointer'} relative">
+        <div id="cards-${col.id}" ${isViewer ? '' : `data-dblaction="quickAdd" data-col="${col.id}"`} class="p-3 flex-1 overflow-y-auto hide-scroll gap-3 min-h-[120px] flex flex-col ${isViewer ? '' : 'cursor-pointer'} relative z-10">
           ${cardsHtml}
           ${emptyStateHtml}
         </div>
@@ -3888,6 +3975,7 @@ function render() {
       const colEl = wrap.querySelector(`#cards-${col.id}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
+        sort: !isSorted, // ЭНТЕРПРАЙЗ: Отключаем ручную сортировку (DnD внутри колонки), если активна умная сортировка
         animation: 250, 
         easing: "cubic-bezier(0.25, 1, 0.5, 1)", 
         ghostClass: 'sortable-ghost',
@@ -4628,6 +4716,11 @@ window.addEventListener('click', (e) => {
     if (mobTagMenu && !mobTagMenu.classList.contains('hidden')) {
       mobTagMenu.classList.add('hidden');
     }
+  }
+  
+  // Закрытие меню сортировок колонок
+  if (!e.target.closest('.relative.group\\/sort') && !e.target.closest('button[title="Авто-сортировка задач"]')) {
+      document.querySelectorAll('.col-sort-menu').forEach(m => m.classList.add('hidden'));
   }
 
   // 1. Обработка кликов по фону модальных окон
