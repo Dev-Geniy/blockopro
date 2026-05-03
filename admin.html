@@ -39,13 +39,17 @@
   </div>
 
   <nav class="flex flex-col gap-2 px-3 w-full">
-    <button class="flex items-center gap-3 p-3 lg:px-4 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold border border-indigo-500/20 transition-all w-full justify-center lg:justify-start shadow-inner">
+    <button id="navDatabase" onclick="switchTab('viewDatabase')" class="flex items-center gap-3 p-3 lg:px-4 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold border border-indigo-500/20 transition-all w-full justify-center lg:justify-start shadow-inner">
       <i data-lucide="database" class="w-5 h-5"></i><span class="hidden lg:block text-sm">База данных</span>
     </button>
-    <button class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start opacity-50 cursor-not-allowed">
+    <button id="navPromo" onclick="switchTab('viewPromo')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
+      <i data-lucide="ticket" class="w-5 h-5"></i><span class="hidden lg:block text-sm">Промо акции</span>
+    </button>
+    <button id="navLogs" onclick="switchTab('viewLogs')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
       <i data-lucide="activity" class="w-5 h-5"></i><span class="hidden lg:block text-sm">Логи системы</span>
     </button>
-    <button onclick="window.location.href='index.html'" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start mt-auto">
+    <div class="h-px bg-gray-800 my-2 mx-4 hidden lg:block"></div>
+    <button onclick="window.location.href='index.html'" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start">
       <i data-lucide="log-out" class="w-5 h-5"></i><span class="hidden lg:block text-sm">Выйти в App</span>
     </button>
   </nav>
@@ -76,55 +80,164 @@
     <!-- Abstract Background Glow -->
     <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 relative z-10">
-      <div class="p-6 bg-gray-900/60 border border-gray-800 rounded-3xl flex flex-col shadow-lg backdrop-blur-sm hover:border-gray-700 transition-colors">
-        <div class="text-gray-500 mb-2"><i data-lucide="users" class="w-5 h-5"></i></div>
-        <div class="text-3xl font-black text-white" id="statUsers">0</div>
-        <div class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Всего аккаунтов</div>
+    <!-- VIEW: DATABASE -->
+    <div id="viewDatabase" class="animate-fade-in-up relative z-10">
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="p-6 bg-gray-900/60 border border-gray-800 rounded-3xl flex flex-col shadow-lg backdrop-blur-sm hover:border-gray-700 transition-colors">
+          <div class="text-gray-500 mb-2"><i data-lucide="users" class="w-5 h-5"></i></div>
+          <div class="text-3xl font-black text-white" id="statUsers">0</div>
+          <div class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Всего аккаунтов</div>
+        </div>
+        <div class="p-6 bg-indigo-900/10 border border-indigo-500/20 rounded-3xl flex flex-col shadow-lg backdrop-blur-sm hover:border-indigo-500/40 transition-colors">
+          <div class="text-indigo-400 mb-2"><i data-lucide="zap" class="w-5 h-5"></i></div>
+          <div class="text-3xl font-black text-indigo-400" id="statPro">0</div>
+          <div class="text-[10px] font-bold text-indigo-500/70 uppercase tracking-widest mt-1">PRO / Company</div>
+        </div>
+        <div class="p-6 bg-emerald-900/10 border border-emerald-500/20 rounded-3xl flex flex-col shadow-lg backdrop-blur-sm hover:border-emerald-500/40 transition-colors">
+          <div class="text-emerald-400 mb-2"><i data-lucide="coins" class="w-5 h-5"></i></div>
+          <div class="text-3xl font-black text-emerald-400" id="statCoins">0</div>
+          <div class="text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest mt-1">Монет в обороте</div>
+        </div>
+        <div class="p-6 bg-purple-900/10 border border-purple-500/20 rounded-3xl flex flex-col shadow-lg backdrop-blur-sm hover:border-purple-500/40 transition-colors">
+          <div class="text-purple-400 mb-2"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></div>
+          <div class="text-3xl font-black text-purple-400" id="statBoards">0</div>
+          <div class="text-[10px] font-bold text-purple-500/70 uppercase tracking-widest mt-1">Облачных досок</div>
+        </div>
       </div>
-      <div class="p-6 bg-indigo-900/10 border border-indigo-500/20 rounded-3xl flex flex-col shadow-lg backdrop-blur-sm hover:border-indigo-500/40 transition-colors">
-        <div class="text-indigo-400 mb-2"><i data-lucide="zap" class="w-5 h-5"></i></div>
-        <div class="text-3xl font-black text-indigo-400" id="statPro">0</div>
-        <div class="text-[10px] font-bold text-indigo-500/70 uppercase tracking-widest mt-1">PRO / Company</div>
-      </div>
-      <div class="p-6 bg-emerald-900/10 border border-emerald-500/20 rounded-3xl flex flex-col shadow-lg backdrop-blur-sm hover:border-emerald-500/40 transition-colors">
-        <div class="text-emerald-400 mb-2"><i data-lucide="coins" class="w-5 h-5"></i></div>
-        <div class="text-3xl font-black text-emerald-400" id="statCoins">0</div>
-        <div class="text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest mt-1">Монет в обороте</div>
-      </div>
-      <div class="p-6 bg-purple-900/10 border border-purple-500/20 rounded-3xl flex flex-col shadow-lg backdrop-blur-sm hover:border-purple-500/40 transition-colors">
-        <div class="text-purple-400 mb-2"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></div>
-        <div class="text-3xl font-black text-purple-400" id="statBoards">0</div>
-        <div class="text-[10px] font-bold text-purple-500/70 uppercase tracking-widest mt-1">Облачных досок</div>
+
+      <!-- Table -->
+      <div class="bg-gray-900/60 border border-gray-800 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-gray-800/50 border-b border-gray-800 text-[10px] font-black text-gray-500 uppercase tracking-widest select-none">
+            <tr>
+              <th class="px-6 py-4">Пользователь</th>
+              <th class="px-6 py-4 cursor-pointer hover:text-white transition-colors group" onclick="handleSort('plan')">
+                 <div class="flex items-center gap-1">Тариф <i id="sortIcon_plan" data-lucide="arrow-down-up" class="w-3 h-3 text-gray-600 group-hover:text-indigo-400"></i></div>
+              </th>
+              <th class="px-6 py-4 text-center cursor-pointer hover:text-white transition-colors group" onclick="handleSort('coins')">
+                 <div class="flex items-center justify-center gap-1">Баланс (B) <i id="sortIcon_coins" data-lucide="arrow-down" class="w-3 h-3 text-indigo-500"></i></div>
+              </th>
+              <th class="px-6 py-4 text-center cursor-pointer hover:text-white transition-colors group" onclick="handleSort('boards')">
+                 <div class="flex items-center justify-center gap-1">Доски <i id="sortIcon_boards" data-lucide="arrow-down-up" class="w-3 h-3 text-gray-600 group-hover:text-indigo-400"></i></div>
+              </th>
+              <th class="px-6 py-4 text-center cursor-pointer hover:text-white transition-colors group" onclick="handleSort('referrals')">
+                 <div class="flex items-center justify-center gap-1">Рефералы <i id="sortIcon_referrals" data-lucide="arrow-down-up" class="w-3 h-3 text-gray-600 group-hover:text-indigo-400"></i></div>
+              </th>
+              <th class="px-6 py-4 text-right">Действия</th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody" class="divide-y divide-gray-800/50">
+            <!-- JS Injects -->
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- Table -->
-    <div class="bg-gray-900/60 border border-gray-800 rounded-3xl overflow-hidden shadow-2xl relative z-10 backdrop-blur-md">
-      <table class="w-full text-left border-collapse">
-        <thead class="bg-gray-800/50 border-b border-gray-800 text-[10px] font-black text-gray-500 uppercase tracking-widest select-none">
-          <tr>
-            <th class="px-6 py-4">Пользователь</th>
-            <th class="px-6 py-4 cursor-pointer hover:text-white transition-colors group" onclick="handleSort('plan')">
-               <div class="flex items-center gap-1">Тариф <i id="sortIcon_plan" data-lucide="arrow-down-up" class="w-3 h-3 text-gray-600 group-hover:text-indigo-400"></i></div>
-            </th>
-            <th class="px-6 py-4 text-center cursor-pointer hover:text-white transition-colors group" onclick="handleSort('coins')">
-               <div class="flex items-center justify-center gap-1">Баланс (B) <i id="sortIcon_coins" data-lucide="arrow-down" class="w-3 h-3 text-indigo-500"></i></div>
-            </th>
-            <th class="px-6 py-4 text-center cursor-pointer hover:text-white transition-colors group" onclick="handleSort('boards')">
-               <div class="flex items-center justify-center gap-1">Доски <i id="sortIcon_boards" data-lucide="arrow-down-up" class="w-3 h-3 text-gray-600 group-hover:text-indigo-400"></i></div>
-            </th>
-            <th class="px-6 py-4 text-center cursor-pointer hover:text-white transition-colors group" onclick="handleSort('referrals')">
-               <div class="flex items-center justify-center gap-1">Рефералы <i id="sortIcon_referrals" data-lucide="arrow-down-up" class="w-3 h-3 text-gray-600 group-hover:text-indigo-400"></i></div>
-            </th>
-            <th class="px-6 py-4 text-right">Действия</th>
-          </tr>
-        </thead>
-        <tbody id="usersTbody" class="divide-y divide-gray-800/50">
-          <!-- JS Injects -->
-        </tbody>
-      </table>
+    <!-- VIEW: PROMO CODES -->
+    <div id="viewPromo" class="hidden animate-fade-in-up relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Constructor -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md lg:col-span-1 h-fit">
+          <h3 class="text-lg font-black text-white mb-5 flex items-center gap-2"><i data-lucide="ticket" class="w-5 h-5 text-amber-400"></i> Конструктор кампаний</h3>
+          
+          <div class="space-y-4">
+             <div>
+                <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 flex justify-between">Промокод <span onclick="generateRandomPromo()" class="text-amber-500 cursor-pointer hover:text-amber-400 transition-colors"><i data-lucide="dices" class="w-3 h-3 inline"></i> Сгенерировать</span></label>
+                <input type="text" id="promoCodeInput" placeholder="SUMMER2026" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-amber-500 font-bold uppercase transition-colors shadow-inner" />
+             </div>
+             
+             <div>
+                <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Тип бонуса</label>
+                <select id="promoTypeInput" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-amber-500 font-bold transition-colors cursor-pointer appearance-none">
+                   <option value="plan_pro_2m">🎁 2 Месяца PRO (Бесплатно)</option>
+                   <option value="plan_fl_1m">🎁 1 Месяц Freelancer (Бесплатно)</option>
+                   <option value="discount_50">💸 Скидка -50% на покупку тарифа</option>
+                   <option value="coins_1000">💰 1000 B-Coins на баланс</option>
+                </select>
+             </div>
+
+             <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Лимит активаций</label>
+                  <input type="number" id="promoLimitInput" placeholder="Безлимит (0)" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-amber-500 font-bold transition-colors shadow-inner" />
+                </div>
+                <div>
+                  <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Срок действия</label>
+                  <input type="date" id="promoExpireInput" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-gray-400 focus:text-white focus:border-amber-500 font-bold transition-colors shadow-inner cursor-pointer" />
+                </div>
+             </div>
+             
+             <button onclick="createPromo()" class="w-full py-3.5 bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-white text-sm font-black rounded-xl shadow-lg shadow-orange-500/20 active:scale-95 transition-all mt-4 flex items-center justify-center gap-2 border border-orange-400/50">
+               <i data-lucide="rss" class="w-4 h-4"></i> Выпустить в сеть
+             </button>
+          </div>
+        </div>
+
+        <!-- Active Promos Table -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md lg:col-span-2">
+          <h3 class="text-lg font-black text-white mb-5 flex items-center gap-2"><i data-lucide="bar-chart-horizontal" class="w-5 h-5 text-indigo-400"></i> Активные промо-кампании</h3>
+          <div class="overflow-x-auto hide-scroll">
+             <table class="w-full text-left border-collapse">
+               <thead class="bg-gray-800/50 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-800">
+                 <tr>
+                   <th class="px-4 py-3 rounded-tl-xl">Код</th>
+                   <th class="px-4 py-3">Бонус</th>
+                   <th class="px-4 py-3 text-center">Активации</th>
+                   <th class="px-4 py-3 text-center">Статус</th>
+                   <th class="px-4 py-3 text-right rounded-tr-xl">Действие</th>
+                 </tr>
+               </thead>
+               <tbody id="promoTbody" class="divide-y divide-gray-800/50">
+                  <!-- JS Injects -->
+               </tbody>
+             </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: SYSTEM LOGS -->
+    <div id="viewLogs" class="hidden animate-fade-in-up relative z-10">
+      <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-8 shadow-2xl backdrop-blur-md max-w-3xl mx-auto mt-6">
+        <div class="w-16 h-16 bg-blue-500/10 border border-blue-500/30 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+           <i data-lucide="activity" class="w-8 h-8 text-blue-400"></i>
+        </div>
+        <h2 class="text-2xl font-black text-white mb-4">Что такое «Логи системы»?</h2>
+        <p class="text-sm text-gray-400 leading-relaxed mb-8">
+          Логи системы (Enterprise Audit Trail) — это <b class="text-gray-200">неизменяемый цифровой след всех транзакций в платформе</b>. В масштабах Enterprise-продукта логи решают 3 критические задачи:
+        </p>
+        
+        <div class="space-y-4 mb-8">
+           <div class="flex items-start gap-4 bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 hover:border-rose-500/30 transition-colors group">
+              <div class="p-2 bg-rose-500/10 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="shield-alert" class="w-5 h-5 text-rose-400"></i></div>
+              <div>
+                 <h4 class="text-sm font-bold text-gray-200 mb-1">Безопасность и Расследования (Security Guard)</h4>
+                 <p class="text-xs text-gray-500 leading-relaxed">Если злоумышленник попытается накрутить рефералов или сменить тариф, система мгновенно зафиксирует его IP, UID и точное время запроса. Администратор сможет расследовать инцидент и откатить ущерб.</p>
+              </div>
+           </div>
+           
+           <div class="flex items-start gap-4 bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 hover:border-indigo-500/30 transition-colors group">
+              <div class="p-2 bg-indigo-500/10 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="network" class="w-5 h-5 text-indigo-400"></i></div>
+              <div>
+                 <h4 class="text-sm font-bold text-gray-200 mb-1">Аналитика поведения (System Telemetry)</h4>
+                 <p class="text-xs text-gray-500 leading-relaxed">Глобальный мониторинг узких мест платформы. Мы видим, какие фичи (например, генерация AI-обложек) вызывают наибольшую нагрузку на API (OpenAI/ImgBB) в пиковые часы.</p>
+              </div>
+           </div>
+           
+           <div class="flex items-start gap-4 bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 hover:border-emerald-500/30 transition-colors group">
+              <div class="p-2 bg-emerald-500/10 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="bug-play" class="w-5 h-5 text-emerald-400"></i></div>
+              <div>
+                 <h4 class="text-sm font-bold text-gray-200 mb-1">Дебаггинг без скриншотов (Pro Support)</h4>
+                 <p class="text-xs text-gray-500 leading-relaxed">Позволяет отделу поддержки воспроизвести цепочку действий пользователя за 5 минут до возникновения бага, радикально снижая время закрытия тикетов (Time-to-Resolution).</p>
+              </div>
+           </div>
+        </div>
+
+        <button class="px-6 py-4 bg-blue-600/10 text-blue-400 border border-blue-500/30 rounded-xl text-sm font-black w-full uppercase tracking-widest cursor-not-allowed">
+          Модуль архитектуры в разработке
+        </button>
+      </div>
     </div>
   </div>
 </main>
@@ -349,6 +462,7 @@
       animateValue('statCoins', 0, totalCoins, 1000);
 
       renderTable();
+      loadPromos(); // ЭНТЕРПРАЙЗ: Загрузка модуля промо-кампаний
 
       // Убираем лоадер
       const loader = document.getElementById('loader');
@@ -763,6 +877,147 @@
       }
   }
 
+  // --- TAB ROUTER ---
+  function switchTab(tabId) {
+     ['viewDatabase', 'viewPromo', 'viewLogs'].forEach(id => {
+         document.getElementById(id).classList.add('hidden');
+     });
+     
+     const baseClass = "flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start";
+     document.getElementById('navDatabase').className = baseClass;
+     document.getElementById('navPromo').className = baseClass;
+     document.getElementById('navLogs').className = baseClass;
+
+     document.getElementById(tabId).classList.remove('hidden');
+     
+     if (tabId === 'viewDatabase') {
+         document.getElementById('navDatabase').className = "flex items-center gap-3 p-3 lg:px-4 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold border border-indigo-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
+     } else if (tabId === 'viewPromo') {
+         document.getElementById('navPromo').className = "flex items-center gap-3 p-3 lg:px-4 bg-amber-500/10 text-amber-400 rounded-xl font-bold border border-amber-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
+     } else if (tabId === 'viewLogs') {
+         document.getElementById('navLogs').className = "flex items-center gap-3 p-3 lg:px-4 bg-blue-500/10 text-blue-400 rounded-xl font-bold border border-blue-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
+     }
+  }
+
+  // --- PROMO CODE ENGINE ---
+  let allPromos = [];
+
+  async function loadPromos() {
+     try {
+         const snap = await db.collection('promocodes').get();
+         allPromos = [];
+         snap.forEach(doc => {
+             allPromos.push({ id: doc.id, ...doc.data() });
+         });
+         renderPromos();
+     } catch(e) { console.error("Promo load error:", e); }
+  }
+
+  function renderPromos() {
+     const tbody = document.getElementById('promoTbody');
+     if (!tbody) return;
+     
+     if (allPromos.length === 0) {
+         tbody.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-xs text-gray-600 font-bold uppercase tracking-widest border-b border-transparent">Нет запущенных кампаний</td></tr>';
+         return;
+     }
+
+     const typeLabels = {
+         'plan_pro_2m': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-inner"><i data-lucide="zap" class="w-3 h-3"></i> 2 Месяца PRO</div>',
+         'plan_fl_1m': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-inner"><i data-lucide="briefcase" class="w-3 h-3"></i> 1 Месяц FL</div>',
+         'discount_50': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-inner"><i data-lucide="percent" class="w-3 h-3"></i> Скидка -50%</div>',
+         'coins_1000': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-inner"><i data-lucide="coins" class="w-3 h-3"></i> 1000 B-Coins</div>'
+     };
+
+     // Сортируем: новые сверху
+     allPromos.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+     tbody.innerHTML = allPromos.map(p => {
+         const maxStr = p.maxUses > 0 ? p.maxUses : '∞';
+         const usesStr = `${p.uses || 0} / <span class="text-gray-500">${maxStr}</span>`;
+         const isExpired = p.expiresAt && new Date(p.expiresAt).getTime() < Date.now();
+         const isExhausted = p.maxUses > 0 && (p.uses || 0) >= p.maxUses;
+         
+         let statusHtml = '<span class="px-2.5 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]">Активен</span>';
+         if (isExpired) statusHtml = '<span class="px-2.5 py-1 rounded border border-red-500/30 bg-red-500/10 text-red-400 text-[9px] font-black uppercase tracking-widest">Истек</span>';
+         else if (isExhausted) statusHtml = '<span class="px-2.5 py-1 rounded border border-gray-500/30 bg-gray-500/10 text-gray-400 text-[9px] font-black uppercase tracking-widest">Лимит</span>';
+
+         return `
+            <tr class="hover:bg-gray-800/40 transition-colors group">
+               <td class="px-4 py-4 font-mono font-bold text-white tracking-wider text-sm">${p.id}</td>
+               <td class="px-4 py-4 text-xs font-bold">${typeLabels[p.type] || p.type}</td>
+               <td class="px-4 py-4 text-center text-xs text-white font-mono font-bold">${usesStr}</td>
+               <td class="px-4 py-4 text-center">${statusHtml}</td>
+               <td class="px-4 py-4 text-right">
+                 <button onclick="deletePromo('${p.id}')" class="p-2 text-gray-500 hover:text-red-500 bg-gray-800/50 hover:bg-red-500/10 rounded-xl transition-all shadow-sm active:scale-95 border border-transparent hover:border-red-500/30 inline-block" title="Отозвать промокод">
+                   <i data-lucide="trash-2" class="w-4 h-4"></i>
+                 </button>
+               </td>
+            </tr>
+         `;
+     }).join('');
+     lucide.createIcons();
+  }
+
+  function generateRandomPromo() {
+     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+     let result = 'BLOCKO-';
+     for (let i = 0; i < 6; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+     document.getElementById('promoCodeInput').value = result;
+  }
+
+  async function createPromo() {
+     const code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
+     const type = document.getElementById('promoTypeInput').value;
+     const maxUses = parseInt(document.getElementById('promoLimitInput').value) || 0;
+     const expiresAtStr = document.getElementById('promoExpireInput').value;
+     
+     if (!code) {
+         showToast('Введите или сгенерируйте код!');
+         return;
+     }
+     
+     let expiresAt = null;
+     if (expiresAtStr) {
+         const d = new Date(expiresAtStr);
+         d.setHours(23, 59, 59, 999);
+         expiresAt = d.toISOString();
+     }
+
+     const promoData = {
+         type: type,
+         maxUses: maxUses,
+         uses: 0,
+         expiresAt: expiresAt,
+         createdAt: new Date().toISOString(),
+         createdBy: currentUser.id // Ссылка на админа
+     };
+
+     try {
+         await db.collection('promocodes').doc(code).set(promoData);
+         showToast('Кампания успешно запущена!');
+         
+         document.getElementById('promoCodeInput').value = '';
+         document.getElementById('promoLimitInput').value = '';
+         document.getElementById('promoExpireInput').value = '';
+         
+         loadPromos();
+     } catch(e) {
+         alert("Ошибка запуска: " + e.message);
+     }
+  }
+
+  async function deletePromo(code) {
+     if(confirm(`Отозвать промокод ${code} навсегда? Пользователи больше не смогут его применить.`)) {
+         try {
+             await db.collection('promocodes').doc(code).delete();
+             showToast('Промокод отозван.');
+             loadPromos();
+         } catch(e) { alert("Ошибка: " + e.message); }
+     }
+  }
+
+  // --- SYSTEM HELPERS ---
   function showToast(text) {
       const t = document.getElementById('adminToast');
       document.getElementById('toastText').innerText = text;
