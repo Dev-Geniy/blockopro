@@ -3379,18 +3379,32 @@ function renderChecklistView() {
 
 function toggleChecklistView(index) {
   viewingCard.checklist[index].isCompleted = !viewingCard.checklist[index].isCompleted;
-  if (viewingCard.checklist[index].isCompleted) fireConfetti(); 
   
-  // Отправляем точечное обновление в Store
+  // Отправляем точечное обновление в Store без полного перерендера UI модалки
   dispatchCardUpdate(viewingCard.id, currentColumn, { checklist: viewingCard.checklist });
   
-  // Обновляем старый визуал (для обратной совместимости)
-  renderChecklistView(); 
+  // Точечное обновление DOM (Virtual-DOM style)
+  const isChecked = viewingCard.checklist[index].isCompleted;
+  const elements = document.querySelectorAll(`[onclick="toggleChecklistView(${index}); event.stopPropagation();"]`);
   
-  // ЭНТЕРПРАЙЗ: Мгновенный ререндер для новой универсальной модалки (contentViewModal)
-  if (activeContentView && (activeContentView.type === 'task' || !activeContentView.type)) {
-      openViewModal(activeContentView.colId, activeContentView.cardId);
-  }
+  elements.forEach(el => {
+      const box = el.querySelector('div');
+      const textSpan = el.querySelector('span');
+      if (box && textSpan) {
+          if (isChecked) {
+              box.className = "w-6 h-6 rounded-lg border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors bg-blue-500 border-blue-500";
+              box.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-white"></i>';
+              textSpan.className = "text-sm font-medium flex-1 line-through text-gray-400 leading-relaxed select-none";
+          } else {
+              box.className = "w-6 h-6 rounded-lg border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-600";
+              box.innerHTML = '';
+              textSpan.className = "text-sm font-medium flex-1 text-gray-700 dark:text-gray-200 leading-relaxed select-none";
+          }
+      }
+  });
+  
+  // Вызываем обновление иконок только внутри измененных элементов
+  elements.forEach(el => lucide.createIcons({ root: el }));
 }
 
 // --- EVENT DELEGATION ENGINE (O(1) Memory Footprint) ---
@@ -3725,15 +3739,20 @@ function render() {
         const ytBadgeHtml = c.youtubeEmbed ? `<div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 shadow-sm" title="Прикреплено видео"><i data-lucide="play-circle" class="w-3 h-3"></i><span class="text-[8px] font-black uppercase tracking-wider">Видео</span></div>` : '';
 
         return `
-          <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none flex flex-col">
+          <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none flex flex-col justify-between">
             ${isViewer ? '' : `<button data-action="editCard" data-col="${col.id}" data-card="${c.id}" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
             
             <!-- ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Легковесное сжатое превью для ускорения рендеринга доски -->
             ${c.image ? `<div class="mb-3 w-full h-32 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0 bg-gray-50 dark:bg-gray-900/50"><img src="${c.imageThumb || c.image}" loading="lazy" decoding="async" fetchpriority="low" style="content-visibility: auto;" class="w-full h-full object-cover block scale-105" /></div>` : ''}
             
-            <div class="flex flex-col items-start justify-between mb-2">
+            <div class="flex flex-col items-start w-full pointer-events-none">
               ${tagsHtml}
-              <div class="flex items-center gap-1.5 pointer-events-none w-full mt-1 justify-end">${priorityHtml}${spHtml}${ytBadgeHtml}</div>
+              <div class="font-bold text-sm leading-tight mb-2 text-gray-900 dark:text-white pr-6 line-clamp-3">${displayTitle}</div>
+            </div>
+            
+            <div class="flex items-center justify-between w-full mt-auto pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
+              <div class="flex items-center gap-1.5">${dueDateHtml}${checklistHtml || normalComments}</div>
+              <div class="flex items-center gap-1.5 justify-end flex-shrink-0">${priorityHtml}${spHtml}${ytBadgeHtml}</div>
             </div>
           </div>`;
       }).join('');
