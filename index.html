@@ -488,6 +488,7 @@
       <div class="flex items-center gap-8 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
         <span class="flex items-center gap-2"><i data-lucide="layout" class="w-3 h-3"></i> Проектов: <b id="statTotalBoards" class="text-gray-900 dark:text-white ml-1">0</b></span>
         <span class="flex items-center gap-2"><i data-lucide="check-square" class="w-3 h-3"></i> Задач: <b id="statTotalTasks" class="text-gray-900 dark:text-white ml-1">0</b></span>
+        <button onclick="openSupportModal()" class="flex items-center gap-2 hover:text-blue-500 transition-colors cursor-pointer"><i data-lucide="life-buoy" class="w-3 h-3"></i> Поддержка</button>
       </div>
       <div class="text-[10px] font-mono text-gray-400 tracking-wider">
         BLOCKO PRO • ECOSYSTEM © 2026
@@ -891,13 +892,21 @@
 
 <!-- Модалка ... -->
 <div id="topUpModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/80 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 rounded-[2rem] w-full max-w-lg shadow-2xl relative border border-gray-200 dark:border-gray-800">
+  <div class="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-lg shadow-2xl relative border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform" id="topUpContent">
     <button onclick="closeTopUpModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-800 dark:hover:text-white p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
     
     <div class="text-center mb-8">
       <div class="mx-auto w-16 h-16 bg-amber-100 dark:bg-amber-900/30 text-amber-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20"><i data-lucide="coins" class="w-8 h-8"></i></div>
-      <h2 class="text-2xl font-black text-gray-900 dark:text-white">Не хватает монет</h2>
-      <p class="text-sm text-gray-500 mt-2">Пополните баланс для оплаты тарифа.</p>
+      <h2 class="text-2xl font-black text-gray-900 dark:text-white">Баланс B-Coins</h2>
+      <p class="text-sm text-gray-500 mt-2">Пополните счет или активируйте промокод.</p>
+    </div>
+
+    <!-- Promo Code Module -->
+    <div class="mb-6 flex gap-2">
+      <input type="text" id="promoCodeInput" placeholder="Введите промокод..." class="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-amber-500 rounded-xl px-4 py-3.5 text-sm font-bold uppercase dark:text-white outline-none transition-colors shadow-inner">
+      <button id="activatePromoBtn" onclick="activatePromoCode()" class="px-6 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-sm flex-shrink-0 flex items-center gap-2">
+         <i data-lucide="ticket" class="w-4 h-4"></i> Ок
+      </button>
     </div>
 
     <div class="space-y-4">
@@ -917,6 +926,57 @@
         </div>
         <div class="px-4 py-2 bg-amber-500 text-white font-bold rounded-xl text-sm group-hover:scale-105 transition-transform relative z-10">$45.00</div>
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Support Ticket Modal -->
+<div id="supportModal" class="hidden fixed inset-0 z-[250] flex items-center justify-center bg-gray-900/80 dark:bg-black/90 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[2.5rem] w-full max-w-lg shadow-2xl relative border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform overflow-hidden" id="supportContent">
+    <div class="absolute -top-32 -left-32 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-32 -right-32 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <button onclick="closeSupportModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 rounded-full transition-colors z-20"><i data-lucide="x" class="w-5 h-5"></i></button>
+    
+    <div class="relative z-10">
+       <div class="flex items-center gap-4 mb-8">
+         <div class="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-2xl border border-blue-100 dark:border-blue-800/50 shadow-sm"><i data-lucide="life-buoy" class="w-8 h-8"></i></div>
+         <div>
+           <h2 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1">Служба Поддержки</h2>
+           <p class="text-xs text-gray-500 font-medium">Мы читаем каждое сообщение.</p>
+         </div>
+       </div>
+
+       <div class="space-y-5">
+         <div>
+            <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">С чем связано обращение?</label>
+            <div class="grid grid-cols-2 gap-3">
+               <label class="flex items-center gap-2 p-3 border border-gray-200 dark:border-gray-700 hover:border-rose-300 dark:hover:border-rose-700 bg-gray-50 dark:bg-gray-800/50 rounded-xl cursor-pointer transition-colors group">
+                 <input type="radio" name="supportType" value="bug" checked class="w-4 h-4 text-rose-500 border-gray-300 focus:ring-rose-500 accent-rose-500">
+                 <span class="text-xs font-bold dark:text-white"><i data-lucide="bug" class="w-3.5 h-3.5 inline text-rose-500 mr-1 mb-0.5"></i> Ошибка</span>
+               </label>
+               <label class="flex items-center gap-2 p-3 border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 bg-gray-50 dark:bg-gray-800/50 rounded-xl cursor-pointer transition-colors group">
+                 <input type="radio" name="supportType" value="idea" class="w-4 h-4 text-purple-500 border-gray-300 focus:ring-purple-500 accent-purple-500">
+                 <span class="text-xs font-bold dark:text-white"><i data-lucide="lightbulb" class="w-3.5 h-3.5 inline text-purple-500 mr-1 mb-0.5"></i> Идея</span>
+               </label>
+               <label class="flex items-center gap-2 p-3 border border-gray-200 dark:border-gray-700 hover:border-amber-300 dark:hover:border-amber-700 bg-gray-50 dark:bg-gray-800/50 rounded-xl cursor-pointer transition-colors group">
+                 <input type="radio" name="supportType" value="complaint" class="w-4 h-4 text-amber-500 border-gray-300 focus:ring-amber-500 accent-amber-500">
+                 <span class="text-xs font-bold dark:text-white"><i data-lucide="megaphone" class="w-3.5 h-3.5 inline text-amber-500 mr-1 mb-0.5"></i> Жалоба</span>
+               </label>
+               <label class="flex items-center gap-2 p-3 border border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-700 bg-gray-50 dark:bg-gray-800/50 rounded-xl cursor-pointer transition-colors group">
+                 <input type="radio" name="supportType" value="thanks" class="w-4 h-4 text-emerald-500 border-gray-300 focus:ring-emerald-500 accent-emerald-500">
+                 <span class="text-xs font-bold dark:text-white"><i data-lucide="heart-handshake" class="w-3.5 h-3.5 inline text-emerald-500 mr-1 mb-0.5"></i> Спасибо</span>
+               </label>
+            </div>
+         </div>
+         <div>
+            <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Сообщение</label>
+            <textarea id="supportMessage" placeholder="Опишите проблему, идею или просто скажите нам пару теплых слов..." rows="5" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-all resize-none shadow-inner"></textarea>
+         </div>
+         <button id="submitSupportBtn" onclick="submitSupportTicket()" class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all flex items-center justify-center gap-2">
+            <i data-lucide="send" class="w-4 h-4"></i> Отправить сообщение
+         </button>
+       </div>
     </div>
   </div>
 </div>
@@ -1453,17 +1513,119 @@ async function upgradeTo(planId) {
   }
 }
 
-// --- ЛОГИКА ПОПОЛНЕНИЯ (ДОНАТ ИЗ INDEX.HTML) ---
+// --- ЛОГИКА ПОПОЛНЕНИЯ И АКТИВАЦИИ ПРОМОКОДОВ ---
 function openTopUpModal() {
   const el = document.getElementById('topUpModal');
+  const content = document.getElementById('topUpContent');
+  document.getElementById('promoCodeInput').value = '';
   el.classList.remove('hidden');
-  setTimeout(() => el.classList.remove('opacity-0'), 10);
+  setTimeout(() => {
+     el.classList.remove('opacity-0');
+     content.classList.remove('scale-95');
+     content.classList.add('scale-100');
+  }, 10);
 }
 
 function closeTopUpModal() {
   const el = document.getElementById('topUpModal');
+  const content = document.getElementById('topUpContent');
   el.classList.add('opacity-0');
+  content.classList.remove('scale-100');
+  content.classList.add('scale-95');
   setTimeout(() => el.classList.add('hidden'), 300);
+}
+
+async function activatePromoCode() {
+  if (!currentUser) return showSystemToast('Ошибка', 'Авторизуйтесь для активации.', 'lock', 'text-amber-500', 'bg-amber-50');
+  
+  const input = document.getElementById('promoCodeInput');
+  const code = input.value.trim().toUpperCase();
+  const btn = document.getElementById('activatePromoBtn');
+  
+  if (!code) return;
+  
+  const ogBtn = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
+  lucide.createIcons({ root: btn.parentElement });
+
+  try {
+     const promoRef = db.collection('promocodes').doc(code);
+     const promoDoc = await promoRef.get();
+     
+     if (!promoDoc.exists) throw new Error('not_found');
+     
+     const promo = promoDoc.data();
+     const now = Date.now();
+     
+     if (promo.expiresAt && new Date(promo.expiresAt).getTime() < now) throw new Error('expired');
+     if (promo.maxUses > 0 && (promo.uses || 0) >= promo.maxUses) throw new Error('limit');
+
+     // Проверка, активировал ли юзер уже этот код (ЭНТЕРПРАЙЗ ЗАЩИТА)
+     const userRef = db.collection('users').doc(currentUser.id);
+     const userDoc = await userRef.get();
+     const usedPromos = userDoc.data().usedPromos || [];
+     
+     if (usedPromos.includes(code)) throw new Error('already_used');
+
+     // Применяем бонусы (Транзакция)
+     const batch = db.batch();
+     const updates = { usedPromos: firebase.firestore.FieldValue.arrayUnion(code) };
+     
+     let successMsg = '';
+     
+     if (promo.type === 'plan' || promo.type === 'plan_pro_2m' || promo.type === 'plan_fl_1m') {
+         // Обратная совместимость + Новый формат
+         let planToSet = promo.rewardPlan || (promo.type === 'plan_pro_2m' ? 'pro' : 'freelancer');
+         let durMonths = promo.rewardPlanDuration || (promo.type === 'plan_pro_2m' ? 2 : 1);
+         
+         updates.plan = planToSet;
+         if (durMonths === 999) {
+             updates.planExpiresAt = firebase.firestore.FieldValue.delete();
+         } else {
+             // К текущему времени прибавляем месяцы (30 дней)
+             const currentExpiry = userDoc.data().planExpiresAt || now;
+             updates.planExpiresAt = Math.max(currentExpiry, now) + (durMonths * 30 * 24 * 60 * 60 * 1000);
+         }
+         successMsg = `Активирован тариф ${planToSet.toUpperCase()}`;
+         userPlan = planToSet; // Обновляем локально
+         localStorage.setItem('blocko_user_plan', planToSet);
+     } else if (promo.type === 'coins' || promo.type === 'coins_1000') {
+         let coinsToAdd = promo.rewardCoins || 1000;
+         updates.coins = firebase.firestore.FieldValue.increment(coinsToAdd);
+         successMsg = `Начислено ${coinsToAdd} B-Coins!`;
+     } else if (promo.type === 'discount' || promo.type === 'discount_50') {
+         // Скидка применяется как флаг в профиле для следующей покупки (Требует доработки Billing системы)
+         updates.activeDiscount = promo.rewardDiscount || 50;
+         successMsg = `Получена скидка ${updates.activeDiscount}% на следующую покупку!`;
+     }
+
+     batch.update(userRef, updates);
+     batch.update(promoRef, { uses: firebase.firestore.FieldValue.increment(1) });
+     
+     await batch.commit();
+     
+     confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
+     showSystemToast('Промокод активирован!', successMsg, 'ticket', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+     input.value = '';
+     
+     // Обновляем UI
+     if (typeof loadAffiliateStats === 'function') loadAffiliateStats();
+     setTimeout(() => closeTopUpModal(), 1500);
+
+  } catch (err) {
+     let errMsg = 'Произошла ошибка базы данных.';
+     if (err.message === 'not_found') errMsg = 'Такой промокод не существует.';
+     else if (err.message === 'expired') errMsg = 'Срок действия промокода истек.';
+     else if (err.message === 'limit') errMsg = 'Лимит активаций этого промокода исчерпан.';
+     else if (err.message === 'already_used') errMsg = 'Вы уже активировали этот промокод ранее.';
+     
+     showSystemToast('Ошибка активации', errMsg, 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+  } finally {
+     btn.disabled = false;
+     btn.innerHTML = ogBtn;
+     lucide.createIcons({ root: btn.parentElement });
+  }
 }
 
 async function buyCoinsPack(amount, usdPrice) {
@@ -2038,6 +2200,66 @@ function shareVia(platform) {
 
 function toggleTheme() { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); }
 
+// --- ЛОГИКА САППОРТА (HELPDESK) ---
+function openSupportModal() {
+  if (!currentUser) return showSystemToast('Доступ закрыт', 'Авторизуйтесь, чтобы отправить обращение в поддержку.', 'lock', 'text-amber-500', 'bg-amber-50');
+  const modal = document.getElementById('supportModal');
+  const content = document.getElementById('supportContent');
+  document.getElementById('supportMessage').value = '';
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+     modal.classList.remove('opacity-0');
+     content.classList.remove('scale-95');
+     content.classList.add('scale-100');
+  }, 10);
+}
+
+function closeSupportModal() {
+  const modal = document.getElementById('supportModal');
+  const content = document.getElementById('supportContent');
+  modal.classList.add('opacity-0');
+  content.classList.remove('scale-100');
+  content.classList.add('scale-95');
+  setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+async function submitSupportTicket() {
+  const text = document.getElementById('supportMessage').value.trim();
+  const type = document.querySelector('input[name="supportType"]:checked').value;
+  const btn = document.getElementById('submitSupportBtn');
+  
+  if (!text) return showSystemToast('Пустое поле', 'Напишите текст сообщения.', 'alert-circle', 'text-amber-500', 'bg-amber-50');
+  
+  const ogBtn = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Отправка...';
+  lucide.createIcons({ root: btn.parentElement });
+
+  try {
+     await db.collection('support_tickets').add({
+         type: type,
+         message: text,
+         status: 'open',
+         user: {
+            id: currentUser.id,
+            name: currentUser.name,
+            email: currentUser.email || null,
+            avatar: currentUser.customAvatar || currentUser.avatar || null
+         },
+         createdAt: new Date().toISOString()
+     });
+     
+     showSystemToast('Отправлено!', 'Спасибо. Ваше обращение успешно доставлено команде Blocko.', 'check-circle', 'text-green-500', 'bg-green-50 dark:bg-green-900/30');
+     closeSupportModal();
+  } catch (e) {
+     showSystemToast('Ошибка', 'Сбой отправки. Попробуйте позже.', 'x-circle', 'text-red-500', 'bg-red-50');
+  } finally {
+     btn.disabled = false;
+     btn.innerHTML = ogBtn;
+     lucide.createIcons({ root: btn.parentElement });
+  }
+}
+
 // Закрытие модалок по клику на затемненный фон
 window.addEventListener('click', (e) => {
   if (e.target.id === 'createBoardModal') closeCreateModal();
@@ -2050,6 +2272,7 @@ window.addEventListener('click', (e) => {
   if (e.target.id === 'customConfirmModal') closeConfirmModal();
   if (e.target.id === 'planDetailsModal') closePlanDetails();
   if (e.target.id === 'importBoardModal') closeImportModal();
+  if (e.target.id === 'supportModal') closeSupportModal();
 });
   
 let toastTimeout;
