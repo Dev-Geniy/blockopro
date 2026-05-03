@@ -1,4 +1,7 @@
-const CACHE_NAME = 'blocko-pro-core-v1';
+// ЭНТЕРПРАЙЗ: Интегрированный Service Worker ядра и медиа Blocko Pro
+const CORE_CACHE_NAME = 'blocko-pro-core-v2';
+const MEDIA_CACHE_NAME = 'blocko-media-cache-v2';
+
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -12,10 +15,12 @@ const CORE_ASSETS = [
   './manifest.json'
 ];
 
+const IMGBB_URL_PATTERN = /^https:\/\/i\.ibb\.co\//;
+
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.open(CORE_CACHE_NAME).then((cache) => {
       return cache.addAll(CORE_ASSETS);
     })
   );
@@ -26,7 +31,7 @@ self.addEventListener('activate', (e) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
+          if (cacheName !== CORE_CACHE_NAME && cacheName !== MEDIA_CACHE_NAME) {
             return caches.delete(cacheName);
           }
         })
@@ -47,14 +52,39 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Стратегия Stale-while-revalidate: отдаем кэш мгновенно, обновляем в фоне
+  // 1. Логика кэширования для медиа-ресурсов (ImgBB)
+  if (IMGBB_URL_PATTERN.test(e.request.url)) {
+    e.respondWith(
+      caches.match(e.request).then((cachedResponse) => {
+        // Возвращаем из кэша мгновенно (0ms), если есть
+        if (cachedResponse) return cachedResponse; 
+        
+        return fetch(e.request).then((networkResponse) => {
+          // Игнорируем некорректные ответы. Cross-origin картинки могут отдавать статус 0 (opaque), это нормально
+          if (!networkResponse || (networkResponse.status !== 200 && networkResponse.type !== 'opaque')) {
+            return networkResponse;
+          }
+          const responseToCache = networkResponse.clone();
+          caches.open(MEDIA_CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseToCache);
+          });
+          return networkResponse;
+        }).catch(() => {
+          // Игнорируем ошибку сети для медиа, карточка просто отрисуется без картинки
+        });
+      })
+    );
+    return; // Завершаем выполнение, чтобы не сработала логика ядра
+  }
+
+  // 2. Стратегия Stale-while-revalidate для ядра приложения
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
       const fetchPromise = fetch(e.request).then((networkResponse) => {
         // Кэшируем только успешные локальные запросы
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
+          caches.open(CORE_CACHE_NAME).then((cache) => {
             cache.put(e.request, responseToCache);
           });
         }
