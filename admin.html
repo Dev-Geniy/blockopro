@@ -117,53 +117,90 @@
   </div>
 </main>
 
-<!-- Edit Modal -->
-<div id="editModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 glass-panel opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-gray-900 p-8 rounded-[2rem] w-full max-w-md shadow-2xl border border-gray-800 transform scale-95 transition-transform relative overflow-hidden" id="editModalContent">
+<!-- User Profile & Edit Modal -->
+<div id="userProfileModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 glass-panel opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-gray-900 p-8 rounded-[2rem] w-full max-w-4xl shadow-2xl border border-gray-800 transform scale-95 transition-transform relative overflow-hidden flex flex-col max-h-[90vh]" id="userProfileModalContent">
     <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="text-xl font-black text-white flex items-center gap-2"><i data-lucide="sliders" class="w-5 h-5 text-indigo-500"></i> Редактор профиля</h3>
-      <button onclick="closeEditModal()" class="text-gray-500 hover:text-white transition-colors bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+    <div class="flex justify-between items-start mb-6 flex-shrink-0">
+      <div class="flex items-center gap-4">
+         <img id="upAvatar" src="" class="w-16 h-16 rounded-full border-2 border-gray-700 object-cover shadow-lg" />
+         <div>
+            <h3 class="text-2xl font-black text-white flex items-center gap-2">
+                <span id="upName">Имя</span>
+                <span id="upAdminBadge" class="hidden"><i data-lucide="shield-check" class="w-5 h-5 text-indigo-500"></i></span>
+            </h3>
+            <div class="text-xs text-gray-400 font-mono mt-1" id="upEmail">email@example.com</div>
+            <div class="text-[10px] text-gray-600 font-mono mt-0.5">UID: <span id="upUid"></span> • Зарегистрирован: <span id="upCreated"></span></div>
+         </div>
+      </div>
+      <button onclick="closeUserProfile()" class="text-gray-500 hover:text-white transition-colors bg-gray-800 p-2 rounded-xl border border-transparent hover:border-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
     
-    <div class="space-y-4">
-      <div>
-         <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Тарифный план</label>
-         <select id="editPlan" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-indigo-500 appearance-none font-bold transition-colors">
-           <option value="free">Free (Базовый)</option>
-           <option value="freelancer">Freelancer</option>
-           <option value="pro">Company (Pro)</option>
-           <option value="infinity">Infinity (God Mode)</option>
-         </select>
+    <div class="flex-1 overflow-y-auto pr-2 space-y-6 hide-scroll">
+      <!-- Readonly Stats -->
+      <div class="grid grid-cols-3 gap-4">
+         <div class="bg-gray-800/50 border border-gray-700 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
+            <i data-lucide="layout-dashboard" class="w-5 h-5 text-purple-400 mb-2"></i>
+            <div class="text-xl font-black text-white" id="upBoardsCount">0</div>
+            <div class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mt-1">Досок</div>
+         </div>
+         <div class="bg-gray-800/50 border border-gray-700 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
+            <i data-lucide="coins" class="w-5 h-5 text-emerald-400 mb-2"></i>
+            <div class="text-xl font-black text-white" id="upCoinsCount">0</div>
+            <div class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mt-1">Текущий баланс</div>
+         </div>
+         <div class="bg-gray-800/50 border border-gray-700 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
+            <i data-lucide="users" class="w-5 h-5 text-amber-400 mb-2"></i>
+            <div class="text-xl font-black text-white" id="upRefsCount">0</div>
+            <div class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mt-1">Приглашено</div>
+         </div>
       </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1 block">Монеты (B-Coins)</label>
-          <input type="number" id="editCoins" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-emerald-500 font-bold transition-colors shadow-inner" />
+
+      <!-- Management Form -->
+      <div class="bg-gray-800/30 border border-gray-700/50 p-5 rounded-3xl">
+        <h4 class="text-xs font-black text-indigo-400 uppercase tracking-widest mb-4 flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4"></i> Управление доступом</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+             <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Тарифный план</label>
+             <select id="editPlan" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-indigo-500 appearance-none font-bold transition-colors shadow-inner">
+               <option value="free">Free (Базовый)</option>
+               <option value="freelancer">Freelancer</option>
+               <option value="pro">Company (Pro)</option>
+               <option value="infinity">Infinity (God Mode)</option>
+             </select>
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1 block">Статус бейджа</label>
+            <select id="editBadge" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-amber-500 appearance-none font-bold transition-colors shadow-inner">
+               <option value="none">Нет бейджа</option>
+               <option value="friend">Blocko Friend</option>
+               <option value="partner">Blocko Partner</option>
+               <option value="ambassador">Ambassador</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1 block">Баланс B-Coins</label>
+            <input type="number" id="editCoins" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-emerald-500 font-bold transition-colors shadow-inner" />
+          </div>
+          <div>
+             <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 block">Бонусный AI Лимит</label>
+             <input type="number" id="editAiLimit" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-indigo-500 font-bold transition-colors shadow-inner" />
+          </div>
         </div>
-        <div>
-          <label class="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1 block">Рефералы</label>
-          <input type="number" id="editRefs" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-purple-500 font-bold transition-colors shadow-inner" />
-        </div>
       </div>
+
+      <!-- Team Details -->
       <div>
-        <label class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1 block">Статус бейджа (Достижения)</label>
-        <select id="editBadge" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-amber-500 appearance-none font-bold transition-colors">
-           <option value="none">Нет бейджа</option>
-           <option value="friend">Blocko Friend</option>
-           <option value="partner">Blocko Partner</option>
-           <option value="ambassador">Ambassador</option>
-        </select>
-      </div>
-      <div>
-         <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 block">Бонусный AI Лимит (Запросов)</label>
-         <input type="number" id="editAiLimit" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-indigo-500 font-bold transition-colors shadow-inner" />
+         <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Участники в проектах пользователя</h4>
+         <div id="upTeamList" class="space-y-2 bg-gray-900 border border-gray-800 rounded-2xl p-2 max-h-48 overflow-y-auto hide-scroll">
+            <!-- Injected by JS -->
+         </div>
       </div>
     </div>
 
-    <div class="mt-8 flex gap-3">
-      <button onclick="closeEditModal()" class="flex-1 py-3 text-sm font-bold text-gray-400 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors border border-gray-700">Отмена</button>
-      <button onclick="saveUserChanges()" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-500/20 active:scale-95 transition-all">Сохранить в БД</button>
+    <div class="mt-6 pt-6 border-t border-gray-800 flex gap-3 flex-shrink-0">
+      <button onclick="closeUserProfile()" class="flex-1 py-3.5 text-sm font-bold text-gray-400 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors border border-gray-700">Закрыть</button>
+      <button onclick="saveUserChanges()" class="flex-[2] py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-500/20 active:scale-95 transition-all">Применить изменения</button>
     </div>
   </div>
 </div>
@@ -176,6 +213,7 @@
 <script>
   lucide.createIcons();
   let allUsers = [];
+  let allBoards = [];
   let boardsMap = {};
   let currentEditUid = null;
 
@@ -189,7 +227,7 @@
         
         if (!data.isAdmin) {
             // ЭНТЕРПРАЙЗ: Бэкдор для инициализации владельца (Zero-Trust Bootstrap)
-            const secret = prompt("BLOCKO PRO SECURITY:\\nВведите ключ шифрования для доступа к Command Center:");
+            const secret = prompt("BLOCKO PRO SECURITY:\nВведите ключ шифрования для доступа к Command Center:");
             if (secret === "blocko_god_mode_2026") {
                 await db.collection('users').doc(user.uid).set({ isAdmin: true }, { merge: true });
                 showToast("Уровень доступа: GOD MODE. Обновление протоколов...");
@@ -213,9 +251,12 @@
       // 1. Агрегация досок (Map Reduce)
       const boardsSnap = await db.collection('boards').get();
       boardsMap = {};
+      allBoards = [];
       let totalBoards = 0;
       boardsSnap.forEach(doc => {
-         const owner = doc.data().owner;
+         const data = doc.data();
+         allBoards.push({ id: doc.id, ...data });
+         const owner = data.owner;
          if(owner) {
              boardsMap[owner] = (boardsMap[owner] || 0) + 1;
          }
@@ -297,7 +338,7 @@
         if (u.plan === 'infinity') planColor = 'bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 shadow-lg border border-orange-500/40';
 
         return `
-          <tr class="hover:bg-gray-800/40 transition-colors group">
+          <tr onclick="openUserProfile('${u.uid}')" class="hover:bg-gray-800/60 transition-colors group cursor-pointer">
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
                 <img src="${safeAvatar}" class="w-10 h-10 rounded-full border border-gray-700 object-cover shadow-sm" />
@@ -322,9 +363,9 @@
             <td class="px-6 py-4 text-center text-sm font-bold text-gray-400">${boardsCount}</td>
             <td class="px-6 py-4 text-center text-sm font-bold text-gray-400">${u.referralCount || 0}</td>
             <td class="px-6 py-4 text-right">
-              <button onclick="openEditModal('${u.uid}')" class="p-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-indigo-600 rounded-xl transition-all shadow-sm active:scale-95 border border-gray-700 hover:border-indigo-500">
-                <i data-lucide="sliders" class="w-4 h-4"></i>
-              </button>
+              <div class="p-2 bg-gray-800/50 text-gray-400 group-hover:text-white group-hover:bg-indigo-600 rounded-xl transition-all shadow-sm border border-transparent group-hover:border-indigo-500 inline-block">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </div>
             </td>
           </tr>
         `;
@@ -332,19 +373,81 @@
      lucide.createIcons();
   }
 
-  function openEditModal(uid) {
+  function openUserProfile(uid) {
      const user = allUsers.find(u => u.uid === uid);
      if(!user) return;
      currentEditUid = uid;
      
+     // 1. Fill Header
+     const safeName = user.name || 'Аноним';
+     const safeAvatar = user.customAvatar || user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+     document.getElementById('upAvatar').src = safeAvatar;
+     document.getElementById('upName').innerText = safeName;
+     document.getElementById('upEmail').innerText = user.email || 'Email скрыт';
+     document.getElementById('upUid').innerText = uid;
+     
+     let createdStr = 'Неизвестно';
+     if(user.createdAt) {
+         try {
+             createdStr = new Date(user.createdAt).toLocaleDateString('ru-RU');
+         } catch(e){}
+     }
+     document.getElementById('upCreated').innerText = createdStr;
+     
+     if (user.isAdmin) document.getElementById('upAdminBadge').classList.remove('hidden');
+     else document.getElementById('upAdminBadge').classList.add('hidden');
+
+     // 2. Fill Readonly Stats
+     document.getElementById('upBoardsCount').innerText = boardsMap[uid] || 0;
+     document.getElementById('upCoinsCount').innerText = user.coins || 0;
+     document.getElementById('upRefsCount').innerText = user.referralCount || 0;
+
+     // 3. Fill Forms
      document.getElementById('editPlan').value = user.plan || 'free';
      document.getElementById('editCoins').value = user.coins || 0;
-     document.getElementById('editRefs').value = user.referralCount || 0;
      document.getElementById('editBadge').value = user.badgeStatus || 'none';
      document.getElementById('editAiLimit').value = user.bonusAiLimit || 0;
 
-     const modal = document.getElementById('editModal');
-     const content = document.getElementById('editModalContent');
+     // 4. Extract Team
+     const userBoards = allBoards.filter(b => b.owner === uid);
+     const teamUids = new Set();
+     userBoards.forEach(b => {
+         if(b.members && Array.isArray(b.members)) {
+             b.members.forEach(m => teamUids.add(m));
+         }
+     });
+     teamUids.delete(uid); // remove self
+
+     const teamListEl = document.getElementById('upTeamList');
+     if(teamUids.size === 0) {
+         teamListEl.innerHTML = '<div class="text-center text-xs text-gray-500 py-4 font-medium italic">В проектах нет приглашенных участников</div>';
+     } else {
+         const teamHtml = Array.from(teamUids).map(tUid => {
+             const tUser = allUsers.find(u => u.uid === tUid);
+             if(!tUser) return '';
+             const tName = tUser.name || 'Аноним';
+             const tAvatar = tUser.customAvatar || tUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tName)}`;
+             let planLabel = tUser.plan === 'pro' ? 'PRO' : (tUser.plan === 'freelancer' ? 'FL' : (tUser.plan === 'infinity' ? 'GOD' : 'FREE'));
+             let planColor = tUser.plan === 'pro' ? 'text-purple-400 bg-purple-500/10 border-purple-500/20' : 'text-gray-400 bg-gray-800 border-gray-700';
+             
+             return `
+               <div class="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-800 transition-colors">
+                  <div class="flex items-center gap-3">
+                     <img src="${tAvatar}" class="w-8 h-8 rounded-full object-cover border border-gray-700" />
+                     <div>
+                        <div class="text-xs font-bold text-white leading-none mb-1">${tName}</div>
+                        <div class="text-[9px] text-gray-500 font-mono leading-none">${tUid}</div>
+                     </div>
+                  </div>
+                  <div class="px-2 py-0.5 rounded border text-[9px] font-black tracking-widest ${planColor}">${planLabel}</div>
+               </div>
+             `;
+         }).join('');
+         teamListEl.innerHTML = teamHtml;
+     }
+
+     const modal = document.getElementById('userProfileModal');
+     const content = document.getElementById('userProfileModalContent');
      modal.classList.remove('hidden');
      setTimeout(() => {
        modal.classList.remove('opacity-0');
@@ -352,9 +455,9 @@
      }, 10);
   }
 
-  function closeEditModal() {
-     const modal = document.getElementById('editModal');
-     const content = document.getElementById('editModalContent');
+  function closeUserProfile() {
+     const modal = document.getElementById('userProfileModal');
+     const content = document.getElementById('userProfileModalContent');
      modal.classList.add('opacity-0');
      content.classList.add('scale-95');
      setTimeout(() => { modal.classList.add('hidden'); currentEditUid = null; }, 300);
