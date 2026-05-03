@@ -512,15 +512,14 @@
           <span class="text-[9px] text-indigo-500 font-black bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-md border border-indigo-100 dark:border-indigo-800"><i data-lucide="sparkles" class="w-3 h-3 inline pb-0.5"></i> AI VISION</span>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 relative mb-3">
-          <!-- Левая часть: Дропзона, превью и iframe видео -->
+          <!-- Левая часть: Дропзона и превью -->
           <label id="dropzoneLabel" class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-2xl cursor-pointer h-36 relative overflow-hidden transition-all group bg-gray-50/50 dark:bg-gray-900/30 sm:col-span-1">
             <div id="dropzoneText" class="flex flex-col items-center text-center px-4"><div class="p-3 bg-white dark:bg-gray-800 rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform"><i data-lucide="image-plus" class="w-6 h-6 text-blue-500"></i></div><span class="text-xs font-medium text-gray-600 dark:text-gray-400 group-hover:text-blue-500 leading-tight">Файл с ПК</span></div>
             <img id="editImagePreview" class="absolute inset-0 w-full h-full object-cover hidden z-10" />
-            <iframe id="editYoutubePreview" class="absolute inset-0 w-full h-full hidden z-10 pointer-events-auto" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             <input type="file" id="editImage" class="hidden" accept="image/*" />
             
-            <!-- Кнопка удаления медиа -->
-            <button type="button" id="removeMediaBtn" onclick="event.preventDefault(); removeCoverMedia()" class="hidden absolute top-2 right-2 p-2 bg-white/90 dark:bg-black/70 hover:bg-red-100 dark:hover:bg-red-900/70 text-red-500 rounded-lg shadow-sm z-20 backdrop-blur-md transition-all active:scale-95 border border-gray-200/50 dark:border-gray-700/50 hover:border-red-300" title="Удалить медиа"><i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i></button>
+            <!-- Кнопка удаления обложки -->
+            <button type="button" id="removeImageBtn" onclick="event.preventDefault(); removeCoverImage()" class="hidden absolute top-2 right-2 p-2 bg-white/90 dark:bg-black/70 hover:bg-red-100 dark:hover:bg-red-900/70 text-red-500 rounded-lg shadow-sm z-20 backdrop-blur-md transition-all active:scale-95 border border-gray-200/50 dark:border-gray-700/50 hover:border-red-300" title="Удалить обложку"><i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i></button>
           </label>
           
           <!-- Правая часть: AI Генератор -->
@@ -534,13 +533,12 @@
           </div>
         </div>
         
-        <!-- Третья часть: YouTube Интеграция с кнопкой Preview -->
+        <!-- Третья часть: YouTube Интеграция -->
         <div class="relative w-full group transition-all">
            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
              <i data-lucide="youtube" class="w-5 h-5 text-gray-400 group-focus-within:text-red-500 transition-colors"></i>
            </div>
-           <input type="text" id="editYoutubeLink" placeholder="Вставьте ссылку на YouTube видео..." class="w-full pl-12 pr-14 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all shadow-sm">
-           <button type="button" onclick="previewYoutubeVideo()" class="absolute inset-y-1.5 right-1.5 flex items-center justify-center w-10 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-500 rounded-lg transition-colors active:scale-95 border border-red-100 dark:border-red-800/50" title="Применить видео"><i data-lucide="check" class="w-4 h-4"></i></button>
+           <input type="text" id="editYoutubeLink" placeholder="Вставьте ссылку на YouTube видео..." class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all shadow-sm">
         </div>
         
         <div id="uploadStatus" class="text-xs font-bold text-indigo-500 text-center mt-2 h-4 transition-all"></div>
@@ -3013,27 +3011,16 @@ function openEditModal(colId, cardId = null) {
   document.getElementById('uploadStatus').innerText = '';
   document.getElementById('aiImagePrompt').value = ''; // Сброс промпта при открытии
   document.getElementById('editYoutubeLink').value = editingCard?.youtubeRaw || ''; // Восстанавливаем ссылку на видео
-  
   const preview = document.getElementById('editImagePreview');
-  const ytPreview = document.getElementById('editYoutubePreview');
-  const removeBtn = document.getElementById('removeMediaBtn');
+  const removeBtn = document.getElementById('removeImageBtn');
 
-  // ЭНТЕРПРАЙЗ МИКРО-UX: Интеллектуальный роутинг превью медиа
-  if (editingCard?.youtubeEmbed) {
-    ytPreview.src = editingCard.youtubeEmbed;
-    ytPreview.classList.remove('hidden');
-    preview.classList.add('hidden');
-    document.getElementById('dropzoneText').classList.add('opacity-0');
-    if (removeBtn) removeBtn.classList.remove('hidden');
-  } else if (editingCard?.image) { 
+  if (editingCard?.image) { 
     preview.src = editingCard.image; 
     preview.classList.remove('hidden'); 
-    ytPreview.classList.add('hidden');
     document.getElementById('dropzoneText').classList.add('opacity-0'); 
     if (removeBtn) removeBtn.classList.remove('hidden');
   } else { 
     preview.classList.add('hidden'); 
-    ytPreview.classList.add('hidden');
     document.getElementById('dropzoneText').classList.remove('opacity-0'); 
     if (removeBtn) removeBtn.classList.add('hidden');
   }
@@ -3108,57 +3095,23 @@ function handleImageSelection(file) {
     pendingImageFile = file; 
     document.getElementById('editImagePreview').src = URL.createObjectURL(file); 
     document.getElementById('editImagePreview').classList.remove('hidden'); 
-    // Если выбрали картинку, скрываем YouTube превью
-    document.getElementById('editYoutubePreview').classList.add('hidden');
     document.getElementById('dropzoneText').classList.add('opacity-0'); 
-    const removeBtn = document.getElementById('removeMediaBtn');
+    const removeBtn = document.getElementById('removeImageBtn');
     if (removeBtn) removeBtn.classList.remove('hidden');
   }
 }
 
-// ЭНТЕРПРАЙЗ: Парсинг и применение YouTube-видео прямо в дропзоне
-function previewYoutubeVideo() {
-  const ytVal = document.getElementById('editYoutubeLink').value.trim();
-  if (!ytVal) return;
-  const ytMatch = ytVal.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
-  if (ytMatch && ytMatch[1]) {
-    const embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}`;
-    document.getElementById('editYoutubePreview').src = embedUrl;
-    document.getElementById('editYoutubePreview').classList.remove('hidden');
-    
-    // Скрываем превью картинки, отдавая приоритет видео
-    document.getElementById('editImagePreview').classList.add('hidden');
-    document.getElementById('dropzoneText').classList.add('opacity-0');
-    
-    const removeBtn = document.getElementById('removeMediaBtn');
-    if (removeBtn) removeBtn.classList.remove('hidden');
-    
-    showSystemToast('YouTube', 'Видео успешно прикреплено!', 'youtube', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
-  } else {
-    showSystemToast('Ошибка', 'Не удалось распознать ссылку YouTube.', 'alert-triangle', 'text-red-500', 'bg-red-50');
-  }
-}
-
-// ЭНТЕРПРАЙЗ: Универсальное удаление любого медиа (и картинки, и видео)
-function removeCoverMedia() {
+// ЭНТЕРПРАЙЗ: Микро-фича для удаления загруженной/сгенерированной обложки
+function removeCoverImage() {
   pendingImageFile = null;
-  if (editingCard) {
-     editingCard.image = null;
-     editingCard.youtubeRaw = null;
-     editingCard.youtubeEmbed = null;
-  }
-  document.getElementById('editYoutubeLink').value = '';
+  if (editingCard) editingCard.image = null; // Помечаем для удаления при сохранении
   
-  const imgPreview = document.getElementById('editImagePreview');
-  imgPreview.classList.add('hidden');
-  imgPreview.src = '';
-  
-  const ytPreview = document.getElementById('editYoutubePreview');
-  ytPreview.classList.add('hidden');
-  ytPreview.src = '';
+  const preview = document.getElementById('editImagePreview');
+  preview.classList.add('hidden');
+  preview.src = '';
   
   document.getElementById('dropzoneText').classList.remove('opacity-0');
-  const removeBtn = document.getElementById('removeMediaBtn');
+  const removeBtn = document.getElementById('removeImageBtn');
   if (removeBtn) removeBtn.classList.add('hidden');
 }
 
@@ -3768,10 +3721,8 @@ function render() {
         }        
         const spHtml = c.storyPoints ? `<span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black px-1.5 py-0.5 rounded-md" title="Story Points">${c.storyPoints}</span>` : '';
         
-        // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Понятный индикатор видео на закрытой карточке вместо квадрата
+        // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Понятный индикатор видео вместо красного квадрата
         const ytBadgeHtml = c.youtubeEmbed ? `<div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 shadow-sm" title="Прикреплено видео"><i data-lucide="play-circle" class="w-3 h-3"></i><span class="text-[8px] font-black uppercase tracking-wider">Видео</span></div>` : '';
-        // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Текстовые читаемые теги
-        const tagsHtml = c.tags?.length ? `<div class="flex flex-wrap gap-1 pointer-events-none mb-1">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<span class="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shadow-sm ${t.color}">${t.name}</span>` : ''; }).join('')}</div>` : '';
 
         return `
           <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none flex flex-col">
@@ -3783,13 +3734,6 @@ function render() {
             <div class="flex flex-col items-start justify-between mb-2">
               ${tagsHtml}
               <div class="flex items-center gap-1.5 pointer-events-none w-full mt-1 justify-end">${priorityHtml}${spHtml}${ytBadgeHtml}</div>
-            </div>
-            <!-- ВОССТАНОВЛЕНИЕ КАРТОЧКИ: Название, чек-листы и футер -->
-            <div class="font-bold text-sm leading-tight pr-8 mb-3 text-gray-900 dark:text-white pointer-events-none flex-1">${displayTitle}</div>
-            ${checklistHtml}
-            <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0">
-              <div class="flex gap-2 items-center text-gray-400">${dueDateHtml}${c.description ? '<i data-lucide="align-left" class="w-3.5 h-3.5 text-gray-400"></i>' : ''}${normalComments}</div>
-              ${authorAvatar}
             </div>
           </div>`;
       }).join('');
@@ -4003,7 +3947,6 @@ function render() {
     }
   });
 }
-  
 let quickAddTargetColId = null;
 function quickAddCard(colId) { quickAddTargetColId = colId; toggleModal('quickAddModal', true); setTimeout(() => document.getElementById('quickAddInput').focus(), 10); }
 function closeQuickAdd() { toggleModal('quickAddModal', false); setTimeout(() => { document.getElementById('quickAddInput').value = ''; document.getElementById('quickAddDesc').value = ''; quickAddTargetColId = null; }, 300); }
