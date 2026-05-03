@@ -348,20 +348,44 @@
       
       if (prodId.startsWith('plan_')) batch.update(userRef, { plan: prodId.replace('plan_', '') });
 
+      let generatedCode = null;
       if (prodId.startsWith('gift_')) {
         const amount = parseInt(prodId.replace('gift_', '')) * 100;
-        const code = 'GIFT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-        batch.set(db.collection('gifts').doc(code), { creator: currentUser.uid, amount, isUsed: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-        alert('Ваш Gift-код: ' + code);
+        generatedCode = 'GIFT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        
+        // ЭНТЕРПРАЙЗ: Интегрируем Гифт-боксы прямо в наш новый Promo Engine!
+        batch.set(db.collection('promocodes').doc(generatedCode), { 
+          type: 'coins', 
+          rewardCoins: amount,
+          maxUses: 1,
+          uses: 0,
+          expiresAt: null,
+          isGiftBox: true,
+          createdAt: new Date().toISOString(),
+          createdBy: currentUser.uid 
+        });
       }
 
       await batch.commit();
-      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-      showSystemToast('Поздравляем!', 'Покупка успешно завершена.', 'check-circle', 'text-green-500', 'bg-green-50');
+      
+      if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
+      
+      if (generatedCode) {
+        // Удобный интерфейс для копирования кода вместо системного alert
+        showSystemToast('Гифт-бокс открыт! 🎁', 'Ваш подарочный код сгенерирован.', 'gift', 'text-rose-500', 'bg-rose-50 dark:bg-rose-900/30');
+        setTimeout(() => {
+           prompt("Скопируйте этот код и отправьте другу (он введет его в поле 'Есть промокод?'):", generatedCode);
+        }, 500);
+      } else {
+        showSystemToast('Поздравляем!', 'Покупка успешно завершена.', 'check-circle', 'text-green-500', 'bg-green-50 dark:bg-green-900/30');
+      }
+      
       loadBalances();
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+      console.error(e); 
+      showSystemToast('Ошибка', 'Сбой транзакции. Баланс не списан.', 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+    }
   }
-
   // --- ЛОГИКА ПОПОЛНЕНИЯ (ИМИТАЦИЯ ОПЛАТЫ) ---
   function openTopUpModal() {
     const el = document.getElementById('topUpModal');
