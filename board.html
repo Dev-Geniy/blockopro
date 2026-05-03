@@ -127,9 +127,13 @@
     <a href="index.html" class="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400" title="На главную">
       <i data-lucide="arrow-left" class="w-5 h-5"></i>
     </a>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-3">
       <h1 id="boardTitleHeader" onclick="renameBoard()" class="text-xl font-bold tracking-tight cursor-pointer hover:text-blue-500 hover:underline transition-all truncate max-w-[150px] sm:max-w-xs" title="Нажмите, чтобы переименовать">Загрузка...</h1>
-      <span id="localBadge" class="hidden bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded-md"><i data-lucide="hard-drive" class="w-3 h-3 inline pb-0.5"></i> ОФЛАЙН</span>
+      
+      <!-- ПРЕМИАЛЬНЫЙ ИНДИКАТОР ПОДКЛЮЧЕНИЯ (Control Panel Style) -->
+      <div id="boardStatusBadge" class="hidden flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all select-none cursor-help hover:scale-105 active:scale-95" title="Индикатор сети">
+        <!-- Содержимое генерируется через JS -->
+      </div>
     </div>
   </div>
   
@@ -227,9 +231,28 @@
     <i data-lucide="link" class="w-4 h-4 mr-3"></i>
     <div class="flex-1 truncate text-xs font-bold">Скопировать инвайт</div>
   </div>
-  <div class="relative">
-    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-    <input type="text" oninput="document.getElementById('boardSearch').value=this.value; handleSearchAndFilter()" placeholder="Поиск задач..." class="w-full pl-10 pr-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm outline-none dark:text-white">
+  <div class="flex items-center gap-2">
+    <div class="relative flex-1">
+      <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+      <input type="text" oninput="document.getElementById('boardSearch').value=this.value; handleSearchAndFilter()" placeholder="Поиск задач..." class="w-full pl-10 pr-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm outline-none dark:text-white focus:ring-2 focus:ring-blue-500 transition-all">
+    </div>
+    
+    <!-- КАСТОМНЫЙ ФИЛЬТР ТЕГОВ (Mobile) -->
+    <div class="relative" id="mobileTagFilterWrapper">
+      <button onclick="toggleTagFilterMenu(true)" id="btnMobileTagFilter" class="p-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:text-pink-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 flex items-center justify-center gap-2" title="Фильтр по тегам">
+        <i data-lucide="filter" class="w-5 h-5"></i>
+        <span id="mobileTagFilterActiveDot" class="hidden absolute top-2 right-2 w-2.5 h-2.5 bg-pink-500 rounded-full border-2 border-white dark:border-gray-900"></span>
+      </button>
+      
+      <div id="mobileTagFilterDropdown" class="hidden absolute top-full mt-2 right-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl w-56 z-50 overflow-hidden transform origin-top-right transition-all">
+        <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
+          <i data-lucide="tag" class="w-3 h-3"></i> Сортировка
+        </div>
+        <div id="mobileTagFilterOptions" class="max-h-60 overflow-y-auto hide-scroll flex flex-col p-2 gap-1">
+          <!-- Опции генерируются через JS -->
+        </div>
+      </div>
+    </div>
   </div>
   <button onclick="toggleArchive(); toggleMobileMenu()" class="w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-900/30 rounded-xl flex justify-center items-center gap-2 text-sm text-gray-700 dark:text-gray-300 font-bold transition-colors">
     <i data-lucide="archive" class="w-4 h-4"></i> Архив проекта
@@ -984,20 +1007,61 @@ if (typeof marked !== 'undefined') {
 }
 
 // --- ENTERPRISE NETWORK OBSERVER (OFFLINE-FIRST) ---
+function updateBoardStatusBadge() {
+  const badge = document.getElementById('boardStatusBadge');
+  if (!badge) return;
+  
+  const isOnline = navigator.onLine;
+  let dotColor, textColor, text, ping, icon, bgWrapper;
+  
+  if (isLocalBoard) {
+    // Офлайн-доска (Device) - Статичный серый
+    dotColor = 'bg-gray-400 dark:bg-gray-500';
+    textColor = 'text-gray-600 dark:text-gray-400';
+    bgWrapper = 'bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 shadow-sm';
+    text = 'Офлайн';
+    ping = false;
+    icon = 'hard-drive';
+  } else {
+    // Облачная доска (Cloud)
+    if (isOnline) {
+      // Онлайн - Пульсирующий изумрудный
+      dotColor = 'bg-emerald-500';
+      textColor = 'text-emerald-700 dark:text-emerald-400';
+      bgWrapper = 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 shadow-sm';
+      text = 'Онлайн';
+      ping = true;
+      icon = 'cloud';
+    } else {
+      // Потеря связи - Статичный желтый
+      dotColor = 'bg-amber-500';
+      textColor = 'text-amber-700 dark:text-amber-400';
+      bgWrapper = 'bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/50 shadow-sm';
+      text = 'Нет сети';
+      ping = false;
+      icon = 'wifi-off';
+    }
+  }
+  
+  badge.className = `flex items-center gap-1.5 px-2.5 py-1 ${bgWrapper} rounded-lg transition-all select-none cursor-help hover:scale-105 active:scale-95 whitespace-nowrap`;
+  badge.innerHTML = `
+    <span class="relative flex h-2 w-2">
+      ${ping ? `<span class="animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor} opacity-75"></span>` : ''}
+      <span class="relative inline-flex rounded-full h-2 w-2 ${dotColor}"></span>
+    </span>
+    <span class="text-[9px] font-black uppercase tracking-widest ${textColor} flex items-center gap-1"><i data-lucide="${icon}" class="w-3 h-3"></i> <span class="hidden sm:inline">${text}</span></span>
+  `;
+  lucide.createIcons({ root: badge });
+}
+
 window.addEventListener('online', () => {
-  showSystemToast('Подключение восстановлено', 'Синхронизация с облаком возобновлена.', 'wifi', 'text-emerald-500', 'bg-emerald-50');
-  if (!isLocalBoard) document.getElementById('localBadge').classList.add('hidden');
+  showSystemToast('Подключение восстановлено', 'Синхронизация с облаком возобновлена.', 'wifi', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+  updateBoardStatusBadge();
 });
 
 window.addEventListener('offline', () => {
-  showSystemToast('Отсутствует интернет', 'Вы работаете в офлайн-режиме. Данные сохранятся локально.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
-  if (!isLocalBoard) {
-    const badge = document.getElementById('localBadge');
-    badge.innerHTML = '<i data-lucide="wifi-off" class="w-3 h-3 inline pb-0.5"></i> ОФЛАЙН';
-    badge.className = 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-[9px] font-bold px-2 py-0.5 rounded-md';
-    badge.classList.remove('hidden');
-    lucide.createIcons();
-  }
+  showSystemToast('Отсутствует интернет', 'Вы работаете в офлайн-режиме. Данные сохранятся локально.', 'wifi-off', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+  updateBoardStatusBadge();
 });
 
 // --- 1. ОПТИМИЗАЦИЯ ПОИСКА (Debounce) ---
@@ -1338,8 +1402,9 @@ let renderFrameId = null;
     }
 
 function loadBoard() {
+  updateBoardStatusBadge(); // Инициализация UI сетевого статуса
+
   if (isLocalBoard) {
-    document.getElementById('localBadge').classList.remove('hidden');
     const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
     const data = localBoards[BOARD_ID];
     if (data) {
@@ -2017,46 +2082,59 @@ function copyShareLink(role = 'editor') {
 function handleSearchAndFilter() { render(); }
 
 /**
- * УПРАВЛЕНИЕ КАСТОМНЫМ ФИЛЬТРОМ ТЕГОВ
+ * УПРАВЛЕНИЕ КАСТОМНЫМ ФИЛЬТРОМ ТЕГОВ (Desktop & Mobile Sync)
  */
-function toggleTagFilterMenu() {
+function toggleTagFilterMenu(isMobile = false) {
   if (window.event) window.event.stopPropagation();
-  const menu = document.getElementById('tagFilterDropdown');
+  const menuId = isMobile ? 'mobileTagFilterDropdown' : 'tagFilterDropdown';
+  const menu = document.getElementById(menuId);
   if (menu) menu.classList.toggle('hidden');
 }
 
 function selectTagFilter(val) {
-  document.getElementById('tagFilter').value = val;
-  const dot = document.getElementById('tagFilterActiveDot');
-  const btn = document.getElementById('btnTagFilter');
+  const hiddenInput = document.getElementById('tagFilter');
+  if(hiddenInput) hiddenInput.value = val;
   
-  if (val !== 'all') {
-    dot.classList.remove('hidden');
-    // Замораживаем розовый цвет кнопки при активном фильтре
-    btn.classList.add('bg-pink-50', 'text-pink-500', 'dark:bg-pink-900/30', 'dark:text-pink-400');
-    btn.classList.remove('bg-gray-100', 'text-gray-600', 'dark:bg-gray-800', 'dark:text-gray-400');
-  } else {
-    dot.classList.add('hidden');
-    btn.classList.remove('bg-pink-50', 'text-pink-500', 'dark:bg-pink-900/30', 'dark:text-pink-400');
-    btn.classList.add('bg-gray-100', 'text-gray-600', 'dark:bg-gray-800', 'dark:text-gray-400');
-  }
+  // Универсальный апдейтер UI для обеих кнопок (Desktop и Mobile)
+  const updateBtnUI = (dotId, btnId) => {
+    const dot = document.getElementById(dotId);
+    const btn = document.getElementById(btnId);
+    if(!dot || !btn) return;
+
+    if (val !== 'all') {
+      dot.classList.remove('hidden');
+      btn.classList.add('bg-pink-50', 'text-pink-500', 'dark:bg-pink-900/30', 'dark:text-pink-400');
+      btn.classList.remove('bg-gray-100', 'text-gray-600', 'dark:bg-gray-800', 'dark:text-gray-400');
+    } else {
+      dot.classList.add('hidden');
+      btn.classList.remove('bg-pink-50', 'text-pink-500', 'dark:bg-pink-900/30', 'dark:text-pink-400');
+      btn.classList.add('bg-gray-100', 'text-gray-600', 'dark:bg-gray-800', 'dark:text-gray-400');
+    }
+  };
+
+  updateBtnUI('tagFilterActiveDot', 'btnTagFilter');
+  updateBtnUI('mobileTagFilterActiveDot', 'btnMobileTagFilter');
   
-  const menu = document.getElementById('tagFilterDropdown');
-  if (menu) menu.classList.add('hidden');
+  const menuDesk = document.getElementById('tagFilterDropdown');
+  if (menuDesk) menuDesk.classList.add('hidden');
   
-  updateTagFilterDropdown(); // Перерисовываем галочки в меню
+  const menuMob = document.getElementById('mobileTagFilterDropdown');
+  if (menuMob) menuMob.classList.add('hidden');
+  
+  updateTagFilterDropdown(); // Синхронизируем галочки в обоих меню
   handleSearchAndFilter();
 }
 
 function updateTagFilterDropdown() {
   const optionsContainer = document.getElementById('tagFilterOptions');
+  const mobileOptionsContainer = document.getElementById('mobileTagFilterOptions');
   const hiddenInput = document.getElementById('tagFilter');
-  if (!optionsContainer || !hiddenInput) return;
+  if (!hiddenInput) return;
   
   const currentTags = getBoardTags();
   const savedValue = hiddenInput.value;
   
-  // Сброс, если тег был удален из проекта
+  // Сброс фильтра, если тег был безвозвратно удален из проекта
   if (savedValue !== 'all' && !currentTags.some(t => t.id === savedValue)) {
     selectTagFilter('all');
     return;
@@ -2084,8 +2162,15 @@ function updateTagFilterDropdown() {
     `;
   });
 
-  optionsContainer.innerHTML = html;
-  lucide.createIcons({ root: optionsContainer });
+  // Синхронно обновляем оба DOM-узла
+  if (optionsContainer) {
+      optionsContainer.innerHTML = html;
+      lucide.createIcons({ root: optionsContainer });
+  }
+  if (mobileOptionsContainer) {
+      mobileOptionsContainer.innerHTML = html;
+      lucide.createIcons({ root: mobileOptionsContainer });
+  }
 }
 
 // ЭНТЕРПРАЙЗ: АБСОЛЮТНАЯ ИЗОЛЯЦИЯ ШТОРОК (С аппаратным скрытием через CSS display)
@@ -4148,11 +4233,18 @@ window.addEventListener('click', (e) => {
     }
   }
 
-  // ЭНТЕРПРАЙЗ: Закрытие выпадающего меню фильтра тегов
+  // ЭНТЕРПРАЙЗ: Закрытие выпадающего меню фильтра тегов (Desktop & Mobile)
   if (!e.target.closest('#tagFilterWrapper')) {
     const tagMenu = document.getElementById('tagFilterDropdown');
     if (tagMenu && !tagMenu.classList.contains('hidden')) {
       tagMenu.classList.add('hidden');
+    }
+  }
+  
+  if (!e.target.closest('#mobileTagFilterWrapper')) {
+    const mobTagMenu = document.getElementById('mobileTagFilterDropdown');
+    if (mobTagMenu && !mobTagMenu.classList.contains('hidden')) {
+      mobTagMenu.classList.add('hidden');
     }
   }
 
