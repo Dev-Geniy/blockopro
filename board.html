@@ -854,6 +854,12 @@
       </div>
     </div>
 
+    <!-- ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Глобальный полноэкранный просмотрщик (Lightbox) -->
+    <div id="fullscreenImageOverlay" onclick="closeFullscreenImage()" class="hidden fixed inset-0 z-[1000] bg-black/95 backdrop-blur-md flex items-center justify-center cursor-zoom-out opacity-0 transition-opacity duration-300">
+       <button class="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 p-3 rounded-full backdrop-blur-lg transition-colors z-50 hover:bg-white/20 active:scale-95 border border-white/20"><i data-lucide="x" class="w-6 h-6 pointer-events-none"></i></button>
+       <img id="fullscreenImageSrc" src="" class="max-w-[95vw] max-h-[95vh] object-contain rounded-xl shadow-2xl scale-95 transition-transform duration-300 pointer-events-none" />
+    </div>
+
 <div id="tableConstructorModal" class="hidden fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
   <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform" id="tableConstructorContent">
     <div class="flex items-center gap-3 mb-6">
@@ -2792,7 +2798,14 @@ function openViewModal(colId, cardId) {
             </div>`;
         } else {
             header.innerHTML = `<div class="flex items-center gap-2 text-blue-500 mb-2"><i data-lucide="layers" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Задача проекта</span></div>`;        let taskHtml = '';
-            if (card.image) taskHtml += `<img src="${card.image}" class="w-full h-64 object-cover rounded-[2rem] mb-6 border border-gray-100 dark:border-gray-700 shadow-sm">`;
+            // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Интерактивный Hover и Полноэкранный вызов для оригинала
+            if (card.image) taskHtml += `
+              <div class="relative group mb-6 cursor-zoom-in overflow-hidden rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700" onclick="openFullscreenImage('${card.image}')">
+                <img src="${card.image}" class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105">
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                  <i data-lucide="maximize-2" class="w-10 h-10 text-white drop-shadow-lg pointer-events-none"></i>
+                </div>
+              </div>`;
             if (card.youtubeEmbed) taskHtml += `<div class="relative w-full overflow-hidden rounded-[2rem] mb-6 border border-gray-100 dark:border-gray-800 shadow-md bg-black"><iframe src="${card.youtubeEmbed}" class="w-full aspect-video rounded-[2rem] pointer-events-auto" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
             if (card.description) taskHtml += `<div class="md-content mb-8 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-[2rem] border border-gray-100 dark:border-gray-800 shadow-sm relative overflow-hidden group"><div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-80"></div>${marked.parse(card.description)}</div>`;
             if (card.checklist && card.checklist.length) {
@@ -3152,6 +3165,28 @@ function renderTagsPicker() { document.getElementById('editTagsContainer').inner
 function toggleTag(tagId) { activeTags.includes(tagId) ? activeTags = activeTags.filter(t => t !== tagId) : activeTags.push(tagId); renderTagsPicker(); }
 
 // GRANULAR WRITE: Сохранение отдельного документа в подколлекцию
+// ГЛОБАЛЬНЫЙ КОНТРОЛЛЕР ПОЛНОЭКРАННЫХ ИЗОБРАЖЕНИЙ (Lightbox API)
+function openFullscreenImage(url) {
+  const overlay = document.getElementById('fullscreenImageOverlay');
+  const img = document.getElementById('fullscreenImageSrc');
+  img.src = url;
+  overlay.classList.remove('hidden');
+  setTimeout(() => {
+     overlay.classList.remove('opacity-0');
+     img.classList.remove('scale-95');
+     img.classList.add('scale-100');
+  }, 10);
+}
+
+function closeFullscreenImage() {
+  const overlay = document.getElementById('fullscreenImageOverlay');
+  const img = document.getElementById('fullscreenImageSrc');
+  overlay.classList.add('opacity-0');
+  img.classList.remove('scale-100');
+  img.classList.add('scale-95');
+  setTimeout(() => { overlay.classList.add('hidden'); img.src = ''; }, 300);
+}
+
 async function saveCard() {
   const titleVal = document.getElementById('editTitle').value.trim();
   const descVal = document.getElementById('editDescription').value;
@@ -3159,7 +3194,7 @@ async function saveCard() {
   const priorityVal = document.getElementById('editPriority').value;
   const spVal = document.getElementById('editStoryPoints').value;
   
-  // ЭНТЕРПРАЙЗ: Интеллектуальный парсинг и валидация YouTube ссылок (Auto-Extractor)
+  // ЭНТЕРПРАЙЗ: Интеллектуальный парсинг и валидация YouTube ссылок
   let ytVal = document.getElementById('editYoutubeLink').value.trim();
   let ytEmbedUrl = null;
   if (ytVal) {
@@ -3168,6 +3203,7 @@ async function saveCard() {
   }
   
   let imageUrl = editingCard ? editingCard.image : null;
+  let imageThumbUrl = editingCard ? (editingCard.imageThumb || editingCard.image) : null;
 
   if (pendingImageFile) { 
     if (!navigator.onLine) {
@@ -3179,6 +3215,8 @@ async function saveCard() {
       const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd }); 
       const data = await res.json(); 
       imageUrl = data.data.url;
+      // ЭНТЕРПРАЙЗ: Захват миниатюры для легкого рендера (Zero-Latency Rendering) на доске
+      imageThumbUrl = data.data.thumb?.url || data.data.display_url || data.data.url;
     } catch(e) { return showSystemToast('Ошибка', 'Сбой загрузки обложки', 'x-circle', 'text-red-500', 'bg-red-50'); }
   }
   
@@ -3188,6 +3226,7 @@ async function saveCard() {
     description: descVal || "", 
     tags: activeTags || [], 
     image: imageUrl,
+    imageThumb: imageThumbUrl, // Сохраняем кэшированную миниатюру
     youtubeRaw: ytVal,
     youtubeEmbed: ytEmbedUrl,
     comments: editingCard ? (editingCard.comments || []) : [], 
@@ -3667,11 +3706,12 @@ function render() {
             </div>`;
         }
         let dueDateHtml = c.dueDate ? `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'} pointer-events-none"><i data-lucide="clock" class="w-3 h-3"></i> ${new Date(c.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</div>` : '';
-        const tagsHtml = c.tags?.length ? `<div class="flex gap-1 pointer-events-none">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; }).join('')}</div>` : '';
+        
+        // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Текстовые читаемые теги
+        const tagsHtml = c.tags?.length ? `<div class="flex flex-wrap gap-1 pointer-events-none mb-1">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<span class="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shadow-sm ${t.color}">${t.name}</span>` : ''; }).join('')}</div>` : '';
         const normalComments = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400 pointer-events-none"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
         
         let priorityHtml = '';
-        // ЭНТЕРПРАЙЗ UX: Заменяем эмодзи на стилизованные векторные иконки
         if (c.priority === 'low') {
           priorityHtml = `<div class="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800" title="Приоритет: Низкий"><i data-lucide="arrow-down-to-line" class="w-3.5 h-3.5 text-blue-500 dark:text-blue-400"></i></div>`;
         } else if (c.priority === 'high') {
@@ -3680,21 +3720,20 @@ function render() {
           priorityHtml = `<div class="flex items-center justify-center w-6 h-6 rounded-lg bg-red-100 dark:bg-red-900 border border-red-200 dark:border-red-700 animate-pulse" title="Приоритет: КРИТИЧНЫЙ"><i data-lucide="zap" class="w-3.5 h-3.5 text-red-600 dark:text-red-400 fill-current"></i></div>`;
         }        
         const spHtml = c.storyPoints ? `<span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black px-1.5 py-0.5 rounded-md" title="Story Points">${c.storyPoints}</span>` : '';
-        const ytBadgeHtml = c.youtubeEmbed ? `<div class="flex items-center justify-center w-6 h-6 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 shadow-sm" title="Видео прикреплено"><i data-lucide="youtube" class="w-3.5 h-3.5 text-red-500 dark:text-red-400"></i></div>` : '';
+        
+        // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Понятный индикатор видео вместо красного квадрата
+        const ytBadgeHtml = c.youtubeEmbed ? `<div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 shadow-sm" title="Прикреплено видео"><i data-lucide="play-circle" class="w-3 h-3"></i><span class="text-[8px] font-black uppercase tracking-wider">Видео</span></div>` : '';
 
         return `
           <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none flex flex-col">
             ${isViewer ? '' : `<button data-action="editCard" data-col="${col.id}" data-card="${c.id}" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
-            ${c.image ? `<div class="mb-3 w-full h-32 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0 bg-gray-50 dark:bg-gray-900/50"><img src="${c.image}" loading="lazy" class="w-full h-full object-cover block" /></div>` : ''}
-            <div class="flex items-start justify-between mb-2">
+            
+            <!-- ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Легковесное сжатое превью для ускорения рендеринга доски -->
+            ${c.image ? `<div class="mb-3 w-full h-32 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0 bg-gray-50 dark:bg-gray-900/50"><img src="${c.imageThumb || c.image}" loading="lazy" decoding="async" fetchpriority="low" style="content-visibility: auto;" class="w-full h-full object-cover block scale-105" /></div>` : ''}
+            
+            <div class="flex flex-col items-start justify-between mb-2">
               ${tagsHtml}
-              <div class="flex items-center gap-1.5 pointer-events-none">${priorityHtml}${spHtml}${ytBadgeHtml}</div>
-            </div>
-            <div class="font-bold text-sm leading-tight pr-8 mb-3 text-gray-900 dark:text-white pointer-events-none flex-1">${displayTitle}</div>
-            ${checklistHtml}
-            <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0">
-              <div class="flex gap-2 items-center text-gray-400">${dueDateHtml}${c.description ? '<i data-lucide="align-left" class="w-3.5 h-3.5 text-gray-400"></i>' : ''}${normalComments}</div>
-              ${authorAvatar}
+              <div class="flex items-center gap-1.5 pointer-events-none w-full mt-1 justify-end">${priorityHtml}${spHtml}${ytBadgeHtml}</div>
             </div>
           </div>`;
       }).join('');
