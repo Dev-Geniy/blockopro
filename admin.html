@@ -103,13 +103,21 @@
     <!-- Table -->
     <div class="bg-gray-900/60 border border-gray-800 rounded-3xl overflow-hidden shadow-2xl relative z-10 backdrop-blur-md">
       <table class="w-full text-left border-collapse">
-        <thead class="bg-gray-800/50 border-b border-gray-800 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+        <thead class="bg-gray-800/50 border-b border-gray-800 text-[10px] font-black text-gray-500 uppercase tracking-widest select-none">
           <tr>
             <th class="px-6 py-4">Пользователь</th>
-            <th class="px-6 py-4">Тариф</th>
-            <th class="px-6 py-4 text-center">Баланс (B)</th>
-            <th class="px-6 py-4 text-center">Доски</th>
-            <th class="px-6 py-4 text-center">Рефералы</th>
+            <th class="px-6 py-4 cursor-pointer hover:text-white transition-colors group" onclick="handleSort('plan')">
+               <div class="flex items-center gap-1">Тариф <i id="sortIcon_plan" data-lucide="arrow-down-up" class="w-3 h-3 text-gray-600 group-hover:text-indigo-400"></i></div>
+            </th>
+            <th class="px-6 py-4 text-center cursor-pointer hover:text-white transition-colors group" onclick="handleSort('coins')">
+               <div class="flex items-center justify-center gap-1">Баланс (B) <i id="sortIcon_coins" data-lucide="arrow-down" class="w-3 h-3 text-indigo-500"></i></div>
+            </th>
+            <th class="px-6 py-4 text-center cursor-pointer hover:text-white transition-colors group" onclick="handleSort('boards')">
+               <div class="flex items-center justify-center gap-1">Доски <i id="sortIcon_boards" data-lucide="arrow-down-up" class="w-3 h-3 text-gray-600 group-hover:text-indigo-400"></i></div>
+            </th>
+            <th class="px-6 py-4 text-center cursor-pointer hover:text-white transition-colors group" onclick="handleSort('referrals')">
+               <div class="flex items-center justify-center gap-1">Рефералы <i id="sortIcon_referrals" data-lucide="arrow-down-up" class="w-3 h-3 text-gray-600 group-hover:text-indigo-400"></i></div>
+            </th>
             <th class="px-6 py-4 text-right">Действия</th>
           </tr>
         </thead>
@@ -260,6 +268,20 @@
   let allBoards = [];
   let boardsMap = {};
   let currentEditUid = null;
+  
+  // Enterprise Sorting State
+  let currentSortKey = 'coins';
+  let currentSortDir = 'desc';
+
+  function handleSort(key) {
+      if (currentSortKey === key) {
+          currentSortDir = currentSortDir === 'desc' ? 'asc' : 'desc';
+      } else {
+          currentSortKey = key;
+          currentSortDir = 'desc';
+      }
+      renderTable();
+  }
 
   // AUTH SECURITY GUARD
   auth.onAuthStateChanged(async (user) => {
@@ -365,14 +387,51 @@
          return searchStr.includes(query);
      });
 
+     // ЭНТЕРПРАЙЗ: Продвинутый движок сортировки с O(1) весами (SEO-Оптимизация)
+     const planWeights = { 'infinity': 4, 'pro': 3, 'freelancer': 2, 'free': 1, '': 0, undefined: 0 };
+     
      filtered.sort((a,b) => {
-         const bC = parseInt(b.coins || 0);
-         const aC = parseInt(a.coins || 0);
-         return bC - aC; // Сортируем по богатству (Киты наверху)
+         let valA, valB;
+         if (currentSortKey === 'coins') {
+             valA = parseInt(a.coins || 0);
+             valB = parseInt(b.coins || 0);
+         } else if (currentSortKey === 'boards') {
+             valA = boardsMap[a.uid] || 0;
+             valB = boardsMap[b.uid] || 0;
+         } else if (currentSortKey === 'referrals') {
+             // Динамический расчет реальных рефералов (Data Integrity)
+             valA = allUsers.filter(u => u.referredBy === a.uid).length;
+             valB = allUsers.filter(u => u.referredBy === b.uid).length;
+         } else if (currentSortKey === 'plan') {
+             valA = planWeights[a.plan] || 0;
+             valB = planWeights[b.plan] || 0;
+         }
+         
+         if (valA < valB) return currentSortDir === 'asc' ? -1 : 1;
+         if (valA > valB) return currentSortDir === 'asc' ? 1 : -1;
+         return 0;
+     });
+
+     // Обновляем визуальные индикаторы (Chevrons)
+     ['plan', 'coins', 'boards', 'referrals'].forEach(key => {
+         const iconEl = document.getElementById('sortIcon_' + key);
+         if (iconEl) {
+             if (key === currentSortKey) {
+                 iconEl.setAttribute('data-lucide', currentSortDir === 'desc' ? 'arrow-down' : 'arrow-up');
+                 iconEl.classList.add('text-indigo-400');
+                 iconEl.classList.remove('text-gray-600', 'group-hover:text-indigo-400');
+             } else {
+                 iconEl.setAttribute('data-lucide', 'arrow-down-up');
+                 iconEl.classList.add('text-gray-600', 'group-hover:text-indigo-400');
+                 iconEl.classList.remove('text-indigo-400');
+             }
+         }
      });
 
      tbody.innerHTML = filtered.map(u => {
         const boardsCount = boardsMap[u.uid] || 0;
+        // Подтягиваем 100% точное значение реальных приглашенных
+        const realRefsCount = allUsers.filter(ru => ru.referredBy === u.uid).length;
         const safeName = u.name || 'Аноним';
         const safeAvatar = u.customAvatar || u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
         
@@ -405,7 +464,7 @@
               </div>
             </td>
             <td class="px-6 py-4 text-center text-sm font-bold text-gray-400">${boardsCount}</td>
-            <td class="px-6 py-4 text-center text-sm font-bold text-gray-400">${u.referralCount || 0}</td>
+            <td class="px-6 py-4 text-center text-sm font-bold text-gray-400">${realRefsCount}</td>
             <td class="px-6 py-4 text-right">
               <div class="p-2 bg-gray-800/50 text-gray-400 group-hover:text-white group-hover:bg-indigo-600 rounded-xl transition-all shadow-sm border border-transparent group-hover:border-indigo-500 inline-block">
                 <i data-lucide="chevron-right" class="w-4 h-4"></i>
@@ -452,10 +511,13 @@
      if (user.isBanned) document.getElementById('upBanBadge').classList.remove('hidden');
      else document.getElementById('upBanBadge').classList.add('hidden');
 
+     // 5. Extract Referrals (Реферальная сеть) - ДЕЛАЕМ ЭТО РАНЬШЕ ДЛЯ СТАТИСТИКИ
+     const referrals = allUsers.filter(u => u.referredBy === uid);
+     
      // 2. Fill Readonly Stats
      document.getElementById('upBoardsCount').innerText = boardsMap[uid] || 0;
      document.getElementById('upCoinsCount').innerText = user.coins || 0;
-     document.getElementById('upRefsCount').innerText = user.referralCount || 0;
+     document.getElementById('upRefsCount').innerText = referrals.length; // ЭНТЕРПРАЙЗ: Точный реальный подсчет
 
      // 3. Fill Forms
      document.getElementById('editPlan').value = user.plan || 'free';
@@ -526,24 +588,47 @@
          teamListEl.innerHTML = teamHtml;
      }
 
-     // 5. Extract Referrals (Реферальная сеть)
-     const referrals = allUsers.filter(u => u.referredBy === uid);
      const refsListEl = document.getElementById('upRefsList');
      if(referrals.length === 0) {
          refsListEl.innerHTML = '<div class="text-center text-xs text-purple-400/50 py-4 font-medium italic">Пользователь никого не пригласил</div>';
      } else {
-         refsListEl.innerHTML = referrals.map(tUser => {
+         // ЭНТЕРПРАЙЗ: Расширенная статистика по тарифам рефералов (SEO Analytics Engine)
+         let freeCount = 0, flCount = 0, proCount = 0;
+         referrals.forEach(r => {
+            if (r.plan === 'pro' || r.plan === 'infinity') proCount++;
+            else if (r.plan === 'freelancer') flCount++;
+            else freeCount++;
+         });
+         
+         const statsHtml = `
+            <div class="flex items-center justify-between px-3 py-2 bg-purple-900/20 rounded-xl mb-3 border border-purple-500/20 shadow-inner">
+               <div class="flex flex-col items-center">
+                 <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest">Free</span>
+                 <span class="text-xs font-bold text-gray-300">${freeCount}</span>
+               </div>
+               <div class="flex flex-col items-center border-l border-r border-purple-500/20 px-4 mx-2">
+                 <span class="text-[8px] font-black text-blue-400 uppercase tracking-widest">FL</span>
+                 <span class="text-xs font-bold text-blue-300">${flCount}</span>
+               </div>
+               <div class="flex flex-col items-center">
+                 <span class="text-[8px] font-black text-purple-400 uppercase tracking-widest">PRO</span>
+                 <span class="text-xs font-bold text-purple-300">${proCount}</span>
+               </div>
+            </div>
+         `;
+
+         const listHtml = referrals.map(tUser => {
              const tName = tUser.name || 'Аноним';
              const tAvatar = tUser.customAvatar || tUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tName)}`;
              let planLabel = tUser.plan === 'pro' ? 'PRO' : (tUser.plan === 'freelancer' ? 'FL' : (tUser.plan === 'infinity' ? 'GOD' : 'FREE'));
              let planColor = tUser.plan === 'pro' ? 'text-purple-400 bg-purple-500/10 border-purple-500/20' : 'text-gray-400 bg-gray-800 border-gray-700';
              
              return `
-               <div onclick="openUserProfile('${tUser.uid}')" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-purple-500/10 transition-colors cursor-pointer group">
+               <div onclick="openUserProfile('${tUser.uid}')" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-purple-500/20 transition-colors cursor-pointer group">
                   <div class="flex items-center gap-3">
-                     <img src="${tAvatar}" class="w-8 h-8 rounded-full object-cover border border-gray-700" />
+                     <img src="${tAvatar}" class="w-8 h-8 rounded-full object-cover border border-gray-700 shadow-sm" />
                      <div>
-                        <div class="text-xs font-bold text-white leading-none mb-1 group-hover:text-purple-400 transition-colors">${tName}</div>
+                        <div class="text-xs font-bold text-white leading-none mb-1 group-hover:text-purple-300 transition-colors">${tName}</div>
                         <div class="text-[9px] text-gray-500 font-mono leading-none">${tUser.uid}</div>
                      </div>
                   </div>
@@ -551,6 +636,8 @@
                </div>
              `;
          }).join('');
+         
+         refsListEl.innerHTML = statsHtml + listHtml;
      }
 
      const modal = document.getElementById('userProfileModal');
