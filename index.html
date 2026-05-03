@@ -670,7 +670,7 @@
       <i data-lucide="x" class="w-6 h-6"></i>
     </button>
     
-    <div class="text-center mb-12 relative z-10">
+    <div class="text-center mb-8 relative z-10">
       <div class="relative w-24 h-24 mx-auto mb-6">
         <div class="absolute inset-0 bg-blue-500 blur-2xl opacity-20 rounded-[2rem]"></div>
         <div class="relative w-full h-full bg-blue-50 dark:bg-blue-500/10 text-blue-500 rounded-[2rem] flex items-center justify-center border border-blue-100 dark:border-blue-900 shadow-inner">
@@ -679,7 +679,15 @@
       </div>
       <span class="text-blue-500 font-bold text-xs uppercase tracking-[0.3em] mb-3 block">Масштабируйте свой поток</span>
       <h2 class="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4">Выберите тарифный план</h2>
-      <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto font-medium">Достигнут лимит текущего плана? Перейдите на новый уровень продуктивности.</p>
+      <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto font-medium mb-8">Достигнут лимит текущего плана? Перейдите на новый уровень продуктивности.</p>
+      
+      <!-- ЭНТЕРПРАЙЗ: Интегрированный модуль промокодов для максимизации конверсии -->
+      <div class="max-w-md mx-auto flex gap-2">
+        <input type="text" id="pricingPromoCodeInput" placeholder="Есть промокод?" class="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-amber-500 rounded-xl px-5 py-4 text-sm font-bold uppercase dark:text-white outline-none transition-colors shadow-inner">
+        <button id="activatePricingPromoBtn" onclick="activatePromoCode('pricingPromoCodeInput', 'activatePricingPromoBtn')" class="px-6 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-sm flex-shrink-0 flex items-center gap-2">
+           <i data-lucide="ticket" class="w-5 h-5"></i> Применить
+        </button>
+      </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
@@ -1488,28 +1496,34 @@ async function upgradeTo(planId) {
       return; 
     }
 
-    if (!confirm(`Оплатить тариф за ${requiredCoins} монет?`)) return;
+    // ЭНТЕРПРАЙЗ: Системная модалка вместо браузерного confirm
+    openConfirmModal('Подтверждение оплаты', `С вашего баланса будет списано ${requiredCoins} B-Coins. Вы уверены?`, 'Оплатить', false, async () => {
+      try {
+        // Оплата и смена тарифа
+        const batch = db.batch();
+        batch.update(userRef, { 
+          coins: firebase.firestore.FieldValue.increment(-requiredCoins),
+          plan: planId 
+        });
+        
+        await batch.commit();
 
-    // Оплата и смена тарифа
-    const batch = db.batch();
-    batch.update(userRef, { 
-      coins: firebase.firestore.FieldValue.increment(-requiredCoins),
-      plan: planId 
+        userPlan = planId;
+        localStorage.setItem('blocko_user_plan', planId);
+        closePricingModal();
+        
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
+        showSystemToast('Поздравляем! 🎉', `Вы успешно активировали ${planId.toUpperCase()}`, 'shield-check', 'text-green-500', 'bg-green-50');
+        renderBoardsGrid();
+      } catch (error) {
+        console.error("Ошибка активации:", error);
+        showSystemToast('Сбой', 'Не удалось провести оплату.', 'alert-circle', 'text-red-500', 'bg-red-50');
+      }
     });
-    
-    await batch.commit();
-
-    userPlan = planId;
-    localStorage.setItem('blocko_user_plan', planId);
-    closePricingModal();
-    
-    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
-    showSystemToast('Поздравляем! 🎉', `Вы успешно активировали ${planId.toUpperCase()}`, 'shield-check', 'text-green-500', 'bg-green-50');
-    renderBoardsGrid();
 
   } catch (error) {
-    console.error("Ошибка активации:", error);
-    showSystemToast('Сбой', 'Не удалось провести оплату.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    console.error("Ошибка проверки баланса:", error);
+    showSystemToast('Сбой', 'Не удалось получить данные профиля.', 'alert-circle', 'text-red-500', 'bg-red-50');
   }
 }
 
@@ -1535,12 +1549,12 @@ function closeTopUpModal() {
   setTimeout(() => el.classList.add('hidden'), 300);
 }
 
-async function activatePromoCode() {
+async function activatePromoCode(inputId = 'promoCodeInput', btnId = 'activatePromoBtn') {
   if (!currentUser) return showSystemToast('Ошибка', 'Авторизуйтесь для активации.', 'lock', 'text-amber-500', 'bg-amber-50');
   
-  const input = document.getElementById('promoCodeInput');
+  const input = document.getElementById(inputId);
   const code = input.value.trim().toUpperCase();
-  const btn = document.getElementById('activatePromoBtn');
+  const btn = document.getElementById(btnId);
   
   if (!code) return;
   
@@ -1595,7 +1609,7 @@ async function activatePromoCode() {
          updates.coins = firebase.firestore.FieldValue.increment(coinsToAdd);
          successMsg = `Начислено ${coinsToAdd} B-Coins!`;
      } else if (promo.type === 'discount' || promo.type === 'discount_50') {
-         // Скидка применяется как флаг в профиле для следующей покупки (Требует доработки Billing системы)
+         // Скидка применяется как флаг в профиле для следующей покупки
          updates.activeDiscount = promo.rewardDiscount || 50;
          successMsg = `Получена скидка ${updates.activeDiscount}% на следующую покупку!`;
      }
@@ -1611,7 +1625,10 @@ async function activatePromoCode() {
      
      // Обновляем UI
      if (typeof loadAffiliateStats === 'function') loadAffiliateStats();
-     setTimeout(() => closeTopUpModal(), 1500);
+     setTimeout(() => {
+         if (typeof closeTopUpModal === 'function') closeTopUpModal();
+         if (typeof closePricingModal === 'function') closePricingModal();
+     }, 1500);
 
   } catch (err) {
      let errMsg = 'Произошла ошибка базы данных.';
