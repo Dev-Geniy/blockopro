@@ -185,7 +185,7 @@
     <button onclick="toggleMobileMenu()" class="md:hidden p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 transition-colors shadow-sm">
       <i data-lucide="menu" class="w-4 h-4"></i>
     </button>
-    <button onclick="toggleActivityLog()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Журнал действий">
+    <button id="btnActivityLog" onclick="toggleActivityLog()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Журнал действий">
       <i data-lucide="activity" class="w-4 h-4"></i>
     </button>
     <button onclick="toggleArchive()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Архив проекта">
@@ -1420,15 +1420,20 @@ function initActivityListener(docRef) {
 function renderActivityLog() {
   const list = document.getElementById("activityList");
   const toggle = document.getElementById("activityToggle");
-  const statusLabel = document.getElementById("auditStatusLabel");
   if (!list || !toggle) return;
   
-  // УНИФИЦИРОВАННАЯ ЛОГИКА: Теперь офлайн доски тоже управляются тумблером (по умолчанию OFF для всех)
+  if (isLocalBoard) {
+    list.innerHTML = `<div class="flex flex-col items-center justify-center p-8 text-center mt-12 animate-fade-in-up"><div class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner border border-gray-200 dark:border-gray-700"><i data-lucide="wifi-off" class="w-10 h-10 text-gray-400"></i></div><h3 class="text-base font-bold text-gray-900 dark:text-white mb-2">Офлайн режим</h3><p class="text-xs text-gray-500 leading-relaxed px-4">Журнал действий недоступен для локальных проектов.</p></div>`;
+    lucide.createIcons({ root: list });
+    return;
+  }
+
   const isEnabled = boardData.isActivityEnabled === true;
   toggle.checked = isEnabled;
+  
+  const statusLabel = document.getElementById("auditStatusLabel");
   if (statusLabel) statusLabel.innerText = isEnabled ? 'Режим: Активен' : 'Режим: Выключен';
 
-  // Если аудит отключен — показываем заглушку
   if (!isEnabled) {
     list.innerHTML = userPlan !== 'pro' ? `
         <div class="flex flex-col items-center justify-center p-8 text-center mt-12 animate-fade-in-up">
@@ -1440,21 +1445,17 @@ function renderActivityLog() {
         <div class="flex flex-col items-center justify-center p-8 text-center mt-12 animate-fade-in-up">
           <div class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner border border-gray-200 dark:border-gray-700"><i data-lucide="power-off" class="w-10 h-10 text-gray-400"></i></div>
           <h3 class="text-base font-bold text-gray-900 dark:text-white mb-2">Логгер выключен</h3>
-          <p class="text-xs text-gray-500 leading-relaxed px-4">Активируйте тумблер выше, чтобы начать запись истории изменений.</p>
+          <p class="text-xs text-gray-500 leading-relaxed px-4">Активируйте тумблер выше, чтобы начать запись истории изменений в реальном времени.</p>
         </div>`;
     lucide.createIcons({ root: list });
     return;
   }
 
-  // Сбор данных из источника истины (Offline & Cloud)
+  // Сбор данных из Firestore
   let activityEntries = [];
-  if (isLocalBoard) {
-    activityEntries = boardData.localActivity || [];
-  } else {
-    const snapshot = window.currentActivitySnapshot;
-    if (snapshot && !snapshot.empty) {
-      snapshot.forEach(doc => activityEntries.push({ id: doc.id, ...doc.data() }));
-    }
+  const snapshot = window.currentActivitySnapshot;
+  if (snapshot && !snapshot.empty) {
+    snapshot.forEach(doc => activityEntries.push({ id: doc.id, ...doc.data() }));
   }
 
   if (activityEntries.length === 0) {
@@ -1465,7 +1466,6 @@ function renderActivityLog() {
   
   let html = '';
   activityEntries.forEach(data => {
-    // Безопасное извлечение пользователя из кэша (или профиля)
     let actualUser = data.user;
     if (actualUser && boardData.users && boardData.users[actualUser.id]) {
       actualUser = boardData.users[actualUser.id];
@@ -1476,7 +1476,7 @@ function renderActivityLog() {
     let timeStr = 'Недавно';
     if (data.timestamp) {
       try {
-        const date = typeof data.timestamp === 'string' ? new Date(data.timestamp) : (data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp));
+        const date = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
         timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       } catch(e){}
     }
@@ -1508,30 +1508,26 @@ function renderActivityLog() {
  * Изначальное состояние для новых досок — OFF (Безопасность данных по умолчанию).
  */
 function toggleActivityLogState(isChecked) {
-  const toggleEl = document.getElementById("activityToggle");
-  const isOwner = boardData.owner === currentUser.id;
+  if (isLocalBoard) return; // На локальных досках тумблер полностью вырезан
 
-  // Офлайн-доска всегда принадлежит тому, кто ее открыл на устройстве, поэтому обходим проверку владельца для isLocalBoard
-  if (!isOwner && !isLocalBoard) {
-     if (toggleEl) toggleEl.checked = !isChecked;
-     return showSystemToast('Отказ', 'Только владелец проекта может изменять эту настройку.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
-  }
-
-  // Gatekeeper: Блокируем доступ без тарифа
   if (isChecked && userPlan !== 'pro') {
-     if (toggleEl) toggleEl.checked = false;
+     document.getElementById("activityToggle").checked = false;
      return showSystemToast('Премиум', 'Журнал действий доступен только на тарифе Company.', 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
   }
   
-  // Сохраняем стейт в облако или localStorage (в зависимости от типа доски)
+  const isOwner = boardData.owner === currentUser.id;
+  if (!isOwner) {
+     document.getElementById("activityToggle").checked = !isChecked;
+     return showSystemToast('Отказ', 'Только владелец проекта может изменять эту настройку.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+  }
+  
   updateBoardData({ isActivityEnabled: isChecked });
   showSystemToast('Аудит', isChecked ? 'Логгер запущен. Запись началась.' : 'Логгер остановлен. База экономится.', 'activity', 'text-purple-500', 'bg-purple-50 dark:bg-purple-900/30');
   
-  // Визуальное обновление индикатора
+  // Визуальное обновление индикатора, если такой есть в DOM
   const statusLabel = document.getElementById("auditStatusLabel");
   if (statusLabel) statusLabel.innerText = isChecked ? 'Режим: Активен' : 'Режим: Выключен';
 
-  // Плавный ре-рендер истории
   setTimeout(renderActivityLog, 100);
 }
 
@@ -1548,14 +1544,15 @@ function updateLogRetention(days) {
  * Внедрен механизм интеллектуальной ротации данных (Garbage Collection) для предотвращения раздувания localStorage.
  */
 function logActivity(text, icon = 'activity') {
-  // КРИТИЧЕСКИЙ ЧЕК: Если аудит выключен пользователем — блокируем выполнение
+  // ЭНТЕРПРАЙЗ: Журнал действий полностью вырезан для офлайн-досок
+  if (isLocalBoard) return;
   if (boardData.isActivityEnabled !== true) return;
 
   const retentionDays = boardData.logRetention || 1;
   const now = Date.now();
   const expiryMs = retentionDays * 24 * 60 * 60 * 1000;
 
-  // Формирование защищенного слепка профиля пользователя для истории действий
+  // Обогащаем объект пользователя премиальными стилями
   const userSnapshot = { 
     id: currentUser.id, 
     name: currentUser.name, 
@@ -1563,75 +1560,27 @@ function logActivity(text, icon = 'activity') {
     badgeConfig: currentUser.badgeConfig || null,
     badgeStatus: currentUser.badgeStatus || 'none'
   };
-
-  if (isLocalBoard) {
-    // OFFLINE ENGINE: Хранение внутри распределенного JSON-объекта в localStorage
-    try {
-      const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
-      if (localBoards[BOARD_ID]) {
-        // Инициализация стека активности в структуре доски
-        if (!localBoards[BOARD_ID].localActivity) localBoards[BOARD_ID].localActivity = [];
-        
-        // 1. АВТО-КЛИНИНГ: Удаление записей за пределами окна хранения (Retention Policy)
-        localBoards[BOARD_ID].localActivity = localBoards[BOARD_ID].localActivity.filter(entry => {
-          const entryTime = new Date(entry.timestamp).getTime();
-          return (now - entryTime) < expiryMs;
-        });
-
-        // 2. ИНЪЕКЦИЯ: Добавление записи с уникальным идентификатором
-        const newEntry = {
-          id: 'act_' + Date.now() + Math.random().toString(36).substr(2, 5),
-          text: text,
-          icon: icon,
-          user: userSnapshot,
-          timestamp: new Date().toISOString()
-        };
-
-        localBoards[BOARD_ID].localActivity.unshift(newEntry);
-        
-        // 3. ПРЕДЕЛЬНЫЙ ЛИМИТ: Ограничение стека (Max 300 записей для защиты производительности DOM)
-        if (localBoards[BOARD_ID].localActivity.length > 300) {
-          localBoards[BOARD_ID].localActivity = localBoards[BOARD_ID].localActivity.slice(0, 300);
-        }
-
-        // Синхронизация локального хранилища и глобального стейта приложения
-        localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
-        boardData = localBoards[BOARD_ID];
-        
-        // Реактивное обновление UI истории, если шторка активна
-        const activitySidebar = document.getElementById('activitySidebar');
-        if (activitySidebar && !activitySidebar.classList.contains('translate-x-full')) {
-          renderActivityLog();
-        }
-      }
-    } catch (e) {
-      console.error("Critical Offline Logger Error:", e);
-    }
-  } else {
-    // CLOUD ENGINE: Асинхронная запись в Firebase Firestore Subcollection
-    const boardRef = db.collection("boards").doc(BOARD_ID);
     
-    boardRef.collection("activity").add({
-      text: text,
-      icon: icon,
-      user: userSnapshot,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).catch(err => console.error("Cloud Audit Sink Error:", err));
+  // Cloud: Добавляем запись в субколлекцию
+  db.collection("boards").doc(BOARD_ID).collection("activity").add({
+    text: text,
+    icon: icon,
+    user: userSnapshot,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(err => console.error("Activity log error:", err));
 
-    // CLEANUP PIPELINE: Удаление устаревших документов пакетами (Batch)
-    const thresholdDate = new Date(now - expiryMs);
-    boardRef.collection("activity")
-      .where("timestamp", "<", thresholdDate)
-      .limit(100) // Оптимизация квот на чтение/удаление
-      .get()
-      .then(snapshot => {
-        if (snapshot.empty) return;
-        const batch = db.batch();
-        snapshot.forEach(doc => batch.delete(doc.ref));
-        batch.commit();
-      })
-      .catch(err => console.warn("Log Rotation Delay:", err));
-  }
+  // Cloud: Авто-очистка просроченных записей при каждом действии (Сборка мусора)
+  const thresholdDate = new Date(now - expiryMs);
+  db.collection("boards").doc(BOARD_ID).collection("activity")
+    .where("timestamp", "<", thresholdDate)
+    .limit(50)
+    .get()
+    .then(snapshot => {
+      if (snapshot.empty) return;
+      const batch = db.batch();
+      snapshot.forEach(doc => batch.delete(doc.ref));
+      batch.commit();
+    }).catch(err => console.error("Retention error:", err));
 }
 
 // Склеиваем структуру колонок с карточками из подколлекции через Batching DOM Updates
@@ -1842,6 +1791,12 @@ function processBoardData(data) {
   // ЭНТЕРПРАЙЗ: Скрываем меню инвайтов и настройки фона для Читателей
   const shareMenuWrapper = document.getElementById('shareMenuWrapper');
   if (shareMenuWrapper) shareMenuWrapper.style.display = isViewer ? 'none' : 'block';
+
+  // ЭНТЕРПРАЙЗ: Полностью вырезаем интерфейс Журнала Действий для Офлайн досок
+  const btnActivityLog = document.getElementById('btnActivityLog');
+  if (btnActivityLog) {
+    btnActivityLog.style.display = isLocalBoard ? 'none' : '';
+  }
   
   const bgSettingsBlock = document.getElementById('bgSettingsBlock');
   if (bgSettingsBlock) bgSettingsBlock.style.display = isViewer ? 'none' : 'block';
