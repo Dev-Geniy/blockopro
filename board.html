@@ -3951,14 +3951,25 @@ async function generateAIDescFromTitle() {
   setBtnLoading(btnId, true, ogBtn);
   
   try {
-    const prompt = `Составь детальный и профессиональный план выполнения для задачи: "${title}". Структурируй текст, используй Markdown форматирование (жирный текст, списки). Не пиши лишних вступлений.`;
+    // ЭНТЕРПРАЙЗ: Оптимизированный промпт для компактной и содержательной генерации без перегрузки БД
+    const prompt = `Действуй как опытный Project Manager. Напиши емкое, но содержательное описание для задачи: "${title}".
+Требования к тексту:
+1. Будь краток: максимум 2-3 небольших абзаца.
+2. Сделай текст полезным: добавь пару неочевидных инсайтов, советов или укажи на возможные "подводные камни" при выполнении.
+3. Используй легкий Markdown (жирный шрифт для акцентов, короткие маркированные списки).
+4. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО генерировать таблицы и длинные массивы текста.
+5. Не используй вводных фраз вроде "Вот план" или "Конечно, вот описание" — начинай сразу с сути.`;
+
     const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(prompt)}?model=openai`);
     textarea.value = await response.text();
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
-  } catch (err) { showSystemToast('Ошибка', 'Сбой нейросети.', 'alert-triangle', 'text-red-500', 'bg-red-50'); } 
-  finally { setBtnLoading(btnId, false, ogBtn); }
+  } catch (err) { 
+    showSystemToast('Ошибка', 'Сбой нейросети.', 'alert-triangle', 'text-red-500', 'bg-red-50'); 
+  } finally { 
+    setBtnLoading(btnId, false, ogBtn); 
+  }
 }
-
+  
 async function generateAIDescFromText() {
   if (!navigator.onLine) return showSystemToast('Офлайн', 'AI недоступен без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
   if (!(await checkAILimit())) return;
