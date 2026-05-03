@@ -1127,6 +1127,15 @@ const debouncedSearch = debounce(() => render());
 
 // --- 2. ГОРЯЧИЕ КЛАВИШИ ---
 document.addEventListener('keydown', (e) => {
+  // Ctrl+Z -> Отмена удаления (Undo)
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+    if (window.pendingUndoAction) {
+      e.preventDefault();
+      window.pendingUndoAction();
+      window.pendingUndoAction = null;
+      document.getElementById('globalToast').classList.add('translate-y-24', 'opacity-0');
+    }
+  }
   // Ctrl+K -> Поиск
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
     e.preventDefault();
@@ -2094,23 +2103,49 @@ async function dispatchCardUpdate(cardId, colId, updatePayload) {
   }
 }
 
-// Единый метод удаления карточки
+// Единый метод удаления карточки с поддержкой Undo
 async function dispatchCardDelete(cardId, colId) {
+  let deletedCard = null;
+  let cardIndex = -1;
+  
   if (isLocalBoard) {
     columns = columns.map(col => {
-      if (col.id == colId) col.cards = col.cards.filter(c => c.id != cardId);
+      if (col.id == colId) {
+        cardIndex = col.cards.findIndex(c => c.id == cardId);
+        if(cardIndex !== -1) deletedCard = col.cards[cardIndex];
+        col.cards = col.cards.filter(c => c.id != cardId);
+      }
       return col;
     });
     persist();
     render();
     
-    // ЭНТЕРПРАЙЗ МИКРО-UX: Мгновенная синхронизация шторки архива в офлайне
     const archiveSidebar = document.getElementById('archiveSidebar');
     if (archiveSidebar && !archiveSidebar.classList.contains('translate-x-full')) {
        renderArchiveSidebar();
     }
   } else {
-    await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).delete();
+    const docRef = db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId));
+    const snap = await docRef.get();
+    if(snap.exists) deletedCard = snap.data();
+    await docRef.delete();
+  }
+  
+  if (deletedCard) {
+     setUndoAction(async () => {
+        if (isLocalBoard) {
+           const col = columns.find(c => c.id == colId);
+           if (col) {
+               if (cardIndex !== -1) col.cards.splice(cardIndex, 0, deletedCard);
+               else col.cards.push(deletedCard);
+           }
+           persist();
+           render();
+        } else {
+           await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).set(deletedCard);
+        }
+        showSystemToast('Восстановлено', 'Задача успешно возвращена на доску.', 'refresh-cw', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+     }, `Задача удалена`);
   }
 }
   
@@ -2895,12 +2930,22 @@ function deleteColumn() {
   const col = columns.find(c => c.id == editingColId);
   const colName = col ? col.name : "колонку";
 
-  openConfirmModal('Удалить колонку?', 'Все задачи внутри колонки также будут удалены навсегда!', 'Удалить', true, () => {
+  openConfirmModal('Удалить колонку?', 'Все задачи внутри будут удалены. Доступна отмена (5 сек).', 'Удалить', true, () => {
+    const colCopy = JSON.parse(JSON.stringify(columns.find(c => c.id == editingColId)));
+    const colIndex = columns.findIndex(c => c.id == editingColId);
+    
     columns = columns.filter(c => c.id != editingColId); 
     persist(); 
     if (!isLocalBoard) logActivity(`Удалил(а) колонку "${colName}" и весь её контент`, 'layout-x');
     closeColModal(); 
     render(); 
+    
+    setUndoAction(() => {
+       columns.splice(colIndex, 0, colCopy);
+       persist();
+       render();
+       showSystemToast('Восстановлено', `Колонка "${colName}" возвращена.`, 'refresh-cw', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+    }, `Колонка "${colName}" удалена`);
   });
 }
 
@@ -2941,15 +2986,9 @@ async function archiveAllCardsInColumn() {
   });
 }
 
-function toggleChecklistItemEdit(index) { 
-  activeChecklist[index].isCompleted = !activeChecklist[index].isCompleted; 
-  if (activeChecklist[index].isCompleted) fireConfetti(); // Вызываем конфетти
-  renderChecklistEdit(); 
-}
+  function renderColorPicker() { document.getElementById('colorPicker').innerHTML = Object.entries(BOARD_UI_COLORS).map(([key, data]) => `<button onclick="selectedColColor='${key}'; renderColorPicker()" class="w-10 h-10 rounded-full border-4 transition-all shadow-sm ${selectedColColor === key ? 'border-gray-900 dark:border-white scale-110 shadow-md' : 'border-transparent'}" style="background-color: ${data.hex};"></button>`).join(''); }
 
-function renderColorPicker() { document.getElementById('colorPicker').innerHTML = Object.entries(BOARD_UI_COLORS).map(([key, data]) => `<button onclick="selectedColColor='${key}'; renderColorPicker()" class="w-10 h-10 rounded-full border-4 transition-all shadow-sm ${selectedColColor === key ? 'border-gray-900 dark:border-white scale-110 shadow-md' : 'border-transparent'}" style="background-color: ${data.hex};"></button>`).join(''); }
-
-function openEditModal(colId, cardId = null) {
+  function openEditModal(colId, cardId = null) {
   currentColumn = colId; 
   
   // FIX: Используем нестрогое сравнение (==) для корректного поиска ID (строка vs число)
@@ -3326,11 +3365,10 @@ async function saveCard() {
 function deleteCard() { 
   if (!editingCard) return;
   const title = editingCard.title;
-  openConfirmModal('Удалить навсегда?', 'Карточка будет удалена без возможности восстановления.', 'Удалить задачу', true, () => {
+  openConfirmModal('Удалить навсегда?', 'Удаленную карточку можно будет восстановить в течение 5 секунд.', 'Удалить задачу', true, () => {
     dispatchCardDelete(editingCard.id, currentColumn);
     if (!isLocalBoard) logActivity(`Удалил(а) задачу "${title}" навсегда`, 'trash-2');
     closeEditModal();
-    showSystemToast('Удалено', 'Карточка стерта из базы.', 'trash-2', 'text-red-500', 'bg-red-50');
   });
 }
   
@@ -3403,12 +3441,11 @@ function addChecklistItem() {
 
 function toggleChecklistItemEdit(index) { 
   activeChecklist[index].isCompleted = !activeChecklist[index].isCompleted; 
-  if (activeChecklist[index].isCompleted) fireConfetti(); // Вызываем конфетти при чеке
   renderChecklistEdit(); 
 }
 
 function removeChecklistItem(index) { activeChecklist.splice(index, 1); renderChecklistEdit(); }
-
+  
 function renderChecklistView() {
   const container = document.getElementById('viewChecklistContainer');
   if (!viewingCard.checklist || viewingCard.checklist.length === 0) { container.innerHTML = ''; return; }
@@ -3846,31 +3883,32 @@ function render() {
       // Вместо прямой вставки в board, добавляем в DocumentFragment
       fragment.appendChild(wrap);
       
-      // Инициализация SortableJS для текущей колонки (Enterprise Ultimate Physics)
       // Инициализация SortableJS для текущей колонки (Enterprise Smart Invert Physics)
       const colEl = wrap.querySelector(`#cards-${col.id}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
         animation: 250, 
-        easing: "cubic-bezier(0.25, 1, 0.5, 1)", // Премиальная физика примагничивания
+        easing: "cubic-bezier(0.25, 1, 0.5, 1)", 
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
+        forceFallback: true, // Решает проблему залипания Drag&Drop элементов в Safari/Chrome на iOS
+        fallbackClass: 'sortable-fallback',
         
         // ВЕРНУЛИ КАК БЫЛО: Фикс для карточек разного размера (Аудио над Картинкой)
-        invertSwap: true, // Вычисляет пересечение по физическим краям (top/bottom), а не по центру мыши
-        direction: 'vertical', // Требуется для правильной работы invertSwap в строгих колонках
-        swapThreshold: 0.6, // Идеальная чувствительность для инвертированного обмена
+        invertSwap: true, 
+        direction: 'vertical', 
+        swapThreshold: 0.6, 
         
         disabled: isViewer,
         delay: 150, 
         delayOnTouchOnly: true, 
         filter: '.empty-state-placeholder', 
-        emptyInsertThreshold: 100, // Глубокий магнит для пустых колонок
+        emptyInsertThreshold: 100, 
         
         // Умная зона прокрутки
         scroll: true, 
-        scrollSensitivity: 150, // Сохраняем увеличенную зону чувствительности от краев экрана
-        scrollSpeed: 30, // Слегка ускоренная плавная прокрутка
+        scrollSensitivity: 150, 
+        scrollSpeed: 30, 
         bubbleScroll: true,
         
         // Интерактивная подсветка скролл-зон
@@ -3977,15 +4015,16 @@ function render() {
     }
     // ----------------------------------------------------
 
-    // Инициализация SortableJS для Колонок (Enterprise Horizontal DnD + Focus Mode)
     // Инициализация SortableJS для Колонок (Enterprise Horizontal DnD + Edge Snapping)
     sortableInstances.push(new Sortable(board, { 
       animation: 300, 
-      easing: "cubic-bezier(0.25, 1, 0.5, 1)", // Премиальная плавная кинематика
+      easing: "cubic-bezier(0.25, 1, 0.5, 1)", 
       handle: '.col-handle', 
       ghostClass: 'sortable-ghost', 
       dragClass: 'sortable-drag', 
-      invertSwap: true, // Захват по границам колонки
+      forceFallback: true, // Плавный Drag&Drop для мобильных устройств
+      fallbackClass: 'sortable-fallback',
+      invertSwap: true, 
       swapThreshold: 0.8,
       disabled: isViewer,
       delay: 150, 
@@ -3993,8 +4032,8 @@ function render() {
       
       // ЭНТЕРПРАЙЗ: Огромная зона горизонтального листания
       scroll: true,
-      scrollSensitivity: 180, // Огромная магнитная зона (180px от краев экрана)
-      scrollSpeed: 30, // Увеличенная скорость панорамирования
+      scrollSensitivity: 180, 
+      scrollSpeed: 30,
       
       onStart: function (evt) {
         // Активируем Focus Mode и неоновые зоны в CSS
@@ -4614,7 +4653,9 @@ window.addEventListener('click', (e) => {
 });
 
 let toastTimeout;
-function showSystemToast(title, desc, iconName, iconColor, bgColor) {
+window.pendingUndoAction = null;
+
+function showSystemToast(title, desc, iconName, iconColor, bgColor, withUndo = false) {
   const toast = document.getElementById('globalToast');
   
   document.getElementById('toastTitle').innerText = title;
@@ -4625,16 +4666,42 @@ function showSystemToast(title, desc, iconName, iconColor, bgColor) {
   iconEl.className = `w-5 h-5 ${iconColor}`;
   
   document.getElementById('toastIconBg').className = `p-2.5 rounded-full flex-shrink-0 ${bgColor}`;
-  lucide.createIcons();
+  
+  const existingUndoBtn = document.getElementById('toastUndoBtn');
+  if (existingUndoBtn) existingUndoBtn.remove();
+  
+  if (withUndo) {
+     const undoBtn = document.createElement('button');
+     undoBtn.id = 'toastUndoBtn';
+     undoBtn.className = 'ml-3 text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-blue-500 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-xl active:scale-95 transition-all self-center whitespace-nowrap border border-gray-200 dark:border-gray-700 shadow-sm flex items-center';
+     undoBtn.innerHTML = '<i data-lucide="undo-2" class="w-3.5 h-3.5 mr-1"></i> Вернуть';
+     undoBtn.onclick = () => {
+        if (window.pendingUndoAction) {
+           window.pendingUndoAction();
+           toast.classList.add('translate-y-24', 'opacity-0');
+           window.pendingUndoAction = null;
+        }
+     };
+     toast.appendChild(undoBtn);
+  }
+
+  lucide.createIcons({ root: toast });
 
   // Показываем
   toast.classList.remove('translate-y-24', 'opacity-0');
   
-  // Прячем через 5 секунд (сбрасывая таймер, если кликнули быстро несколько раз)
+  // Прячем через 5 секунд
   clearTimeout(toastTimeout);
   toastTimeout = setTimeout(() => {
     toast.classList.add('translate-y-24', 'opacity-0');
+    if (withUndo) window.pendingUndoAction = null;
   }, 5000);
+}
+
+// ЭНТЕРПРАЙЗ: Вызов функции отмены действия
+function setUndoAction(actionCallback, msg) {
+   window.pendingUndoAction = actionCallback;
+   showSystemToast('Удалено', msg + ' (или Ctrl+Z)', 'trash-2', 'text-red-500', 'bg-red-50 dark:bg-red-900/30', true);
 }
 
 // 1. Закрытие окон на клавишу Escape
@@ -5067,9 +5134,8 @@ function toggleAudioPlayer(btn, colId, cardId) {
 
 // Делегируем удаление через единый диспетчер
 function deleteCardDirectly(colId, cardId, typeLabel = 'контент') {
-  openConfirmModal(`Удалить ${typeLabel}?`, 'Это действие нельзя отменить, данные будут стерты из облака.', 'Удалить навсегда', true, () => {
+  openConfirmModal(`Удалить ${typeLabel}?`, 'Удаленный объект можно будет вернуть в течение 5 секунд.', 'Удалить навсегда', true, () => {
     dispatchCardDelete(cardId, colId);
-    showSystemToast('Удалено', 'Объект успешно удален из проекта.', 'trash-2', 'text-red-500', 'bg-red-50');
   });
 }
 let activeContentView = null; // { colId, cardId, type }
