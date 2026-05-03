@@ -2651,9 +2651,38 @@ async function setActiveBadge(badge) {
   showSystemToast('Сохранено', 'Отображаемый бейдж изменен везде!', 'check-circle', 'text-green-500', 'bg-green-50');
 }
 
-// ЭНТЕРПРАЙЗ: Фоновая синхронизация профиля по всем активным проектам пользователя
+// ЭНТЕРПРАЙЗ: Универсальная гибридная синхронизация профиля (Cloud + Offline)
 async function syncUserProfileToBoards(updates) {
   if (!currentUser || !currentUser.id) return;
+  
+  // 1. OFFLINE ENGINE: Zero-Latency обновление для локальных досок
+  try {
+    const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+    let localUpdated = false;
+    
+    Object.keys(localBoards).forEach(boardId => {
+      const lBoard = localBoards[boardId];
+      if (lBoard.users && lBoard.users[currentUser.id]) {
+        lBoard.users[currentUser.id] = {
+          ...lBoard.users[currentUser.id],
+          ...updates
+        };
+        localUpdated = true;
+      }
+    });
+    
+    if (localUpdated) {
+      localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
+      // Обновляем отображение досок на главной странице, если они уже отрендерены
+      if (typeof renderBoardsGrid === 'function') {
+        requestAnimationFrame(() => renderBoardsGrid());
+      }
+    }
+  } catch (err) {
+    console.error("Local profile sync error:", err);
+  }
+
+  // 2. CLOUD ENGINE: Фоновая синхронизация по облачным проектам
   try {
     const boardsSnapshot = await db.collection('boards').where('members', 'array-contains', currentUser.id).get();
     
@@ -2663,18 +2692,18 @@ async function syncUserProfileToBoards(updates) {
     let opCount = 0;
     
     boardsSnapshot.forEach(doc => {
-      const boardData = doc.data();
-      if (boardData.users && boardData.users[currentUser.id]) {
+      const bData = doc.data();
+      if (bData.users && bData.users[currentUser.id]) {
         currentBatch.update(doc.ref, {
           [`users.${currentUser.id}`]: {
-            ...boardData.users[currentUser.id],
+            ...bData.users[currentUser.id],
             ...updates
           }
         });
         opCount++;
         
         // Разделяем пакеты по 450 операций для абсолютной безопасности
-        if (opCount === 450) {
+        if (opCount >= 450) {
           batches.push(currentBatch.commit());
           currentBatch = db.batch();
           opCount = 0;
@@ -2688,7 +2717,9 @@ async function syncUserProfileToBoards(updates) {
     
     // Параллельно и быстро фиксируем все пакеты в базе данных
     await Promise.all(batches);
-  } catch (e) { console.error("Global sync error:", e); }
+  } catch (e) { 
+    console.error("Global cloud sync error:", e); 
+  }
 }
 
 function updateProfilePreview(data) {
