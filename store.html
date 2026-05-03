@@ -21,6 +21,15 @@
     .card-zoom:hover { transform: translateY(-8px); }
     .glass-modal { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     .detail-overlay { backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+
+    /* Premium Blocko Loader */
+    @keyframes block-stretch {
+      0%, 100% { transform: scaleX(1); opacity: 0.5; }
+      50% { transform: scaleX(2.5); opacity: 1; }
+    }
+    .loader-block { animation: block-stretch 1.2s ease-in-out infinite; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-400 { animation-delay: 0.4s; }
   </style>
   <script>
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
@@ -28,8 +37,23 @@
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
 
-<header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center">
-  <div class="flex items-center gap-4">
+<!-- ПРЕМИАЛЬНЫЙ ЭКРАН ЗАГРУЗКИ (BLOCKO ANIMATION) -->
+<div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
+  <div class="flex flex-col items-center scale-110">
+    <div class="bg-gradient-to-br from-blue-600 to-indigo-600 p-4 rounded-3xl text-white shadow-2xl shadow-blue-500/40 mb-6">
+      <i data-lucide="layers" class="w-12 h-12"></i>
+    </div>
+    <h2 class="text-3xl font-black tracking-tighter mb-10">BLOCKO <span class="text-blue-500">PRO</span></h2>
+    
+    <div class="flex gap-2 h-1.5 w-48 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 relative">
+       <div class="loader-block absolute top-0 left-0 h-full w-12 bg-blue-500 rounded-full"></div>
+       <div class="loader-block delay-200 absolute top-0 left-12 h-full w-12 bg-indigo-500 rounded-full"></div>
+       <div class="loader-block delay-400 absolute top-0 left-24 h-full w-12 bg-blue-400 rounded-full"></div>
+    </div>
+  </div>
+</div>
+
+<header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center">  <div class="flex items-center gap-4">
     <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
     <div>
       <h1 class="text-xl font-bold tracking-tight">Blocko Market</h1>
@@ -54,6 +78,28 @@
 
 <main class="p-8 max-w-7xl mx-auto w-full flex-1">
   
+  <!-- ПРОМО БЛОК (Интеграция маркетинга) -->
+  <section class="mb-16">
+    <div class="bg-gray-900/5 dark:bg-white/5 border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden transition-all hover:border-amber-300 dark:hover:border-amber-700/50 hover:shadow-xl hover:shadow-amber-500/10">
+      <div class="absolute -right-20 -top-20 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="relative z-10 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5">
+        <div class="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 text-amber-500 rounded-[1.2rem] flex items-center justify-center shadow-inner border border-amber-200 dark:border-amber-800/50 flex-shrink-0">
+          <i data-lucide="ticket" class="w-8 h-8"></i>
+        </div>
+        <div>
+          <h3 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight mb-1">Есть промокод?</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Активируйте скидку, премиум-тариф или получите B-Coins.</p>
+        </div>
+      </div>
+      <div class="relative z-10 w-full md:w-auto flex gap-2">
+        <input type="text" id="storePromoCodeInput" placeholder="Введите код..." class="w-full md:w-64 px-5 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-bold uppercase tracking-widest focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-inner dark:text-white">
+        <button id="activateStorePromoBtn" onclick="activatePromoCode('storePromoCodeInput', 'activateStorePromoBtn')" class="px-6 py-4 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-lg shadow-amber-500/25 active:scale-95 transition-all text-sm flex items-center gap-2 flex-shrink-0">
+          <i data-lucide="zap" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </section>
+
   <section class="mb-20">
     <div class="shelf-title">
       <div class="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg text-blue-500 border border-blue-100 dark:border-blue-900"><i data-lucide="cpu" class="w-5 h-5"></i></div>
@@ -173,8 +219,19 @@
   const ALL_PRODUCTS_MAP = [...PRODUCTS.AI, ...PRODUCTS.PLANS, ...PRODUCTS.GIFTS].reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
 
   auth.onAuthStateChanged(user => {
-    if (user) { currentUser = user; loadBalances(); renderAll(); }
-    else { window.location.href = 'index.html'; }
+    const loader = document.getElementById('globalLoader');
+    if (user) { 
+      currentUser = user; 
+      loadBalances(); 
+      renderAll(); 
+      
+      if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.classList.add('hidden'), 700);
+      }
+    } else { 
+      window.location.href = 'index.html'; 
+    }
   });
 
   async function loadBalances() {
@@ -354,6 +411,93 @@
       if (!document.getElementById('topUpModal').classList.contains('hidden')) closeTopUpModal();
     }
   });
+
+  // --- ЛОГИКА АКТИВАЦИИ ПРОМОКОДОВ В МАГАЗИНЕ ---
+  async function activatePromoCode(inputId = 'storePromoCodeInput', btnId = 'activateStorePromoBtn') {
+    if (!currentUser) return showSystemToast('Ошибка', 'Авторизуйтесь для активации.', 'lock', 'text-amber-500', 'bg-amber-50');
+    
+    const input = document.getElementById(inputId);
+    const code = input.value.trim().toUpperCase();
+    const btn = document.getElementById(btnId);
+    
+    if (!code) return;
+    
+    const ogBtn = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>';
+    lucide.createIcons({ root: btn.parentElement });
+
+    try {
+       const promoRef = db.collection('promocodes').doc(code);
+       const promoDoc = await promoRef.get();
+       
+       if (!promoDoc.exists) throw new Error('not_found');
+       
+       const promo = promoDoc.data();
+       const now = Date.now();
+       
+       if (promo.expiresAt && new Date(promo.expiresAt).getTime() < now) throw new Error('expired');
+       if (promo.maxUses > 0 && (promo.uses || 0) >= promo.maxUses) throw new Error('limit');
+
+       const userRef = db.collection('users').doc(currentUser.uid);
+       const userDoc = await userRef.get();
+       const usedPromos = userDoc.data().usedPromos || [];
+       
+       if (usedPromos.includes(code)) throw new Error('already_used');
+
+       const batch = db.batch();
+       const updates = { usedPromos: firebase.firestore.FieldValue.arrayUnion(code) };
+       
+       let successMsg = '';
+       
+       if (promo.type === 'plan' || promo.type === 'plan_pro_2m' || promo.type === 'plan_fl_1m') {
+           let planToSet = promo.rewardPlan || (promo.type === 'plan_pro_2m' ? 'pro' : 'freelancer');
+           let durMonths = promo.rewardPlanDuration || (promo.type === 'plan_pro_2m' ? 2 : 1);
+           
+           updates.plan = planToSet;
+           if (durMonths === 999) {
+               updates.planExpiresAt = firebase.firestore.FieldValue.delete();
+           } else {
+               const currentExpiry = userDoc.data().planExpiresAt || now;
+               updates.planExpiresAt = Math.max(currentExpiry, now) + (durMonths * 30 * 24 * 60 * 60 * 1000);
+           }
+           successMsg = `Активирован тариф ${planToSet.toUpperCase()}`;
+           localStorage.setItem('blocko_user_plan', planToSet);
+       } else if (promo.type === 'coins' || promo.type === 'coins_1000') {
+           let coinsToAdd = promo.rewardCoins || 1000;
+           updates.coins = firebase.firestore.FieldValue.increment(coinsToAdd);
+           successMsg = `Начислено ${coinsToAdd} B-Coins!`;
+       } else if (promo.type === 'discount' || promo.type === 'discount_50') {
+           updates.activeDiscount = promo.rewardDiscount || 50;
+           successMsg = `Получена скидка ${updates.activeDiscount}% на следующую покупку!`;
+       }
+
+       batch.update(userRef, updates);
+       batch.update(promoRef, { uses: firebase.firestore.FieldValue.increment(1) });
+       
+       await batch.commit();
+       
+       if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
+       showSystemToast('Промокод активирован!', successMsg, 'ticket', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+       input.value = '';
+       
+       // Мгновенное обновление баланса в шапке магазина
+       loadBalances();
+
+    } catch (err) {
+       let errMsg = 'Произошла ошибка базы данных.';
+       if (err.message === 'not_found') errMsg = 'Такой промокод не существует.';
+       else if (err.message === 'expired') errMsg = 'Срок действия промокода истек.';
+       else if (err.message === 'limit') errMsg = 'Лимит активаций этого промокода исчерпан.';
+       else if (err.message === 'already_used') errMsg = 'Вы уже активировали этот промокод ранее.';
+       
+       showSystemToast('Ошибка активации', errMsg, 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+    } finally {
+       btn.disabled = false;
+       btn.innerHTML = ogBtn;
+       lucide.createIcons({ root: btn.parentElement });
+    }
+  }
 </script>
 </body>
 </html>
