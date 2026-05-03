@@ -174,10 +174,25 @@
         <input type="text" id="boardSearch" oninput="debouncedSearch()" placeholder="Поиск задач..." 
                class="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:ring-2 focus:ring-blue-500 rounded-xl text-sm outline-none transition-all dark:text-white">
       </div>
-      <select id="tagFilter" onchange="handleSearchAndFilter()" 
-              class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-bold px-3 py-2 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-        <option value="all">Все теги</option>
-      </select>
+      
+      <!-- КАСТОМНЫЙ ФИЛЬТР ТЕГОВ В ЕДИННОЙ ДИЗАЙН-СИСТЕМЕ -->
+      <div class="relative" id="tagFilterWrapper">
+        <input type="hidden" id="tagFilter" value="all">
+        <button onclick="toggleTagFilterMenu()" id="btnTagFilter" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:text-pink-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 flex items-center justify-center gap-2" title="Фильтр по тегам">
+          <i data-lucide="filter" class="w-4 h-4"></i>
+          <span id="tagFilterActiveDot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 bg-pink-500 rounded-full border border-white dark:border-gray-900"></span>
+        </button>
+        
+        <!-- Выпадающее меню фильтра -->
+        <div id="tagFilterDropdown" class="hidden absolute top-full mt-2 right-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl w-56 z-50 overflow-hidden transform origin-top-right transition-all">
+          <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
+            <i data-lucide="tag" class="w-3 h-3"></i> Сортировка
+          </div>
+          <div id="tagFilterOptions" class="max-h-60 overflow-y-auto hide-scroll flex flex-col p-2 gap-1">
+            <!-- Опции генерируются через JS -->
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2001,15 +2016,76 @@ function copyShareLink(role = 'editor') {
   
 function handleSearchAndFilter() { render(); }
 
+/**
+ * УПРАВЛЕНИЕ КАСТОМНЫМ ФИЛЬТРОМ ТЕГОВ
+ */
+function toggleTagFilterMenu() {
+  if (window.event) window.event.stopPropagation();
+  const menu = document.getElementById('tagFilterDropdown');
+  if (menu) menu.classList.toggle('hidden');
+}
+
+function selectTagFilter(val) {
+  document.getElementById('tagFilter').value = val;
+  const dot = document.getElementById('tagFilterActiveDot');
+  const btn = document.getElementById('btnTagFilter');
+  
+  if (val !== 'all') {
+    dot.classList.remove('hidden');
+    // Замораживаем розовый цвет кнопки при активном фильтре
+    btn.classList.add('bg-pink-50', 'text-pink-500', 'dark:bg-pink-900/30', 'dark:text-pink-400');
+    btn.classList.remove('bg-gray-100', 'text-gray-600', 'dark:bg-gray-800', 'dark:text-gray-400');
+  } else {
+    dot.classList.add('hidden');
+    btn.classList.remove('bg-pink-50', 'text-pink-500', 'dark:bg-pink-900/30', 'dark:text-pink-400');
+    btn.classList.add('bg-gray-100', 'text-gray-600', 'dark:bg-gray-800', 'dark:text-gray-400');
+  }
+  
+  const menu = document.getElementById('tagFilterDropdown');
+  if (menu) menu.classList.add('hidden');
+  
+  updateTagFilterDropdown(); // Перерисовываем галочки в меню
+  handleSearchAndFilter();
+}
+
 function updateTagFilterDropdown() {
-  const select = document.getElementById('tagFilter');
-  if (!select) return;
+  const optionsContainer = document.getElementById('tagFilterOptions');
+  const hiddenInput = document.getElementById('tagFilter');
+  if (!optionsContainer || !hiddenInput) return;
+  
   const currentTags = getBoardTags();
-  const savedValue = select.value;
-  let options = '<option value="all">Все теги</option>';
-  currentTags.forEach(t => { options += `<option value="${t.id}">${t.name}</option>`; });
-  select.innerHTML = options;
-  if ([...select.options].some(o => o.value === savedValue)) select.value = savedValue;
+  const savedValue = hiddenInput.value;
+  
+  // Сброс, если тег был удален из проекта
+  if (savedValue !== 'all' && !currentTags.some(t => t.id === savedValue)) {
+    selectTagFilter('all');
+    return;
+  }
+  
+  const activeValue = hiddenInput.value;
+
+  let html = `
+    <button onclick="selectTagFilter('all')" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-between ${activeValue === 'all' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}">
+      <div class="flex items-center gap-2.5"><i data-lucide="layers" class="w-4 h-4"></i> Все задачи</div>
+      ${activeValue === 'all' ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}
+    </button>
+  `;
+
+  currentTags.forEach(t => {
+    const isActive = activeValue === t.id;
+    html += `
+      <button onclick="selectTagFilter('${t.id}')" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-between ${isActive ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}">
+        <div class="flex items-center gap-2.5">
+          <div class="w-3.5 h-3.5 rounded-full shadow-sm border ${t.color}"></div>
+          <span class="truncate max-w-[130px]">${t.name}</span>
+        </div>
+        ${isActive ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}
+      </button>
+    `;
+  });
+
+  optionsContainer.innerHTML = html;
+  lucide.createIcons({ root: optionsContainer });
 }
 
 // ЭНТЕРПРАЙЗ: АБСОЛЮТНАЯ ИЗОЛЯЦИЯ ШТОРОК (С аппаратным скрытием через CSS display)
@@ -4069,6 +4145,14 @@ window.addEventListener('click', (e) => {
     const shareMenu = document.getElementById('shareMenuDropdown');
     if (shareMenu && !shareMenu.classList.contains('hidden')) {
       shareMenu.classList.add('hidden');
+    }
+  }
+
+  // ЭНТЕРПРАЙЗ: Закрытие выпадающего меню фильтра тегов
+  if (!e.target.closest('#tagFilterWrapper')) {
+    const tagMenu = document.getElementById('tagFilterDropdown');
+    if (tagMenu && !tagMenu.classList.contains('hidden')) {
+      tagMenu.classList.add('hidden');
     }
   }
 
