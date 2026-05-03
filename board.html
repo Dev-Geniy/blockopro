@@ -2031,6 +2031,12 @@ async function dispatchCardUpdate(cardId, colId, updatePayload) {
     });
     persist();
     render(); // Локально рендерим руками
+    
+    // ЭНТЕРПРАЙЗ МИКРО-UX: Мгновенная синхронизация шторки архива в офлайне
+    const archiveSidebar = document.getElementById('archiveSidebar');
+    if (archiveSidebar && !archiveSidebar.classList.contains('translate-x-full')) {
+       renderArchiveSidebar();
+    }
   } else {
     // Отправляем точечное обновление в Firebase. 
     // onSnapshot сам обновит UI (реактивность) без ручного вызова render()!
@@ -2050,6 +2056,12 @@ async function dispatchCardDelete(cardId, colId) {
     });
     persist();
     render();
+    
+    // ЭНТЕРПРАЙЗ МИКРО-UX: Мгновенная синхронизация шторки архива в офлайне
+    const archiveSidebar = document.getElementById('archiveSidebar');
+    if (archiveSidebar && !archiveSidebar.classList.contains('translate-x-full')) {
+       renderArchiveSidebar();
+    }
   } else {
     await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).delete();
   }
@@ -2251,9 +2263,37 @@ window.toggleChat = () => SidebarManager.toggle('chatSidebar', () => {
 // Глухой перехватчик для старых вызовов
 window.closeOtherSidebars = () => SidebarManager.closeAll();
   
+// ЭНТЕРПРАЙЗ МИКРО-UX: Анимация исчезновения карточки из архива перед фактическим восстановлением
+function animateAndRestoreCard(cardId, colId) {
+  const el = document.getElementById(`archive-item-${cardId}`);
+  if (el) {
+    el.classList.add('opacity-0', 'scale-95', '-translate-x-full');
+    setTimeout(() => restoreCardFromSidebar(cardId, colId), 250); // Ждем завершения анимации
+  } else {
+    restoreCardFromSidebar(cardId, colId);
+  }
+}
+
 function restoreCardFromSidebar(cardId, colId) {
   dispatchCardUpdate(cardId, colId, { archived: false });
   showSystemToast('Восстановлено', 'Карточка успешно возвращена на доску.', 'refresh-cw', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/20');
+}
+
+// ЭНТЕРПРАЙЗ МИКРО-UX: Анимация исчезновения перед удалением навсегда прямо из архива
+function animateAndDeleteCard(colId, cardId, typeLabel) {
+  openConfirmModal(`Удалить ${typeLabel}?`, 'Это действие нельзя отменить, данные будут стерты навсегда.', 'Удалить', true, () => {
+    const el = document.getElementById(`archive-item-${cardId}`);
+    if (el) {
+      el.classList.add('opacity-0', 'scale-95', 'translate-x-full', 'bg-red-50', 'dark:bg-red-900/30', 'border-red-200');
+      setTimeout(() => {
+        dispatchCardDelete(cardId, colId);
+        showSystemToast('Удалено', 'Объект стерт из базы.', 'trash-2', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+      }, 250);
+    } else {
+      dispatchCardDelete(cardId, colId);
+      showSystemToast('Удалено', 'Объект стерт из базы.', 'trash-2', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
+    }
+  });
 }
 
 function renderArchiveSidebar() {
@@ -2296,18 +2336,19 @@ function renderArchiveSidebar() {
     if (c.type === 'todo') iconHtml = '<i data-lucide="list-todo" class="w-3.5 h-3.5"></i>';
     if (c.type === 'link') iconHtml = '<i data-lucide="link" class="w-3.5 h-3.5"></i>';
 
+    // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЯ: Добавлен ID (archive-item-id) для точечной анимации удаления
     return `
-      <div class="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm flex flex-col gap-2 transition-all hover:border-amber-300 dark:hover:border-amber-700">
+      <div id="archive-item-${c.id}" class="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm flex flex-col gap-2 transition-all duration-300 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-md animate-fade-in-up">
         <div class="flex justify-between items-start gap-2">
           <h4 class="font-bold text-sm text-gray-900 dark:text-white line-clamp-2 leading-tight flex-1">${displayTitle}</h4>
           <span class="text-gray-400 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-1.5 rounded shadow-sm flex-shrink-0" title="${c.type || 'task'}">${iconHtml}</span>
         </div>
         <div class="text-[10px] text-gray-500 font-medium"><i data-lucide="layout" class="w-3 h-3 inline pb-0.5"></i> Из: ${colName}</div>
         <div class="flex gap-2 mt-2 border-t border-gray-100 dark:border-gray-700/50 pt-3">
-          <button onclick="restoreCardFromSidebar('${c.id}', '${c.columnId}')" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-1.5">
+          <button onclick="animateAndRestoreCard('${c.id}', '${c.columnId}')" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-1.5 active:scale-95 shadow-sm">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Вернуть
           </button>
-          <button onclick="deleteCardDirectly('${c.columnId}', '${c.id}', 'объект')" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800/50 rounded-lg transition-colors shadow-sm" title="Удалить навсегда">
+          <button onclick="animateAndDeleteCard('${c.columnId}', '${c.id}', 'объект')" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800/50 rounded-lg transition-colors shadow-sm active:scale-95" title="Удалить навсегда">
             <i data-lucide="trash-2" class="w-4 h-4"></i>
           </button>
         </div>
@@ -2315,7 +2356,6 @@ function renderArchiveSidebar() {
     `;
   }).join('');
   
-  // ЭНТЕРПРАЙЗ ОПТИМИЗАЦИЯ: Исключаем глобальное сканирование DOM, чтобы не убить слушатель кликов на кнопке Архива
   lucide.createIcons({ root: container });
 }
   
