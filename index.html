@@ -1067,6 +1067,15 @@ auth.onAuthStateChanged(async (user) => {
         subscribeToBoards(user.uid);
 
         const urlParams = new URLSearchParams(window.location.search);
+        
+        // ЭНТЕРПРАЙЗ: Умная маршрутизация после регистрации для Гифт-боксов
+        const redirectAction = urlParams.get('redirect');
+        const promoCode = urlParams.get('code');
+        if (redirectAction === 'gift' && promoCode) {
+            window.location.href = `gift.html?code=${promoCode}`;
+            return;
+        }
+
         const joinId = urlParams.get('join');
         const joinRole = urlParams.get('r') || 'editor'; // Читаем запрошенную роль из ссылки
         
