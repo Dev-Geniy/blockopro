@@ -1547,15 +1547,30 @@ async function confirmCreateBoard() {
   
   if (!currentUser) return;
 
+  // ЭНТЕРПРАЙЗ МИКРО-UX: Блокируем кнопку на время загрузки
+  const submitBtn = document.querySelector('#createBoardModal button.w-full.bg-blue-600');
+  const originalBtnHTML = submitBtn ? submitBtn.innerHTML : '';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Создаем...';
+    lucide.createIcons({ root: submitBtn.parentNode });
+  }
+
   if (type === 'online') {
     const ownedOnlineCount = onlineBoards.filter(b => b.owner === currentUser.id).length;
-    const currentPlanKey = userPlan.toUpperCase();
-    const planLimits = PLANS[currentPlanKey] || PLANS.FREE; 
+    
+    // КРИТИЧЕСКИЙ ФИКС БИЛЛИНГА: Ищем тариф по его реальному ID, чтобы не зависеть от ключей объекта
+    const planLimits = Object.values(PLANS).find(p => p.id === userPlan) || PLANS.FREE;
     
     if (ownedOnlineCount >= planLimits.boardsLimit) {
+      if (submitBtn) { 
+        submitBtn.disabled = false; 
+        submitBtn.innerHTML = originalBtnHTML; 
+        lucide.createIcons({ root: submitBtn.parentNode }); 
+      }
       closeCreateModal();
       openPricingModal();
-      showSystemToast('Лимит достигнут', `На вашем тарифе доступно до ${planLimits.boardsLimit} облачных проектов.`, 'lock', 'text-amber-500', 'bg-amber-50');
+      showSystemToast('Лимит достигнут', `На вашем тарифе доступно до ${planLimits.boardsLimit} облачных проектов.`, 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
       return;
     }
   }
@@ -1597,7 +1612,12 @@ async function confirmCreateBoard() {
       if(password) sessionStorage.setItem('blocko_auth_' + docRef.id, password);
       window.location.href = `board.html?b=${docRef.id}`;
     } catch (e) { 
-      showSystemToast('Ошибка', 'Не удалось создать проект в облаке.', 'alert-circle', 'text-red-500', 'bg-red-50');
+      if (submitBtn) { 
+        submitBtn.disabled = false; 
+        submitBtn.innerHTML = originalBtnHTML; 
+        lucide.createIcons({ root: submitBtn.parentNode }); 
+      }
+      showSystemToast('Ошибка', 'Не удалось создать проект в облаке.', 'alert-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
     }
   }
 }
@@ -1721,22 +1741,37 @@ async function processBoardImport() {
   
   // ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Ограничение размера файла (максимум 10 MB)
   if (pendingImportFile.size > 10 * 1024 * 1024) {
-     return showSystemToast('Отказ в доступе', 'Файл слишком большой. Максимальный размер 10 МБ.', 'shield-alert', 'text-red-500', 'bg-red-50');
+     return showSystemToast('Отказ в доступе', 'Файл слишком большой. Максимальный размер 10 МБ.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
   }
 
   const type = document.querySelector('input[name="importBoardType"]:checked').value;
   const password = document.getElementById('importBoardPassword').value.trim() || null;
 
+  // ЭНТЕРПРАЙЗ МИКРО-UX: Блокируем кнопку на время загрузки
+  const dropzoneBtn = document.querySelector('#importDropzone button.bg-emerald-500');
+  const originalBtnHTML = dropzoneBtn ? dropzoneBtn.innerHTML : '';
+  if (dropzoneBtn) {
+    dropzoneBtn.disabled = true;
+    dropzoneBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Разворачиваем...';
+    lucide.createIcons({ root: dropzoneBtn.parentNode });
+  }
+
   // ЭНТЕРПРАЙЗ: Проверка лимитов тарифа при загрузке в Облако
   if (type === 'online') {
     const ownedOnlineCount = onlineBoards.filter(b => b.owner === currentUser.id).length;
-    const currentPlanKey = userPlan.toUpperCase();
-    const planLimits = PLANS[currentPlanKey] || PLANS.FREE; 
+    
+    // КРИТИЧЕСКИЙ ФИКС БИЛЛИНГА: Безопасный поиск тарифа
+    const planLimits = Object.values(PLANS).find(p => p.id === userPlan) || PLANS.FREE; 
     
     if (ownedOnlineCount >= planLimits.boardsLimit) {
+      if (dropzoneBtn) { 
+        dropzoneBtn.disabled = false; 
+        dropzoneBtn.innerHTML = originalBtnHTML; 
+        lucide.createIcons({ root: dropzoneBtn.parentNode }); 
+      }
       closeImportModal();
       openPricingModal();
-      return showSystemToast('Лимит достигнут', `На вашем тарифе доступно до ${planLimits.boardsLimit} облачных проектов.`, 'lock', 'text-amber-500', 'bg-amber-50');
+      return showSystemToast('Лимит достигнут', `На вашем тарифе доступно до ${planLimits.boardsLimit} облачных проектов.`, 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
     }
   }
 
@@ -1780,7 +1815,7 @@ async function processBoardImport() {
         
         closeImportModal();
         renderBoardsGrid();
-        showSystemToast('Успех', 'Офлайн проект успешно восстановлен.', 'check-circle', 'text-emerald-500', 'bg-emerald-50');
+        showSystemToast('Успех', 'Офлайн проект успешно восстановлен.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
         setTimeout(() => window.location.href = `board.html?b=${newBoardId}`, 800);
       } else {
          // Cloud развертывание с учетом Subcollections
@@ -1797,7 +1832,7 @@ async function processBoardImport() {
          });
 
          closeImportModal();
-         showSystemToast('Синхронизация...', 'Создаем облачную инфраструктуру. Пожалуйста, подождите.', 'loader-2', 'text-blue-500 animate-spin', 'bg-blue-50');
+         showSystemToast('Синхронизация...', 'Создаем облачную инфраструктуру. Пожалуйста, подождите.', 'loader-2', 'text-blue-500 animate-spin', 'bg-blue-50 dark:bg-blue-900/30');
 
          const docRef = db.collection("boards").doc(); 
          imported.id = docRef.id;
@@ -1828,16 +1863,21 @@ async function processBoardImport() {
              await Promise.all(batches);
          }
          
-         showSystemToast('Успех', 'Облачный проект восстановлен!', 'cloud-snow', 'text-blue-500', 'bg-blue-50');
+         showSystemToast('Успех', 'Облачный проект восстановлен!', 'cloud-snow', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
          setTimeout(() => window.location.href = `board.html?b=${docRef.id}`, 800);
       }
     } catch (err) { 
-        showSystemToast('Блокировка', 'Файл поврежден, имеет неверный формат или содержит опасный код.', 'shield-alert', 'text-red-500', 'bg-red-50'); 
+        if (dropzoneBtn) { 
+          dropzoneBtn.disabled = false; 
+          dropzoneBtn.innerHTML = originalBtnHTML; 
+          lucide.createIcons({ root: dropzoneBtn.parentNode }); 
+        }
+        showSystemToast('Блокировка', 'Файл поврежден, имеет неверный формат или содержит опасный код.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/30'); 
     }
   };
   reader.readAsText(pendingImportFile);
 }
-
+  
 function promptJoinById() {
   document.getElementById('joinBoardIdInput').value = '';
   document.getElementById('joinBoardModal').classList.remove('hidden');
