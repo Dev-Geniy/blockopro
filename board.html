@@ -2709,34 +2709,19 @@ function toggleMessageLike(msgId) {
   }
 
   // Фоновая синхронизация с Firebase (Без ожидания пользователя)
-  const msgRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc(msgId);
-  msgRef.get().then(doc => {
-    if (doc.exists) {
-      let likes = doc.data().likes || [];
-      if (likes.includes(currentUser.id)) {
-        likes = likes.filter(id => id !== currentUser.id);
-      } else {
-        likes.push(currentUser.id);
-      }
-      msgRef.update({ likes });
+      const msgRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc(msgId);
+      msgRef.get().then(doc => {
+        if (doc.exists) {
+          let likes = doc.data().likes || [];
+          if (likes.includes(currentUser.id)) {
+            likes = likes.filter(id => id !== currentUser.id);
+          } else {
+            likes.push(currentUser.id);
+          }
+          msgRef.update({ likes });
+        }
+      }).catch(err => console.error("Like sync failed:", err));
     }
-  }).catch(err => console.error("Like sync failed:", err));
-}
-
-  // Фоновая синхронизация с Firebase
-  const msgRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc(msgId);
-  msgRef.get().then(doc => {
-    if (doc.exists) {
-      let likes = doc.data().likes || [];
-      if (likes.includes(currentUser.id)) {
-        likes = likes.filter(id => id !== currentUser.id);
-      } else {
-        likes.push(currentUser.id);
-      }
-      msgRef.update({ likes });
-    }
-  }).catch(err => console.error("Like sync failed:", err));
-}
 
 // ЭНТЕРПРАЙЗ: Voice-to-Text для командного чата
 let chatSpeechRecognition = null;
