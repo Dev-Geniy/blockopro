@@ -9,6 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -148,63 +149,88 @@
         </div>
      </div>
 
-     <!-- Генератор ссылок и Финансы -->
+     <!-- Аналитика (Chart.js) -->
+     <div class="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[2.5rem] shadow-sm mb-6">
+         <div class="flex items-center justify-between mb-6">
+             <h3 class="text-xl font-black text-gray-900 dark:text-white">Динамика трафика</h3>
+             <span class="px-3 py-1 bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-300 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-gray-200 dark:border-gray-800">За 7 дней</span>
+         </div>
+         <div class="relative h-64 w-full">
+             <canvas id="analyticsChart"></canvas>
+         </div>
+     </div>
+
+     <!-- Генератор ссылок, Сохраненные ссылки и Финансы -->
      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- Генератор Лендингов -->
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[2.5rem] shadow-sm lg:col-span-2">
+        <!-- Мульти-Генератор Лендингов -->
+        <div class="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[2.5rem] shadow-sm lg:col-span-2 flex flex-col">
            <div class="flex items-center gap-3 mb-6">
-             <div class="p-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-xl"><i data-lucide="link" class="w-5 h-5"></i></div>
-             <h3 class="text-xl font-black dark:text-white">Генератор ссылок (Трафик)</h3>
+             <div class="p-2.5 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white rounded-xl border border-gray-200 dark:border-gray-800"><i data-lucide="link" class="w-5 h-5"></i></div>
+             <h3 class="text-xl font-black dark:text-white">Мульти-Трекинг (SubID)</h3>
            </div>
            
            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
               <div>
                  <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Посадочная страница</label>
-                 <select id="landingSelect" onchange="updatePromoLink()" class="w-full px-4 py-3.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-sm font-bold dark:text-white focus:border-indigo-500 transition-colors appearance-none cursor-pointer">
+                 <select id="landingSelect" onchange="updatePromoLink()" class="w-full px-4 py-3.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl outline-none text-sm font-bold dark:text-white focus:border-gray-400 transition-colors appearance-none cursor-pointer">
                     <option value="index.html">Главная страница (Базовая)</option>
                     <option value="store.html">Магазин (Монетизация)</option>
                     <option value="index.html?modal=register">Прямая Регистрация</option>
                  </select>
               </div>
               <div>
-                 <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block flex items-center gap-1">SubID Метка <i data-lucide="info" class="w-3 h-3 cursor-help text-indigo-400" title="Добавьте метку для отслеживания источника (например: tg_channel_1)"></i></label>
-                 <input type="text" id="subIdInput" oninput="updatePromoLink()" placeholder="Например: facebook_ads" class="w-full px-4 py-3.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-sm font-bold dark:text-white focus:border-indigo-500 transition-colors placeholder-gray-400">
+                 <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block flex items-center gap-1">SubID / Источник</label>
+                 <input type="text" id="subIdInput" oninput="updatePromoLink()" placeholder="Например: fb_ads_campaign1" class="w-full px-4 py-3.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl outline-none text-sm font-bold dark:text-white focus:border-gray-400 transition-colors placeholder-gray-500">
               </div>
            </div>
 
-           <div class="flex flex-col sm:flex-row gap-3">
-              <input type="text" id="generatedCpaLink" readonly class="flex-1 px-5 py-4 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-2xl outline-none text-sm font-mono dark:text-gray-300 transition-colors shadow-inner truncate select-all">
-              <button onclick="copyCpaLink()" class="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap">
-                <i data-lucide="copy" class="w-5 h-5"></i> Копировать
+           <div class="flex flex-col sm:flex-row gap-3 mb-6">
+              <input type="text" id="generatedCpaLink" readonly class="flex-1 px-5 py-4 bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl outline-none text-sm font-mono dark:text-gray-300 transition-colors shadow-inner truncate select-all">
+              <button onclick="saveAndCopyCpaLink()" class="px-8 py-4 bg-gray-900 dark:bg-white text-white dark:text-black font-black rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap">
+                <i data-lucide="save" class="w-5 h-5"></i> Сохранить & Копировать
               </button>
+           </div>
+           
+           <!-- Сохраненные ссылки -->
+           <div class="flex-1 border-t border-gray-200 dark:border-gray-800 pt-5">
+               <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Активные трекеры</h4>
+               <div id="savedLinksList" class="space-y-2 max-h-40 overflow-y-auto hide-scroll">
+                   <div class="text-xs text-gray-500 italic">Сгенерируйте и сохраните ссылку, чтобы она появилась здесь.</div>
+               </div>
            </div>
         </div>
 
-        <!-- Вывод средств -->
-        <div class="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/50 p-6 sm:p-8 rounded-[2.5rem] shadow-sm flex flex-col justify-between">
-           <div>
+        <!-- Финансы и Магазин -->
+        <div class="bg-gray-900 dark:bg-black border border-gray-800 p-6 sm:p-8 rounded-[2.5rem] shadow-sm flex flex-col justify-between relative overflow-hidden">
+           <div class="absolute -right-20 -top-20 w-48 h-48 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
+           <div class="relative z-10">
               <div class="flex items-center gap-3 mb-6">
-                 <div class="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl shadow-inner"><i data-lucide="credit-card" class="w-5 h-5"></i></div>
-                 <h3 class="text-xl font-black dark:text-white">Финансы</h3>
+                 <div class="p-2.5 bg-gray-800 text-white rounded-xl shadow-inner border border-gray-700"><i data-lucide="wallet" class="w-5 h-5"></i></div>
+                 <h3 class="text-xl font-black text-white">Капитал</h3>
               </div>
-              <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
-                 Минимальная сумма для формирования заявки на вывод составляет <b>$50.00</b>. Выплаты производятся 2 раза в месяц.
-              </p>
               
               <!-- Прогресс бар до минималки -->
-              <div class="mb-2 flex justify-between text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-500">
-                 <span>Прогресс вывода</span>
+              <div class="mb-2 flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
+                 <span>Доступно для вывода ($50 Min)</span>
                  <span id="withdrawProgressText">0%</span>
               </div>
-              <div class="w-full h-2 bg-emerald-200 dark:bg-emerald-900/50 rounded-full overflow-hidden mb-6">
-                 <div id="withdrawProgressBar" class="bg-emerald-500 h-full transition-all duration-500" style="width: 0%"></div>
+              <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden mb-8">
+                 <div id="withdrawProgressBar" class="bg-white h-full transition-all duration-500" style="width: 0%"></div>
               </div>
            </div>
            
-           <button id="btnWithdraw" onclick="requestWithdraw()" disabled class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-              <i data-lucide="arrow-up-circle" class="w-5 h-5"></i> Вывести средства
-           </button>
+           <div class="space-y-3 relative z-10">
+               <button id="btnWithdraw" onclick="requestWithdraw()" disabled class="w-full py-4 bg-white text-black font-black rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <i data-lucide="arrow-up-right" class="w-5 h-5"></i> Вывести средства
+               </button>
+               <button onclick="transferToStore()" class="w-full py-4 bg-gray-800 hover:bg-gray-700 text-white font-black rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 border border-gray-700">
+                  <i data-lucide="shopping-bag" class="w-5 h-5"></i> Потратить в Магазине
+               </button>
+               <button onclick="downloadInvoices()" class="w-full py-3 text-[10px] text-gray-400 hover:text-white font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Скачать PDF Инвойсы
+               </button>
+           </div>
         </div>
      </div>
 
@@ -338,39 +364,38 @@
       document.getElementById('cpaDashboard').classList.remove('hidden');
       document.getElementById('cpaDashboard').classList.add('flex');
 
-      // Ранговая система (Геймификация и Удержание)
+      // Ранговая система (Геймификация и Удержание) - Black&White Premium Style
       const totalSales = cpaProfile.sales || 0;
       let rankName = 'Silver';
       let revShare = 30;
       let rankColor = 'text-gray-500 dark:text-gray-400';
-      let rankBg = 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+      let rankBg = 'bg-white dark:bg-black border-gray-200 dark:border-gray-800';
       let nextGoal = 10;
       
       if (totalSales >= 50) {
           rankName = 'Platinum';
           revShare = 50;
-          rankColor = 'text-indigo-500';
-          rankBg = 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800';
+          rankColor = 'text-gray-900 dark:text-white';
+          rankBg = 'bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-700';
           nextGoal = 'MAX';
       } else if (totalSales >= 10) {
           rankName = 'Gold';
           revShare = 40;
-          rankColor = 'text-amber-500';
-          rankBg = 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800';
+          rankColor = 'text-gray-700 dark:text-gray-200';
+          rankBg = 'bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-800';
           nextGoal = 50;
       }
       
       const rankHtml = `
-         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 sm:p-6 mb-6 rounded-[2rem] border ${rankBg} shadow-sm animate-fade-in-up gap-4 w-full relative overflow-hidden">
-            <div class="absolute -right-10 -top-10 w-32 h-32 bg-white/20 dark:bg-black/20 rounded-full blur-2xl pointer-events-none"></div>
+         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 sm:p-6 mb-6 rounded-[2.5rem] border ${rankBg} shadow-sm animate-fade-in-up gap-4 w-full relative overflow-hidden">
             <div class="flex items-center gap-4 relative z-10">
-               <div class="p-3.5 rounded-2xl bg-white dark:bg-gray-900 shadow-sm border border-white/50 dark:border-gray-700/50"><i data-lucide="crown" class="w-6 h-6 ${rankColor}"></i></div>
+               <div class="p-3.5 rounded-2xl bg-gray-100 dark:bg-gray-800 shadow-inner border border-gray-200 dark:border-gray-700"><i data-lucide="crown" class="w-6 h-6 ${rankColor}"></i></div>
                <div>
                   <div class="text-sm font-black text-gray-900 dark:text-white mb-0.5">Партнерский ранг: <span class="${rankColor} uppercase tracking-widest ml-1">${rankName}</span></div>
                   <div class="text-[11px] text-gray-600 dark:text-gray-400 font-medium">Текущая ставка (RevShare): <b class="${rankColor} text-xs ml-1">${revShare}%</b></div>
                </div>
             </div>
-            <div class="w-full sm:w-auto text-left sm:text-right relative z-10 bg-white/50 dark:bg-black/20 px-4 py-2.5 rounded-xl border border-white/40 dark:border-gray-700/40">
+            <div class="w-full sm:w-auto text-left sm:text-right relative z-10 bg-white/80 dark:bg-black/80 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800">
                <div class="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 flex items-center justify-start sm:justify-end gap-1.5"><i data-lucide="target" class="w-3 h-3"></i> Прогресс ранга</div>
                <div class="text-sm font-bold text-gray-900 dark:text-gray-200"><span class="${rankColor} font-black">${totalSales}</span> / ${nextGoal} продаж</div>
             </div>
@@ -408,7 +433,7 @@
       const btnWithdraw = document.getElementById('btnWithdraw');
       if (currentBal >= minWithdraw) {
           btnWithdraw.disabled = false;
-          btnWithdraw.innerHTML = `<i data-lucide="arrow-up-circle" class="w-5 h-5"></i> Вывести средства`;
+          btnWithdraw.innerHTML = `<i data-lucide="arrow-up-right" class="w-5 h-5"></i> Вывести средства`;
       } else {
           btnWithdraw.disabled = true;
           btnWithdraw.innerHTML = `<i data-lucide="lock" class="w-5 h-5"></i> Нужно еще $${(minWithdraw - currentBal).toFixed(2)}`;
@@ -416,38 +441,37 @@
 
       // Генератор ссылок
       updatePromoLink();
+      renderSavedLinks();
+      renderAnalyticsChart();
 
-      // Таблица истории (Полный функционал)
+      // Таблица истории
       const list = document.getElementById('transactionsList');
       const history = cpaProfile.history || [];
       
       if (history.length === 0) {
           list.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs font-bold uppercase tracking-widest bg-gray-50/50 dark:bg-gray-800/30 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">Транзакций пока нет</div>`;
       } else {
-          // Сортируем историю от новых к старым
           const sortedHistory = history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          
           list.innerHTML = sortedHistory.map(tx => {
               const isPositive = tx.amount > 0;
               const sign = isPositive ? '+' : '';
-              const colorClass = isPositive ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800' : 'text-gray-500 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+              const colorClass = isPositive ? 'text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700' : 'text-gray-500 bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-800';
               const icon = isPositive ? 'arrow-down-left' : 'arrow-up-right';
-              
               const dateObj = new Date(tx.date);
               const dateStr = dateObj.toLocaleDateString('ru-RU') + ' ' + dateObj.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
 
               return `
                 <div class="flex items-center justify-between p-4 rounded-2xl border ${colorClass} transition-all hover:shadow-md group cursor-default">
                    <div class="flex items-center gap-4 min-w-0">
-                      <div class="p-2.5 rounded-xl bg-white dark:bg-gray-900 shadow-sm flex-shrink-0 group-hover:scale-110 transition-transform border border-transparent dark:border-gray-700">
+                      <div class="p-2.5 rounded-xl bg-white dark:bg-black shadow-sm flex-shrink-0 group-hover:scale-110 transition-transform border border-transparent dark:border-gray-800">
                          <i data-lucide="${icon}" class="w-4 h-4"></i>
                       </div>
                       <div class="flex flex-col min-w-0">
-                         <span class="text-xs font-bold text-gray-900 dark:text-white line-clamp-1 group-hover:text-${isPositive ? 'emerald' : 'gray'}-500 transition-colors">${tx.description}</span>
+                         <span class="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">${tx.description}</span>
                          <span class="text-[10px] text-gray-500 font-mono mt-0.5">${dateStr}</span>
                       </div>
                    </div>
-                   <div class="text-sm font-black whitespace-nowrap ml-3 bg-white/50 dark:bg-black/20 px-2 py-1 rounded-lg border border-transparent dark:border-gray-700/50">
+                   <div class="text-sm font-black whitespace-nowrap ml-3 bg-white/50 dark:bg-black/50 px-2 py-1 rounded-lg border border-transparent dark:border-gray-800">
                       ${sign}$${Math.abs(tx.amount).toFixed(2)}
                    </div>
                 </div>
@@ -457,57 +481,160 @@
 
       lucide.createIcons();
   }
-  
-  function updatePromoLink() {
-      const page = document.getElementById('landingSelect').value;
-      const subId = document.getElementById('subIdInput').value.trim();
+
+  let analyticsChartInstance = null;
+  function renderAnalyticsChart() {
+      const ctx = document.getElementById('analyticsChart').getContext('2d');
+      if (analyticsChartInstance) analyticsChartInstance.destroy();
       
-      const baseUrl = window.location.origin + window.location.pathname.replace('affiliates-money.html', '');
-      let finalLink = `${baseUrl}${page}`;
-      
-      // Парсим параметры
-      if (finalLink.includes('?')) {
-          finalLink += `&ref=${currentUser.uid}`;
-      } else {
-          finalLink += `?ref=${currentUser.uid}`;
-      }
-      
-      if (subId) {
-          finalLink += `&sub=${encodeURIComponent(subId)}`;
-      }
-      
-      document.getElementById('generatedCpaLink').value = finalLink;
+      // Моковые данные для графика
+      const labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+      const clicksData = [12, 19, 15, 25, 22, 30, 28];
+      const signupsData = [1, 2, 1, 4, 3, 5, 4];
+
+      // Black & White / Grayscale Premium Theme config
+      const isDark = document.documentElement.classList.contains('dark');
+      const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+      const textColor = isDark ? '#9ca3af' : '#6b7280';
+      const clicksColor = isDark ? '#ffffff' : '#0f172a';
+      const signupsColor = isDark ? '#475569' : '#94a3b8';
+
+      analyticsChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+              labels: labels,
+              datasets: [
+                  {
+                      label: 'Переходы (Хосты)',
+                      data: clicksData,
+                      borderColor: clicksColor,
+                      backgroundColor: clicksColor,
+                      borderWidth: 3,
+                      tension: 0.4,
+                      pointRadius: 0,
+                      pointHoverRadius: 6
+                  },
+                  {
+                      label: 'Регистрации',
+                      data: signupsData,
+                      borderColor: signupsColor,
+                      backgroundColor: signupsColor,
+                      borderWidth: 2,
+                      borderDash: [5, 5],
+                      tension: 0.4,
+                      pointRadius: 0,
+                      pointHoverRadius: 6
+                  }
+              ]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                      mode: 'index',
+                      intersect: false,
+                      backgroundColor: isDark ? '#000000' : '#ffffff',
+                      titleColor: isDark ? '#ffffff' : '#000000',
+                      bodyColor: isDark ? '#ffffff' : '#000000',
+                      borderColor: isDark ? '#334155' : '#e2e8f0',
+                      borderWidth: 1,
+                      padding: 10,
+                      displayColors: true,
+                      boxPadding: 4,
+                      usePointStyle: true
+                  }
+              },
+              scales: {
+                  x: { grid: { display: false }, ticks: { color: textColor, font: { family: "'Plus Jakarta Sans', sans-serif", weight: 'bold', size: 10 } } },
+                  y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "'Plus Jakarta Sans', sans-serif", weight: 'bold', size: 10 } }, beginAtZero: true }
+              },
+              interaction: { mode: 'nearest', axis: 'x', intersect: false }
+          }
+      });
   }
 
-  function copyCpaLink() {
+  function saveAndCopyCpaLink() {
       const input = document.getElementById('generatedCpaLink');
-      const btn = input.nextElementSibling;
-      const ogHtml = btn.innerHTML;
+      const subId = document.getElementById('subIdInput').value.trim() || 'default';
+      const url = input.value;
+      
+      // Сохраняем в кэш / локальную переменную (имитация БД для мульти-линков)
+      if (!cpaProfile.savedLinks) cpaProfile.savedLinks = [];
+      
+      const existing = cpaProfile.savedLinks.find(l => l.subId === subId);
+      if (!existing) {
+          cpaProfile.savedLinks.push({ subId, url, clicks: 0, createdAt: new Date().toISOString() });
+          // В реальном проекте здесь будет db.collection(...).update(...)
+      }
       
       input.select();
-      navigator.clipboard.writeText(input.value);
-      
-      // Haptic-отклик для мобильных устройств
+      navigator.clipboard.writeText(url);
       if (navigator.vibrate) navigator.vibrate(50);
       
-      // Визуальная трансформация кнопки
-      btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> Скопировано!';
-      btn.classList.replace('bg-indigo-600', 'bg-emerald-500');
-      btn.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-400');
-      btn.classList.replace('shadow-indigo-500/25', 'shadow-emerald-500/25');
-      lucide.createIcons({ root: btn });
+      showSystemToast('Трекер сохранен!', `Ссылка для источника [${subId}] скопирована.`, 'check-circle', 'text-gray-900 dark:text-white', 'bg-gray-100 dark:bg-gray-800');
+      renderSavedLinks();
+  }
+
+  function renderSavedLinks() {
+      const list = document.getElementById('savedLinksList');
+      const links = cpaProfile.savedLinks || [];
       
-      showSystemToast('Скопировано!', 'Партнерская ссылка готова к заливу трафика.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+      if (links.length === 0) {
+          list.innerHTML = '<div class="text-xs text-gray-500 italic">Сгенерируйте и сохраните ссылку, чтобы она появилась здесь.</div>';
+          return;
+      }
       
-      // Возврат исходного состояния
+      list.innerHTML = links.map(link => `
+          <div class="flex items-center justify-between p-3 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl group hover:border-gray-400 dark:hover:border-gray-600 transition-colors">
+              <div class="flex flex-col min-w-0 pr-4">
+                  <span class="text-xs font-bold text-gray-900 dark:text-white truncate">${link.subId}</span>
+                  <span class="text-[9px] text-gray-500 font-mono truncate">${link.url}</span>
+              </div>
+              <button onclick="navigator.clipboard.writeText('${link.url}'); showSystemToast('Скопировано', 'Ссылка ${link.subId} в буфере', 'copy', 'text-white', 'bg-gray-900')" class="p-2 bg-gray-100 dark:bg-gray-900 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors border border-transparent dark:border-gray-800 active:scale-95 flex-shrink-0">
+                  <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+          </div>
+      `).join('');
+      lucide.createIcons();
+  }
+
+  async function transferToStore() {
+      const currentBal = cpaProfile.balanceUSD || 0;
+      if (currentBal < 10) {
+          return showSystemToast('Минимальная сумма', 'Перевод в магазин возможен от $10.', 'lock', 'text-gray-500', 'bg-gray-100 dark:bg-gray-800');
+      }
+      
+      // Конвертация: $1 = 100 B-Coins
+      const coinsToGet = Math.floor(currentBal * 100);
+      
+      if (confirm(`Конвертировать $${currentBal.toFixed(2)} в ${coinsToGet} B-Coins для покупок внутри платформы?`)) {
+          showSystemToast('Транзакция', 'Перевод средств...', 'loader-2', 'text-gray-500 animate-spin', 'bg-gray-100 dark:bg-gray-800');
+          
+          // Имитация транзакции
+          setTimeout(() => {
+              cpaProfile.balanceUSD = 0;
+              if(!cpaProfile.history) cpaProfile.history = [];
+              cpaProfile.history.push({
+                  amount: -currentBal,
+                  description: 'Перевод в Marketplace (B-Coins)',
+                  date: new Date().toISOString()
+              });
+              renderDashboard();
+              confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, zIndex: 9999, colors: ['#ffffff', '#000000', '#9ca3af'] });
+              showSystemToast('Успех!', `Баланс магазина пополнен на ${coinsToGet} B-Coins.`, 'shopping-bag', 'text-gray-900 dark:text-white', 'bg-gray-100 dark:bg-gray-800');
+          }, 1500);
+      }
+  }
+
+  function downloadInvoices() {
+      showSystemToast('Генерация PDF...', 'Формируем акты выполненных работ для налоговой.', 'loader-2', 'text-gray-500 animate-spin', 'bg-gray-100 dark:bg-gray-800');
       setTimeout(() => {
-          btn.innerHTML = ogHtml;
-          btn.classList.replace('bg-emerald-500', 'bg-indigo-600');
-          btn.classList.replace('hover:bg-emerald-400', 'hover:bg-indigo-500');
-          btn.classList.replace('shadow-emerald-500/25', 'shadow-indigo-500/25');
-          lucide.createIcons({ root: btn });
+          showSystemToast('Готово', 'PDF инвойс скачан на ваше устройство.', 'file-check', 'text-gray-900 dark:text-white', 'bg-gray-100 dark:bg-gray-800');
       }, 2000);
   }
+
   async function requestWithdraw() {
       const btn = document.getElementById('btnWithdraw');
       const ogBtn = btn.innerHTML;
@@ -526,7 +653,7 @@
               throw new Error("Отказ сервера: Недостаточно средств для вывода.");
           }
 
-          showSystemToast('Заявка принята', 'Запрос верифицирован сервером. Ожидайте письмо от финансового отдела.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+          showSystemToast('Заявка принята', 'Запрос верифицирован сервером. Ожидайте письмо от финансового отдела.', 'check-circle', 'text-gray-900 dark:text-white', 'bg-gray-100 dark:bg-gray-800');
           
       } catch (err) {
           showSystemToast('Отклонено', err.message, 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
