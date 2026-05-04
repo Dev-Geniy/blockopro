@@ -618,17 +618,26 @@
     }
 
     if (!hasAccess) {
-        // Мгновенный кик из панели с эффектом стирания куки
+        // ЭНТЕРПРАЙЗ: Скрытая система сигнализации (Логирование попыток проникновения)
+        try {
+            db.collection('system_logs').add({
+                type: 'security_alert',
+                message: 'Несанкционированная попытка входа в Command Center',
+                user: user.email || user.uid,
+                createdAt: new Date().toISOString()
+            });
+        } catch(e) {
+            console.error("Alert log failed");
+        }
+
+        // Мгновенный кик из панели с эффектом стирания интерфейса
         document.body.innerHTML = '<div style="display:flex; height:100vh; align-items:center; justify-content:center; background:#0b0f19; color:#ef4444; font-family:sans-serif; font-size:24px; font-weight:bold;">ДОСТУП ЗАПРЕЩЕН / ACCESS DENIED</div>';
         setTimeout(() => window.location.href = 'index.html', 1500);
         return;
     }
-
-
-
       
-        // Авторизация пройдена - грузим тяжелую дату
-        loadEnterpriseData();
+    // Авторизация пройдена - грузим тяжелую дату
+    loadEnterpriseData();
     } catch(e) {
         console.error(e);
         window.location.href = 'index.html';
