@@ -103,12 +103,16 @@
     </button>
   </div>
 
-  <!-- Error / Success State -->
-  <div id="msgState" class="hidden relative z-10 w-full max-w-md bg-gray-900/60 glass-panel border border-gray-800 rounded-[2.5rem] p-10 text-center shadow-2xl m-auto">    <div id="msgIcon" class="w-20 h-20 mx-auto rounded-3xl flex items-center justify-center mb-6"></div>
-    <h2 id="msgTitle" class="text-2xl font-black text-white mb-3">...</h2>
-    <p id="msgDesc" class="text-sm text-gray-400 mb-8 leading-relaxed">...</p>
-    <button onclick="window.location.href='index.html'" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl transition-all shadow-lg active:scale-95">
-       Перейти в Blocko Pro
+  <!-- Error / Success State (Epic Reward Ritual) -->
+  <div id="msgState" class="hidden relative z-10 w-full max-w-md bg-gray-900/60 glass-panel border border-gray-800 rounded-[3rem] p-10 text-center shadow-2xl m-auto transform scale-95 opacity-0 transition-all duration-700">
+    <div id="msgIcon" class="w-24 h-24 mx-auto rounded-[2rem] flex items-center justify-center mb-8"></div>
+    <h2 id="msgTitle" class="text-3xl font-black text-white mb-4 tracking-tight">...</h2>
+    
+    <!-- ЭНТЕРПРАЙЗ: Контейнер изменен на div для поддержки сложной HTML-верстки -->
+    <div id="msgDesc" class="mb-10 w-full">...</div>
+    
+    <button onclick="window.location.href='index.html'" class="w-full py-4.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black uppercase tracking-widest text-[11px] rounded-2xl transition-all shadow-lg shadow-indigo-500/25 active:scale-95 flex items-center justify-center gap-2">
+       Перейти в рабочее пространство <i data-lucide="arrow-right" class="w-4 h-4"></i>
     </button>
   </div>
 
@@ -258,30 +262,53 @@
 
             await batch.commit();
 
-            // Эффект победы
+            // ЭНТЕРПРАЙЗ: Эпический эффект джекпота
             document.getElementById('giftCard').classList.add('hidden');
-            confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 }, zIndex: 9999, colors: ['#f43f5e', '#ffffff', '#6366f1'] });
-            showMsg('check-circle', 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30', 'Успешно!', `На ваш баланс зачислено ${currentPromo.rewardCoins} монет. Мы ждем вас в рабочем пространстве.`);
+            
+            // Запускаем золотое конфетти
+            confetti({ particleCount: 300, spread: 120, origin: { y: 0.5 }, zIndex: 9999, colors: ['#fbbf24', '#f59e0b', '#ffffff', '#fb923c'] });
+            
+            // Генерируем премиальную верстку для суммы
+            const epicRewardHtml = `
+               <span class="block text-gray-400 mb-6 text-sm font-bold uppercase tracking-widest">Вам начислено:</span>
+               <span class="block text-6xl sm:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-200 to-amber-500 filter drop-shadow-[0_0_30px_rgba(245,158,11,0.6)] mb-4 animate-pulse scale-110">${currentPromo.rewardCoins}</span>
+               <span class="block text-amber-500 font-black tracking-[0.4em] uppercase text-xs mb-8">B-Coins</span>
+               <span class="block text-sm text-gray-500 max-w-xs mx-auto leading-relaxed border-t border-gray-800 pt-6">Баланс пополнен. Используйте эти активы для расширения своей империи в Blocko Pro.</span>
+            `;
+
+            showMsg('crown', 'bg-amber-500/10 text-amber-500 border border-amber-500/30 shadow-[0_0_50px_rgba(245,158,11,0.2)]', 'ДЖЕКПОТ!', epicRewardHtml);
 
         } catch (err) {
-            alert("Ошибка: " + err.message);
+            // Возвращаем кнопку в исходное состояние
             btn.disabled = false;
             btn.innerHTML = ogBtn;
             lucide.createIcons({ root: btn });
+            
+            // ЭНТЕРПРАЙЗ: Выводим ошибку красиво в интерфейс, а не в системный alert
+            showMsg('alert-triangle', 'bg-red-500/10 text-red-500 border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.1)]', 'Доступ закрыт', `<p class="text-sm text-gray-400 leading-relaxed">${err.message}</p>`);
         }
     }
 
-    function showMsg(icon, colorClasses, title, desc) {
+    function showMsg(icon, colorClasses, title, descHtml) {
         document.getElementById('loadingState').classList.add('hidden');
         document.getElementById('giftCard').classList.add('hidden');
         
         const state = document.getElementById('msgState');
-        document.getElementById('msgIcon').className = `w-20 h-20 mx-auto rounded-3xl flex items-center justify-center mb-6 shadow-inner ${colorClasses}`;
-        document.getElementById('msgIcon').innerHTML = `<i data-lucide="${icon}" class="w-10 h-10"></i>`;
+        document.getElementById('msgIcon').className = `w-24 h-24 mx-auto rounded-[2rem] flex items-center justify-center mb-8 ${colorClasses}`;
+        document.getElementById('msgIcon').innerHTML = `<i data-lucide="${icon}" class="w-12 h-12"></i>`;
         document.getElementById('msgTitle').innerText = title;
-        document.getElementById('msgDesc').innerText = desc;
+        
+        // ЭНТЕРПРАЙЗ ИСПРАВЛЕНИЕ: Используем innerHTML для рендера стилизованных блоков
+        document.getElementById('msgDesc').innerHTML = descHtml;
         
         state.classList.remove('hidden');
+        
+        // Плавное появление с анимацией масштабирования
+        setTimeout(() => {
+            state.classList.remove('opacity-0', 'scale-95');
+            state.classList.add('opacity-100', 'scale-100');
+        }, 50);
+        
         lucide.createIcons();
     }
   </script>
