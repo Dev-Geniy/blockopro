@@ -73,34 +73,38 @@
   <!-- Main Gift Card -->
   <div id="giftCard" class="hidden relative z-10 w-full max-w-lg bg-gray-900/60 glass-panel border border-gray-800 rounded-[3rem] p-8 sm:p-12 text-center shadow-2xl transition-all duration-700 transform scale-95 opacity-0 m-auto">
     
-    <div id="senderBlock" class="hidden flex items-center justify-center gap-3 mb-8 bg-gray-800/50 w-fit mx-auto px-4 py-2 rounded-full border border-gray-700 shadow-inner">
+    <div id="senderBlock" class="hidden flex items-center justify-center gap-3 mb-6 bg-gray-800/50 w-fit mx-auto px-4 py-2 rounded-full border border-gray-700 shadow-inner">
        <img id="senderAvatar" src="" class="w-8 h-8 rounded-full border border-gray-600 shadow-sm" />
        <span class="text-sm font-bold text-gray-200">Подарок от <span id="senderName" class="text-white font-black">User</span></span>
     </div>
 
-    <div class="relative w-48 h-48 mx-auto mb-8 animate-float group cursor-pointer">
+    <!-- Текстовое уведомление над подарком -->
+    <div id="claimHintText" class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 animate-pulse">Нажмите на подарок, чтобы открыть</div>
+
+    <div id="giftImageBtn" onclick="claimGift()" class="relative w-48 h-48 mx-auto mb-8 animate-float group cursor-pointer transition-all duration-300">
        <!-- Многослойное неоновое свечение -->
        <div class="absolute inset-0 bg-rose-500 blur-[60px] opacity-40 rounded-full group-hover:opacity-70 transition-opacity duration-700"></div>
        <div class="absolute inset-0 bg-indigo-500 blur-[60px] opacity-40 rounded-full mix-blend-screen group-hover:opacity-70 transition-opacity duration-700 transform translate-x-4 -translate-y-4"></div>
        
        <!-- Премиальное 3D Изображение подарка -->
-       <img src="https://img.icons8.com/3d-fluency/250/gift.png" alt="3D Gift Box" class="relative z-10 w-full h-full object-contain epic-3d-glow group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-500" />
+       <img src="https://img.icons8.com/3d-fluency/250/gift.png" alt="3D Gift Box" class="relative z-10 w-full h-full object-contain epic-3d-glow group-hover:scale-110 group-hover:-rotate-3 active:scale-90 transition-transform duration-500" />
+       
+       <!-- ЭНТЕРПРАЙЗ: Интегрированный лоадер прямо внутри подарка -->
+       <div id="giftLoader" class="hidden absolute inset-0 z-20 flex flex-col items-center justify-center bg-gray-900/60 rounded-[2rem] backdrop-blur-md opacity-0 transition-opacity duration-300">
+         <i data-lucide="loader-2" class="w-10 h-10 text-white animate-spin"></i>
+       </div>
     </div>
 
     <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">Для вас есть сюрприз!</h1>
     <h2 class="text-xl sm:text-2xl font-black text-rose-400 mb-6" id="giftValue">... B-Coins</h2>
     
-    <div class="bg-indigo-500/10 border border-indigo-500/20 p-5 rounded-2xl mb-8 text-left">
+    <div class="bg-indigo-500/10 border border-indigo-500/20 p-5 rounded-2xl mb-2 text-left">
        <h4 class="text-xs font-black text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><i data-lucide="layers" class="w-4 h-4"></i> Что такое Blocko Pro?</h4>
-       <p class="text-sm text-gray-300 leading-relaxed">
+       <p class="text-sm text-gray-300 leading-relaxed mb-0">
          Это профессиональная PWA-экосистема для управления проектами и бизнесом. Канбан-доски, AI-ассистент, чаты и офлайн-режим. 
          <br><br><span class="text-rose-400 font-bold">Используйте подаренные монеты для оплаты премиум-тарифа или генераций нейросети!</span>
        </p>
     </div>
-
-    <button id="claimBtn" onclick="claimGift()" class="w-full py-4 bg-white text-gray-900 hover:bg-gray-100 font-black text-lg rounded-2xl shadow-xl hover:shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-2">
-       <i data-lucide="unlock" class="w-5 h-5"></i> <span id="claimBtnText">Забрать подарок</span>
-    </button>
   </div>
 
   <!-- Error / Success State (Epic Reward Ritual) -->
@@ -126,9 +130,10 @@
 
     auth.onAuthStateChanged((user) => {
         currentUser = user;
-        // ЭНТЕРПРАЙЗ: Динамически меняем текст кнопки
-        const btnText = document.getElementById('claimBtnText');
-        if (btnText) btnText.innerText = user ? 'Забрать подарок' : 'Авторизоваться и Забрать';
+        
+        // ЭНТЕРПРАЙЗ: Динамически меняем текст подсказки над подарком
+        const hintText = document.getElementById('claimHintText');
+        if (hintText) hintText.innerText = user ? 'Нажмите на подарок, чтобы открыть' : 'Нажмите, чтобы авторизоваться и открыть';
         
         createParticles(); // Запускаем 3D-фоновую анимацию
         initGiftPage();
@@ -233,11 +238,16 @@
             return;
         }
 
-        const btn = document.getElementById('claimBtn');
-        const ogBtn = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Распаковка...';
-        lucide.createIcons({ root: btn });
+        const giftBtn = document.getElementById('giftImageBtn');
+        const giftLoader = document.getElementById('giftLoader');
+        const hintText = document.getElementById('claimHintText');
+        const ogHint = hintText.innerText;
+        
+        // Блокируем интерфейс и показываем лоадер прямо внутри подарка
+        giftBtn.style.pointerEvents = 'none';
+        giftLoader.classList.remove('hidden');
+        setTimeout(() => giftLoader.classList.remove('opacity-0'), 10);
+        hintText.innerText = 'Распаковка...';
 
         try {
             const userRef = db.collection('users').doc(currentUser.uid);
@@ -279,10 +289,11 @@
             showMsg('crown', 'bg-amber-500/10 text-amber-500 border border-amber-500/30 shadow-[0_0_50px_rgba(245,158,11,0.2)]', 'ДЖЕКПОТ!', epicRewardHtml);
 
         } catch (err) {
-            // Возвращаем кнопку в исходное состояние
-            btn.disabled = false;
-            btn.innerHTML = ogBtn;
-            lucide.createIcons({ root: btn });
+            // Возвращаем подарок в исходное состояние при ошибке
+            giftBtn.style.pointerEvents = 'auto';
+            giftLoader.classList.add('opacity-0');
+            setTimeout(() => giftLoader.classList.add('hidden'), 300);
+            hintText.innerText = ogHint;
             
             // ЭНТЕРПРАЙЗ: Выводим ошибку красиво в интерфейс, а не в системный alert
             showMsg('alert-triangle', 'bg-red-500/10 text-red-500 border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.1)]', 'Доступ закрыт', `<p class="text-sm text-gray-400 leading-relaxed">${err.message}</p>`);
