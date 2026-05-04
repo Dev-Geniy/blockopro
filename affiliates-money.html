@@ -214,11 +214,11 @@
               </button>
            </div>
            
-           <!-- Сохраненные ссылки -->
+           <!-- Сохраненные ссылки (Detailed Stats) -->
            <div class="flex-1 border-t border-gray-200 dark:border-gray-800 pt-5">
-               <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Активные трекеры</h4>
-               <div id="savedLinksList" class="space-y-2 max-h-40 overflow-y-auto hide-scroll">
-                   <div class="text-xs text-gray-500 italic">Сгенерируйте и сохраните ссылку, чтобы она появилась здесь.</div>
+               <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Ваши рекламные кампании</h4>
+               <div id="savedLinksList" class="space-y-3 max-h-[300px] overflow-y-auto hide-scroll">
+                   <div class="text-xs text-gray-500 italic p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl">Сгенерируйте и сохраните ссылку, чтобы она появилась здесь.</div>
                </div>
            </div>
         </div>
@@ -583,18 +583,33 @@
       });
   }
 
-  function saveAndCopyCpaLink() {
+  async function saveAndCopyCpaLink() {
+      if (!currentUser) return;
+
       const input = document.getElementById('generatedCpaLink');
       const subId = document.getElementById('subIdInput').value.trim() || 'default';
       const url = input.value;
       
-      // Сохраняем в кэш / локальную переменную (имитация БД для мульти-линков)
       if (!cpaProfile.savedLinks) cpaProfile.savedLinks = [];
       
       const existing = cpaProfile.savedLinks.find(l => l.subId === subId);
       if (!existing) {
-          cpaProfile.savedLinks.push({ subId, url, clicks: 0, createdAt: new Date().toISOString() });
-          // В реальном проекте здесь будет db.collection(...).update(...)
+          cpaProfile.savedLinks.push({ 
+             subId, 
+             url, 
+             clicks: 0, 
+             signups: 0, 
+             sales: 0, 
+             createdAt: new Date().toISOString() 
+          });
+          
+          try {
+             await db.collection('affiliates_cpa').doc(currentUser.uid).update({
+                 savedLinks: cpaProfile.savedLinks
+             });
+          } catch(e) {
+             console.error("Ошибка сохранения ссылки:", e);
+          }
       }
       
       input.select();
@@ -610,19 +625,41 @@
       const links = cpaProfile.savedLinks || [];
       
       if (links.length === 0) {
-          list.innerHTML = '<div class="text-xs text-gray-500 italic">Сгенерируйте и сохраните ссылку, чтобы она появилась здесь.</div>';
+          list.innerHTML = '<div class="text-xs text-gray-500 italic p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl">Сгенерируйте и сохраните ссылку, чтобы она появилась здесь.</div>';
           return;
       }
       
-      list.innerHTML = links.map(link => `
-          <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl group hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors shadow-sm">
-              <div class="flex flex-col min-w-0 pr-4">
-                  <span class="text-xs font-bold text-gray-900 dark:text-white truncate">${link.subId}</span>
-                  <span class="text-[9px] text-gray-500 font-mono truncate">${link.url}</span>
+      // Сортировка: новые сверху
+      const sortedLinks = [...links].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      list.innerHTML = sortedLinks.map(link => `
+          <div class="p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl flex flex-col gap-3 group hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors shadow-sm relative overflow-hidden">
+              <div class="absolute right-0 top-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-indigo-500/10 transition-colors"></div>
+              
+              <div class="flex justify-between items-start relative z-10">
+                 <div class="flex flex-col min-w-0 pr-4">
+                    <span class="font-black text-sm text-gray-900 dark:text-white truncate flex items-center gap-2"><i data-lucide="folder-git-2" class="w-4 h-4 text-indigo-500"></i> ${link.subId}</span>
+                    <span class="text-[10px] text-gray-500 font-mono truncate mt-1">${link.url}</span>
+                 </div>
+                 <button onclick="navigator.clipboard.writeText('${link.url}'); showSystemToast('Скопировано', 'Ссылка ${link.subId} в буфере', 'copy', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30')" class="p-2 bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-indigo-500 rounded-xl transition-colors border border-gray-100 dark:border-gray-700 active:scale-95 flex-shrink-0 shadow-sm">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                 </button>
               </div>
-              <button onclick="navigator.clipboard.writeText('${link.url}'); showSystemToast('Скопировано', 'Ссылка ${link.subId} в буфере', 'copy', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30')" class="p-2 bg-gray-50 dark:bg-gray-900 text-gray-400 hover:text-indigo-500 rounded-lg transition-colors border border-gray-100 dark:border-gray-800 active:scale-95 flex-shrink-0 shadow-sm">
-                  <i data-lucide="copy" class="w-4 h-4"></i>
-              </button>
+
+              <div class="grid grid-cols-3 gap-2 mt-1 border-t border-gray-100 dark:border-gray-800 pt-3 relative z-10">
+                 <div class="flex flex-col">
+                    <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Переходы</span>
+                    <span class="text-sm font-bold text-gray-900 dark:text-white">${link.clicks || 0}</span>
+                 </div>
+                 <div class="flex flex-col border-l border-gray-100 dark:border-gray-800 pl-3">
+                    <span class="text-[9px] font-black text-purple-400 uppercase tracking-widest">Регистрации</span>
+                    <span class="text-sm font-bold text-gray-900 dark:text-white">${link.signups || 0}</span>
+                 </div>
+                 <div class="flex flex-col border-l border-gray-100 dark:border-gray-800 pl-3">
+                    <span class="text-[9px] font-black text-amber-400 uppercase tracking-widest">Продажи</span>
+                    <span class="text-sm font-bold text-gray-900 dark:text-white">${link.sales || 0}</span>
+                 </div>
+              </div>
           </div>
       `).join('');
       lucide.createIcons();
