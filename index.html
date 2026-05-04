@@ -59,8 +59,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-  <!-- ЭНТЕРПРАЙЗ: Ядро для генерации QR-кодов на стороне клиента (Zero-latency) -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -439,10 +437,7 @@
             <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Магазин
           </a>
           <a href="javascript:void(0)" onclick="openAffiliateModal()" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
-             <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Реферальная сеть (Бонусы)
-          </a>
-          <a href="affiliates-money.html" class="text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors flex items-center gap-3 group">
-             <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-all"></div> Партнерская программа ($)
+             <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Реферальная сеть
           </a>
           <a href="products.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
             <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Продукты Blocko
@@ -568,7 +563,7 @@
     </div>
   </div>
 </div>
-
+  
   <!-- Пароль на проект (Enterprise Edition) -->
   <div id="passwordEntryModal" class="hidden fixed inset-0 z-[250] flex items-center justify-center bg-gray-900/80 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4">
   <div class="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-800 text-center transform transition-transform scale-95 overflow-hidden" id="passwordEntryContent">
@@ -1092,16 +1087,8 @@ function debounce(func, timeout = 300) {
     timer = setTimeout(() => { func.apply(this, args); }, timeout);
   };
 }
-  
 // Обернутая функция рендера
 const debouncedRender = debounce(() => renderBoardsGrid());
-
-// ЭНТЕРПРАЙЗ: Системные лимиты тарифов
-const PLANS = {
-    FREE: { id: 'free', name: 'Free', boardsLimit: 1, aiLimit: 10, membersLimit: 3 },
-    FREELANCER: { id: 'freelancer', name: 'Freelancer', boardsLimit: 10, aiLimit: 50, membersLimit: 10 },
-    PRO: { id: 'pro', name: 'Company', boardsLimit: 999, aiLimit: 999, membersLimit: 999 }
-};
   
 let currentUser = null;
 let onlineBoards = [];
@@ -2448,6 +2435,49 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+async function buyStoreItem(itemId, price) {
+  if (!currentUser) return;
+  
+  const affRef = db.collection('affiliates').doc(currentUser.id);
+  const userRef = db.collection('users').doc(currentUser.id);
+  
+  try {
+    const affDoc = await affRef.get();
+    const balance = affDoc.exists ? (affDoc.data().earnedCredits || 0) : 0;
+
+    if (balance < price) {
+      return showSystemToast('Недостаточно баллов', `Нужно еще ${price - balance} кр.`, 'alert-circle', 'text-amber-500', 'bg-amber-50');
+    }
+
+    const batch = db.batch();
+
+    // Списываем баллы
+    batch.update(affRef, { 
+      earnedCredits: firebase.firestore.FieldValue.increment(-price) 
+    });
+
+    // ВЫДАЧА ТОВАРА
+    if (itemId === 'extra_ai') {
+      // Испольуем set с merge, чтобы поле создалось автоматически, если его нет
+      batch.set(userRef, { 
+        bonusAiLimit: firebase.firestore.FieldValue.increment(50) 
+      }, { merge: true });
+    }
+
+    await batch.commit();
+    
+    if (typeof confetti === 'function') {
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
+    }
+
+    showSystemToast('Куплено! 🚀', `Товар "${itemId}" активирован.`, 'check-circle', 'text-green-500', 'bg-green-50');
+    loadAffiliateStats(); 
+  } catch (e) {
+    console.error("Ошибка активации:", e);
+    showSystemToast('Ошибка', 'Не удалось связаться с базой данных.', 'x-circle', 'text-red-500', 'bg-red-50');
+  }
+}
+
 // ==========================================
 // ЛОГИКА КАСТОМНЫХ ОКЕН ПОДТВЕРЖДЕНИЯ
 // ==========================================
@@ -2781,13 +2811,13 @@ function renderUserAvatar(userConfig, sizeClass = "w-11 h-11", idAttr = '', oncl
   if (config.animation === 'flicker') animationClass = "animate-bounce"; 
   
   let badgeIconHtml = '';
-  // ЭНТЕРПРАЙЗ: Используем Inline SVG для мгновенного рендера бейджей (без задержек библиотеки Lucide)
+  // Распределяем иконки геймификации для профиля и карточек
   if (badge === 'ambassador') {
-    badgeIconHtml = `<div class="absolute -top-1.5 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 transform rotate-12 shadow border border-gray-200 dark:border-gray-700 z-10"><svg class="w-3.5 h-3.5 text-amber-500 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg></div>`;
+    badgeIconHtml = `<div class="absolute -top-1.5 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 transform rotate-12 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="crown" class="w-3.5 h-3.5 text-amber-500 fill-current"></i></div>`;
   } else if (badge === 'partner') {
-    badgeIconHtml = `<div class="absolute -bottom-1 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><svg class="w-3 h-3 text-amber-500 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg></div>`;
+    badgeIconHtml = `<div class="absolute -bottom-1 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="award" class="w-3 h-3 text-amber-500 fill-current"></i></div>`;
   } else if (badge === 'friend') {
-    badgeIconHtml = `<div class="absolute -bottom-1 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><svg class="w-3 h-3 text-blue-500 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2-1 4-2 7-2 2.94 0 5.48 1.05 7.29 1.95A1.5 1.5 0 0 1 20 6.3V13Z"/><path d="m9 12 2 2 4-4"/></svg></div>`;
+    badgeIconHtml = `<div class="absolute -bottom-1 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="shield-check" class="w-3 h-3 text-blue-500 fill-current"></i></div>`;
   }
 
   // ЭНТЕРПРАЙЗ ИЗОЛЯЦИЯ: Выделяем эффекты наведения и фиксируем слои
@@ -3334,10 +3364,6 @@ async function applyFrameColor(frameColor, glowColor) {
     let currentQrUrl = '';
 
     function openQrModal(inputId, descText) {
-        if (typeof QRCode === 'undefined') {
-            return showSystemToast('Ошибка', 'Ядро QR не загружено.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
-        }
-        
         const input = document.getElementById(inputId);
         if (!input || !input.value) return;
 
@@ -3346,10 +3372,14 @@ async function applyFrameColor(frameColor, glowColor) {
 
         const canvas = document.getElementById('qrCanvas');
         
+        // Генерация QR-кода на лету
         QRCode.toCanvas(canvas, currentQrUrl, {
             width: 200,
             margin: 1,
-            color: { dark: "#0f172a", light: "#ffffff" }
+            color: {
+                dark: "#0f172a", // Стилизация под Blocko Pro (Сланец)
+                light: "#ffffff"
+            }
         }, function (error) {
             if (error) console.error("QR Engine Error:", error);
         });
@@ -3387,23 +3417,28 @@ async function applyFrameColor(frameColor, glowColor) {
 
     async function shareQrCode() {
         const canvas = document.getElementById('qrCanvas');
+        
         try {
+            // Конвертируем canvas в Blob для отправки в системный шаринг
             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
             const file = new File([blob], 'BlockoPro_Access_QR.png', { type: 'image/png' });
 
+            // Проверка поддержки нативного шаринга файлов (Web Share API Level 2)
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     title: 'Blocko Pro',
-                    text: 'Присоединяйся ко мне в Blocko Pro!\n' + currentQrUrl,
+                    text: 'Привет! Присоединяйся ко мне в Blocko Pro:\n' + currentQrUrl,
                     files: [file]
                 });
-                showSystemToast('Отправлено', 'QR-код успешно отправлен.', 'check-circle', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
+                showSystemToast('Отправлено', 'QR-код и ссылка успешно отправлены.', 'check-circle', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
             } else {
                 throw new Error('Native file share is not supported');
             }
         } catch (error) {
+            console.warn('Share API fallback:', error);
+            // Фолбэк для десктопов, где шаринг файлов не поддерживается
             navigator.clipboard.writeText(currentQrUrl);
-            showSystemToast('Скопировано', 'Системный шаринг недоступен. Ссылка скопирована.', 'copy', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
+            showSystemToast('Скопировано', 'Файловый шаринг недоступен на этом устройстве. Ссылка скопирована в буфер.', 'copy', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
         }
     }
   </script>
