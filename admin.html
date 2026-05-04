@@ -68,6 +68,9 @@
     <button id="navLogs" onclick="switchTab('viewLogs')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
       <i data-lucide="activity" class="w-5 h-5"></i><span class="hidden lg:block text-sm">Логи системы</span>
     </button>
+    <button id="navCPA" onclick="switchTab('viewCPA')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
+      <i data-lucide="network" class="w-5 h-5"></i><span class="hidden lg:block text-sm">CPA Сеть</span>
+    </button>
     <div class="h-px bg-gray-800 my-2 mx-4 hidden lg:block"></div>
     <button onclick="window.location.href='index.html'" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start">
       <i data-lucide="log-out" class="w-5 h-5"></i><span class="hidden lg:block text-sm">Выйти в App</span>
@@ -386,6 +389,66 @@
       </div>
     </div>
 
+    <!-- VIEW: CPA NETWORK -->
+    <div id="viewCPA" class="hidden animate-fade-in-up relative z-10">
+      <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md">
+         <div class="flex justify-between items-center mb-8">
+            <h3 class="text-2xl font-black text-white flex items-center gap-3"><i data-lucide="network" class="w-8 h-8 text-indigo-500"></i> Партнерская сеть (CPA)</h3>
+            <button onclick="loadCpaNetwork()" class="p-3 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-xl transition-colors border border-gray-700 shadow-sm" title="Обновить"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+         </div>
+
+         <!-- Статистика CPA -->
+         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Партнеров (Активных)</div>
+                <div class="text-2xl font-black text-white" id="statCpaPartners">0</div>
+              </div>
+              <div class="p-3 bg-indigo-500/10 text-indigo-500 rounded-xl"><i data-lucide="users" class="w-6 h-6"></i></div>
+            </div>
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Суммарный оборот ($)</div>
+                <div class="text-2xl font-black text-emerald-400" id="statCpaRevenue">$0.00</div>
+              </div>
+              <div class="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl"><i data-lucide="dollar-sign" class="w-6 h-6"></i></div>
+            </div>
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Всего хостов (Клики)</div>
+                <div class="text-2xl font-black text-blue-400" id="statCpaClicks">0</div>
+              </div>
+              <div class="p-3 bg-blue-500/10 text-blue-500 rounded-xl"><i data-lucide="mouse-pointer-click" class="w-6 h-6"></i></div>
+            </div>
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Запросы на вывод</div>
+                <div class="text-2xl font-black text-rose-400" id="statCpaWithdrawals">0</div>
+              </div>
+              <div class="p-3 bg-rose-500/10 text-rose-500 rounded-xl"><i data-lucide="arrow-up-circle" class="w-6 h-6"></i></div>
+            </div>
+         </div>
+
+         <!-- Таблица партнеров -->
+         <div class="overflow-x-auto hide-scroll bg-gray-800/30 rounded-2xl border border-gray-700/50">
+             <table class="w-full text-left border-collapse">
+               <thead class="bg-gray-800/50 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-700">
+                 <tr>
+                   <th class="px-6 py-4 rounded-tl-2xl">Партнер</th>
+                   <th class="px-6 py-4 text-center">Ранг & RevShare</th>
+                   <th class="px-6 py-4 text-center">Хосты / Рег / Sales</th>
+                   <th class="px-6 py-4 text-center">Баланс ($)</th>
+                   <th class="px-6 py-4 text-right rounded-tr-2xl">Действия</th>
+                 </tr>
+               </thead>
+               <tbody id="cpaPartnersTbody" class="divide-y divide-gray-700/50">
+                  <!-- JS Injects -->
+               </tbody>
+             </table>
+         </div>
+      </div>
+    </div>
+
   </div>
 </main>
 
@@ -599,10 +662,7 @@
             return;
         }
 
-
-
-
-      // ЭНТЕРПРАЙЗ: Железный занавес безопасности (Real-time RBAC Barrier)
+    // ЭНТЕРПРАЙЗ: Железный занавес безопасности (Real-time RBAC Barrier)
     const ownerEmail = 'uajerryua@gmail.com';
     let hasAccess = user.email === ownerEmail;
 
@@ -684,6 +744,7 @@
       loadPromos(); // ЭНТЕРПРАЙЗ: Загрузка модуля промо-кампаний
       loadSupportTickets(); // ЭНТЕРПРАЙЗ: Загрузка Helpdesk
       loadQuestSubmissions(); // ЭНТЕРПРАЙЗ: Загрузка модерации квестов
+      loadCpaNetwork(); // ЭНТЕРПРАЙЗ: Загрузка партнерской CPA-сети
 
       // Убираем лоадер
       const loader = document.getElementById('loader');
@@ -1100,7 +1161,7 @@
 
   // --- TAB ROUTER ---
   function switchTab(tabId) {
-     ['viewDatabase', 'viewPromo', 'viewQuests', 'viewSupport', 'viewLogs'].forEach(id => {
+     ['viewDatabase', 'viewPromo', 'viewQuests', 'viewSupport', 'viewLogs', 'viewCPA'].forEach(id => {
          document.getElementById(id).classList.add('hidden');
      });
      
@@ -1110,6 +1171,7 @@
      document.getElementById('navQuests').className = baseClass;
      document.getElementById('navSupport').className = baseClass;
      document.getElementById('navLogs').className = baseClass;
+     document.getElementById('navCPA').className = baseClass;
 
      document.getElementById(tabId).classList.remove('hidden');
      
@@ -1123,6 +1185,8 @@
          document.getElementById('navSupport').className = "flex items-center gap-3 p-3 lg:px-4 bg-rose-500/10 text-rose-400 rounded-xl font-bold border border-rose-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
      } else if (tabId === 'viewLogs') {
          document.getElementById('navLogs').className = "flex items-center gap-3 p-3 lg:px-4 bg-blue-500/10 text-blue-400 rounded-xl font-bold border border-blue-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
+     } else if (tabId === 'viewCPA') {
+         document.getElementById('navCPA').className = "flex items-center gap-3 p-3 lg:px-4 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold border border-indigo-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
      }
   }
 
@@ -1630,6 +1694,120 @@
       } catch (e) {
           alert('Ошибка обработки: ' + e.message);
       }
+  }
+
+  // --- CPA NETWORK ENGINE ---
+  let allCpaPartners = [];
+
+  async function loadCpaNetwork() {
+      try {
+          const snap = await db.collection('affiliates_cpa').get();
+          allCpaPartners = [];
+          let totalRevenue = 0;
+          let totalClicks = 0;
+          let pendingWithdrawals = 0; // Для будущей логики статусов вывода
+          
+          snap.forEach(doc => {
+              const data = doc.data();
+              if(data.isActive) {
+                  allCpaPartners.push({ id: doc.id, ...data });
+                  totalRevenue += (data.balanceUSD || 0);
+                  totalClicks += (data.clicks || 0);
+                  // Подсчитываем заявки на вывод (предполагаем наличие массива withdrawals)
+                  if(data.withdrawals) {
+                      pendingWithdrawals += data.withdrawals.filter(w => w.status === 'pending').length;
+                  }
+              }
+          });
+
+          // Обновляем статистику
+          document.getElementById('statCpaPartners').innerText = allCpaPartners.length;
+          document.getElementById('statCpaRevenue').innerText = '$' + totalRevenue.toFixed(2);
+          document.getElementById('statCpaClicks').innerText = totalClicks;
+          document.getElementById('statCpaWithdrawals').innerText = pendingWithdrawals;
+
+          renderCpaNetwork();
+      } catch (e) {
+          console.error("CPA Network load error:", e);
+      }
+  }
+
+  function renderCpaNetwork() {
+      const tbody = document.getElementById('cpaPartnersTbody');
+      if (!tbody) return;
+
+      if (allCpaPartners.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-xs text-gray-500 font-bold uppercase tracking-widest">Нет активных партнеров</td></tr>';
+          return;
+      }
+
+      // Сортировка по балансу (или продажам)
+      const sorted = allCpaPartners.sort((a, b) => (b.balanceUSD || 0) - (a.balanceUSD || 0));
+
+      tbody.innerHTML = sorted.map(p => {
+          // Ищем профиль пользователя для аватара и имени
+          const userProfile = allUsers.find(u => u.uid === p.id) || {};
+          const safeName = userProfile.name || 'Аноним Партнер';
+          const safeEmail = userProfile.email || p.id;
+          const safeAvatar = userProfile.customAvatar || userProfile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+
+          // Определение ранга по продажам
+          const totalSales = p.sales || 0;
+          let rankName = 'Silver';
+          let revShare = 30;
+          let rankColor = 'text-gray-400 bg-gray-800 border-gray-700';
+          
+          if (totalSales >= 50) {
+              rankName = 'Platinum';
+              revShare = 50;
+              rankColor = 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30';
+          } else if (totalSales >= 10) {
+              rankName = 'Gold';
+              revShare = 40;
+              rankColor = 'text-amber-400 bg-amber-500/10 border-amber-500/30';
+          }
+
+          const balance = (p.balanceUSD || 0).toFixed(2);
+          const metrics = `${p.clicks || 0} / ${p.signups || 0} / ${totalSales}`;
+
+          return `
+            <tr class="hover:bg-gray-800/40 transition-colors group">
+               <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                     <img src="${safeAvatar}" class="w-10 h-10 rounded-full border border-gray-700 object-cover shadow-sm" />
+                     <div>
+                        <div class="text-sm font-bold text-white line-clamp-1">${safeName}</div>
+                        <div class="text-[10px] text-gray-500 font-mono mt-0.5">${safeEmail}</div>
+                     </div>
+                  </div>
+               </td>
+               <td class="px-6 py-4 text-center">
+                  <div class="inline-flex flex-col items-center">
+                     <span class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${rankColor}">${rankName}</span>
+                     <span class="text-[10px] text-gray-400 mt-1 font-bold">${revShare}% Share</span>
+                  </div>
+               </td>
+               <td class="px-6 py-4 text-center text-sm font-bold text-gray-300 tracking-wider">
+                  ${metrics}
+               </td>
+               <td class="px-6 py-4 text-center">
+                  <span class="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20 shadow-inner">
+                     $${balance}
+                  </span>
+               </td>
+               <td class="px-6 py-4 text-right">
+                 <button onclick="inspectCpaPartner('${p.id}')" class="p-2 text-gray-400 hover:text-indigo-400 bg-gray-800 hover:bg-indigo-500/10 rounded-xl transition-all shadow-sm active:scale-95 border border-transparent hover:border-indigo-500/30 inline-block" title="Детали и Выплаты">
+                   <i data-lucide="external-link" class="w-4 h-4"></i>
+                 </button>
+               </td>
+            </tr>
+          `;
+      }).join('');
+      lucide.createIcons();
+  }
+
+  function inspectCpaPartner(partnerId) {
+      showToast('Детальный инспект партнера находится в разработке. ID: ' + partnerId);
   }
 
   // --- SYSTEM HELPERS ---
