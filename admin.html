@@ -1794,17 +1794,15 @@
           return;
       }
 
-      // Сортировка по балансу (или продажам)
+      // Сортировка по балансу
       const sorted = allCpaPartners.sort((a, b) => (b.balanceUSD || 0) - (a.balanceUSD || 0));
 
       tbody.innerHTML = sorted.map(p => {
-          // Ищем профиль пользователя для аватара и имени
           const userProfile = allUsers.find(u => u.uid === p.id) || {};
           const safeName = userProfile.name || 'Аноним Партнер';
           const safeEmail = userProfile.email || p.id;
           const safeAvatar = userProfile.customAvatar || userProfile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
 
-          // Определение ранга по продажам
           const totalSales = p.sales || 0;
           let rankName = 'Silver';
           let revShare = 30;
@@ -1849,8 +1847,9 @@
                   </span>
                </td>
                <td class="px-6 py-4 text-right">
-                 <button onclick="inspectCpaPartner('${p.id}')" class="p-2 text-gray-400 hover:text-indigo-400 bg-gray-800 hover:bg-indigo-500/10 rounded-xl transition-all shadow-sm active:scale-95 border border-transparent hover:border-indigo-500/30 inline-block" title="Детали и Выплаты">
-                   <i data-lucide="external-link" class="w-4 h-4"></i>
+                 <!-- КРИТИЧЕСКИЙ ФИКС: Явный перехват кликов и отключение событий на иконке -->
+                 <button onclick="event.stopPropagation(); event.preventDefault(); inspectCpaPartner('${p.id}')" class="p-2 text-gray-400 hover:text-indigo-400 bg-gray-800 hover:bg-indigo-500/10 rounded-xl transition-all shadow-sm active:scale-95 border border-transparent hover:border-indigo-500/30 inline-block" title="Детали и Выплаты">
+                   <i data-lucide="external-link" class="w-4 h-4 pointer-events-none"></i>
                  </button>
                </td>
             </tr>
@@ -1864,10 +1863,19 @@
           const partner = allCpaPartners.find(p => p.id === partnerId);
           const userProfile = allUsers.find(u => u.uid === partnerId) || {};
           
-          if (!partner) return;
+          if (!partner) {
+             alert(`Ошибка: Партнер с ID ${partnerId} не найден в массиве allCpaPartners.`);
+             return;
+          }
           
-          currentEditUid = partnerId; // Глобальный ID для операций корректировки
+          currentEditUid = partnerId; 
           
+          let modal = document.getElementById('cpaInspectModal');
+          if (!modal) {
+             alert('Критическая ошибка: Элемент cpaInspectModal не существует в DOM. Проверьте верстку HTML-модального окна.');
+             return;
+          }
+
           const safeName = userProfile.name || 'Аноним Партнер';
           const safeEmail = userProfile.email || partnerId;
           const safeAvatar = userProfile.customAvatar || userProfile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
@@ -1879,11 +1887,9 @@
           
           document.getElementById('cpaInspectSales').innerText = partner.sales || 0;
           
-          // Безопасный парсинг баланса
           const currentBal = parseFloat(partner.balanceUSD) || 0;
           document.getElementById('cpaInspectBal').innerText = '$' + currentBal.toFixed(2);
           
-          // Вычисляем суммарный заработок с жесткой типизацией
           const history = partner.history || [];
           let totalEarned = 0;
           history.forEach(tx => {
@@ -1892,12 +1898,10 @@
           });
           document.getElementById('cpaInspectTotal').innerText = '$' + totalEarned.toFixed(2);
           
-          // Рендер истории
           const historyEl = document.getElementById('cpaInspectHistory');
           if (history.length === 0) {
               historyEl.innerHTML = '<div class="text-center text-xs text-gray-500 py-6 font-bold uppercase tracking-widest">Транзакций нет</div>';
           } else {
-              // Клонируем массив перед сортировкой, чтобы избежать ошибки Read-Only
               const sortedHistory = [...history].sort((a, b) => {
                   const timeA = a.date ? new Date(a.date).getTime() : 0;
                   const timeB = b.date ? new Date(b.date).getTime() : 0;
@@ -1919,7 +1923,6 @@
                   }
                   
                   let actionHtml = '';
-                  // Если транзакция - это запрос на вывод
                   if (amt < 0 && tx.status === 'pending') {
                       actionHtml = `
                         <div class="flex items-center gap-2 mt-2">
@@ -1950,16 +1953,19 @@
           
           lucide.createIcons();
           
-          const modal = document.getElementById('cpaInspectModal');
           const content = document.getElementById('cpaInspectContent');
+          
+          // Принудительный сброс display (на случай конфликтов Tailwind-классов)
           modal.classList.remove('hidden');
+          modal.style.display = 'flex';
+          
           setTimeout(() => {
               modal.classList.remove('opacity-0');
               content.classList.remove('scale-95');
           }, 10);
       } catch (err) {
           console.error("Ошибка при открытии деталей партнера:", err);
-          showToast('Системная ошибка при рендере данных.');
+          alert("Критическая ошибка UI: " + err.message);
       }
   }
 
@@ -1968,7 +1974,10 @@
       const content = document.getElementById('cpaInspectContent');
       modal.classList.add('opacity-0');
       content.classList.add('scale-95');
-      setTimeout(() => modal.classList.add('hidden'), 300);
+      setTimeout(() => {
+          modal.classList.add('hidden');
+          modal.style.display = ''; // Сбрасываем инлайн-стиль
+      }, 300);
   }
 
   async function adjustCpaBalance() {
@@ -1997,8 +2006,8 @@
 
           input.value = '';
           showToast('Баланс партнера успешно обновлен!');
-          loadCpaNetwork(); // Перерендериваем таблицу админки
-          setTimeout(() => inspectCpaPartner(currentEditUid), 500); // Обновляем модалку
+          loadCpaNetwork(); 
+          setTimeout(() => inspectCpaPartner(currentEditUid), 500); 
 
       } catch (e) {
           console.error(e);
@@ -2039,7 +2048,6 @@
           if (txIndex > -1) {
               history[txIndex].status = 'rejected';
               
-              // Возвращаем средства через компенсационную транзакцию
               history.push({
                   id: 'tx_refund_' + Date.now(),
                   amount: refundAmount,
