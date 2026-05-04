@@ -162,13 +162,14 @@
       </div>
 
       <!-- Блок 3: Квесты -->
-      <div class="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] shadow-sm flex flex-col items-center text-center transition-all duration-500 relative overflow-hidden opacity-70">
-         <div class="relative w-20 h-20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-[1.5rem] flex items-center justify-center mb-6 border border-emerald-100 dark:border-emerald-900 shadow-inner">
+      <div onclick="openQuestsModal()" class="cursor-pointer bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-emerald-500/10 flex flex-col items-center text-center transition-all duration-500 relative overflow-hidden group">
+         <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+         <div class="relative w-20 h-20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-[1.5rem] flex items-center justify-center mb-6 border border-emerald-100 dark:border-emerald-900 transition-transform duration-500 group-hover:scale-110 shadow-inner">
            <i data-lucide="check-square" class="w-10 h-10 relative z-10"></i>
          </div>
-         <h3 class="font-extrabold text-xl mb-2 text-gray-900 dark:text-white tracking-tight">Квесты</h3>
-         <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 flex-1 leading-relaxed">Выполняй задания и забирай по 100 кр. в день.</p>
-         <button disabled class="w-full py-3.5 rounded-2xl text-[10px] uppercase tracking-widest font-black transition-all flex items-center justify-center gap-2 bg-gray-200 dark:bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-300 dark:border-gray-700"><i data-lucide="lock" class="w-4 h-4"></i> В разработке</button>
+         <h3 class="font-extrabold text-xl mb-2 text-gray-900 dark:text-white tracking-tight">Центр заданий</h3>
+         <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 flex-1 leading-relaxed">Выполняй квесты и забирай ценные награды.</p>
+         <button class="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 active:scale-95 relative z-10"><i data-lucide="play" class="w-5 h-5"></i> Открыть квесты</button>
       </div>
 
     </div>
@@ -331,7 +332,98 @@
   </div>
 </div>
 
-<div id="globalToast" class="fixed bottom-6 right-6 z-[500] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30"><i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i></div>
+<!-- Quests Modal (Энтерпрайз Геймификация) -->
+<div id="questsModal" class="hidden fixed inset-0 z-[460] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-xl opacity-0 transition-opacity duration-500 px-4 py-10 overflow-y-auto">
+  <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[3rem] w-full max-w-2xl shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto transform scale-95 transition-transform duration-500" id="questsContent">
+    
+    <div class="absolute -top-32 -left-32 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <button onclick="closeQuestsModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
+
+    <div class="text-center mb-8 relative z-10">
+      <div class="mx-auto w-20 h-20 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-[1.5rem] flex items-center justify-center mb-4 shadow-inner border border-emerald-100 dark:border-emerald-800/50">
+        <i data-lucide="target" class="w-10 h-10"></i>
+      </div>
+      <h2 class="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Задания и награды</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Выполняйте квесты, чтобы быстро накопить баланс.</p>
+    </div>
+
+    <div class="space-y-8 relative z-10">
+        <!-- Ежедневные задания -->
+        <div>
+            <h3 class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4"></i> Ежедневные квесты</h3>
+            <div class="space-y-3">
+                <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-white dark:bg-gray-900 text-blue-500 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 group-hover:scale-110 transition-transform"><i data-lucide="door-open" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Открытие Бонусного Центра</h4>
+                            <p class="text-[10px] text-gray-500 font-bold mt-1 uppercase tracking-widest">Награда: <span class="text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md ml-1">+10 кр.</span></p>
+                        </div>
+                    </div>
+                    <button id="btnQuestLogin" onclick="claimDailyQuest('login', 10)" class="w-full sm:w-auto px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0"><i data-lucide="download" class="w-4 h-4"></i> Забрать</button>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-sky-300 dark:hover:border-sky-700 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-white dark:bg-gray-900 text-sky-500 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 group-hover:scale-110 transition-transform"><i data-lucide="send" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Поделиться платформой в Telegram</h4>
+                            <p class="text-[10px] text-gray-500 font-bold mt-1 uppercase tracking-widest">Награда: <span class="text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md ml-1">+50 кр.</span></p>
+                        </div>
+                    </div>
+                    <button id="btnQuestTelegram" onclick="claimDailyQuest('telegram', 50)" class="w-full sm:w-auto px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0"><i data-lucide="external-link" class="w-4 h-4"></i> Выполнить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Глобальные задания (С ручной проверкой) -->
+        <div>
+            <h3 class="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-4 flex items-center gap-2"><i data-lucide="flame" class="w-4 h-4"></i> Уникальные квесты</h3>
+            <div class="space-y-4">
+                
+                <!-- Эпическое -->
+                <div class="bg-gradient-to-br from-purple-500/5 to-pink-500/5 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800/50 p-5 rounded-2xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-purple-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-bl-xl shadow-sm">Эпическое</div>
+                    <div class="flex items-start gap-4 mb-4 mt-2">
+                        <div class="p-3 bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-xl shadow-inner border border-purple-200 dark:border-purple-800 flex-shrink-0"><i data-lucide="edit-3" class="w-6 h-6"></i></div>
+                        <div>
+                            <h4 class="font-extrabold text-gray-900 dark:text-white mb-1">Написать статью о Blocko Pro</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-2">Опубликуйте текстовый обзор платформы на любом сайте, блоге или форуме.</p>
+                            <p class="text-[10px] font-black uppercase tracking-widest">Награда: <span class="text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md ml-1">+300 кр.</span></p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2 relative z-10 pt-2">
+                        <input type="text" id="questArticleLink" placeholder="Вставьте ссылку на статью (http://...)" class="flex-1 bg-white dark:bg-gray-900 border border-purple-200 dark:border-purple-700/50 rounded-xl px-4 py-3 text-xs font-bold dark:text-white outline-none focus:border-purple-500 transition-colors shadow-inner">
+                        <button id="btnQuestArticle" onclick="submitSpecialQuest('article')" class="w-full sm:w-auto px-5 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0">Отправить</button>
+                    </div>
+                </div>
+
+                <!-- Мифическое -->
+                <div class="bg-gradient-to-br from-amber-500/5 to-orange-500/5 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800/50 p-5 rounded-2xl relative overflow-hidden shadow-[0_0_15px_rgba(245,158,11,0.05)]">
+                    <div class="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-bl-xl shadow-sm">Мифическое</div>
+                    <div class="flex items-start gap-4 mb-4 mt-2">
+                        <div class="p-3 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-xl shadow-inner border border-amber-200 dark:border-amber-800 flex-shrink-0"><i data-lucide="video" class="w-6 h-6"></i></div>
+                        <div>
+                            <h4 class="font-extrabold text-gray-900 dark:text-white mb-1">Снять видеообзор</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-2">Опубликуйте качественный видеообзор о том, как вы используете Blocko Pro, на YouTube, TikTok или Reels.</p>
+                            <p class="text-[10px] font-black uppercase tracking-widest">Награда: <span class="text-amber-600 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-md ml-1">Тариф COMPANY</span></p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2 relative z-10 pt-2">
+                        <input type="text" id="questVideoLink" placeholder="Вставьте ссылку на видео (http://...)" class="flex-1 bg-white dark:bg-gray-900 border border-amber-200 dark:border-amber-700/50 rounded-xl px-4 py-3 text-xs font-bold dark:text-white outline-none focus:border-amber-500 transition-colors shadow-inner">
+                        <button id="btnQuestVideo" onclick="submitSpecialQuest('video')" class="w-full sm:w-auto px-5 py-3 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0">Отправить</button>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+    
+  </div>
+</div>
+
+<div id="globalToast" class="fixed bottom-6 right-6 z-[500] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
+  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30"><i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i></div>
   <div><h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4><p id="toastDesc" class="text-xs text-gray-500 leading-relaxed"></p></div>
 </div>
 
@@ -843,6 +935,7 @@
     if (e.target.id === 'customConfirmModal') closeConfirmModal();
     if (e.target.id === 'giftLinkModal') closeGiftLinkModal();
     if (e.target.id === 'dailyGiftModal') closeDailyGiftModal();
+    if (e.target.id === 'questsModal') closeQuestsModal();
   });
   
   document.addEventListener('keydown', (e) => {
@@ -852,8 +945,165 @@
       if (!document.getElementById('customConfirmModal').classList.contains('hidden')) closeConfirmModal();
       if (!document.getElementById('giftLinkModal').classList.contains('hidden')) closeGiftLinkModal();
       if (!document.getElementById('dailyGiftModal').classList.contains('hidden')) closeDailyGiftModal();
+      if (!document.getElementById('questsModal').classList.contains('hidden')) closeQuestsModal();
     }
   });
+
+  // --- ЭНТЕРПРАЙЗ: ЛОГИКА ЦЕНТРА ЗАДАНИЙ (КВЕСТЫ) ---
+  
+  function openQuestsModal() {
+      const modal = document.getElementById('questsModal');
+      const content = document.getElementById('questsContent');
+      
+      renderQuestsStatus(); // Подтягиваем статусы заданий перед показом
+      
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+          modal.classList.remove('opacity-0');
+          content.classList.remove('scale-95');
+          content.classList.add('scale-100');
+      }, 10);
+  }
+
+  function closeQuestsModal() {
+      const modal = document.getElementById('questsModal');
+      const content = document.getElementById('questsContent');
+      modal.classList.add('opacity-0');
+      content.classList.remove('scale-100');
+      content.classList.add('scale-95');
+      setTimeout(() => modal.classList.add('hidden'), 500);
+  }
+
+  async function renderQuestsStatus() {
+      if (!currentUser) return;
+      
+      const todayStr = new Date().toLocaleDateString('ru-RU');
+      
+      // Блокируем выполненные сегодня кнопки
+      if (currentUserData.dailyQuestsDate === todayStr && currentUserData.dailyQuests) {
+          if (currentUserData.dailyQuests.includes('login')) disableQuestBtn('btnQuestLogin');
+          if (currentUserData.dailyQuests.includes('telegram')) disableQuestBtn('btnQuestTelegram');
+      }
+  }
+
+  function disableQuestBtn(id) {
+      const btn = document.getElementById(id);
+      if(btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Выполнено';
+          btn.className = "w-full sm:w-auto px-5 py-3 bg-gray-100 dark:bg-gray-800 text-gray-400 font-bold rounded-xl border border-gray-200 dark:border-gray-700 text-xs cursor-not-allowed flex items-center justify-center gap-2 flex-shrink-0";
+          lucide.createIcons({ root: btn.parentNode });
+      }
+  }
+
+  async function claimDailyQuest(type, amount) {
+      if (!currentUser) return showSystemToast('Доступ закрыт', 'Авторизуйтесь для выполнения квестов.', 'lock', 'text-amber-500', 'bg-amber-50');
+      
+      const btnId = type === 'login' ? 'btnQuestLogin' : 'btnQuestTelegram';
+      const btn = document.getElementById(btnId);
+      
+      const ogHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
+      lucide.createIcons({ root: btn.parentNode });
+
+      try {
+          const userRef = db.collection('users').doc(currentUser.uid);
+          const affRef = db.collection('affiliates').doc(currentUser.uid);
+          const todayStr = new Date().toLocaleDateString('ru-RU');
+
+          let completedToday = [];
+          if (currentUserData.dailyQuestsDate === todayStr && currentUserData.dailyQuests) {
+              completedToday = currentUserData.dailyQuests;
+          }
+
+          if (completedToday.includes(type)) {
+              throw new Error('Вы уже выполнили это задание сегодня.');
+          }
+
+          // Выполняем транзакцию
+          const batch = db.batch();
+          batch.set(userRef, {
+              dailyQuestsDate: todayStr,
+              dailyQuests: firebase.firestore.FieldValue.arrayUnion(type)
+          }, { merge: true });
+
+          batch.set(affRef, {
+              earnedCredits: firebase.firestore.FieldValue.increment(amount)
+          }, { merge: true });
+
+          await batch.commit();
+
+          // Логика конкретных заданий (Шаринг)
+          if (type === 'telegram') {
+              const url = encodeURIComponent(window.location.origin + window.location.pathname.replace('store.html', ''));
+              const text = encodeURIComponent("Присоединяйтесь ко мне в Blocko Pro!");
+              window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank', 'width=600,height=400');
+          }
+
+          // Обновляем локальные данные, чтобы не тянуть из базы снова
+          currentUserData.dailyQuestsDate = todayStr;
+          if(!currentUserData.dailyQuests) currentUserData.dailyQuests = [];
+          currentUserData.dailyQuests.push(type);
+
+          if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 60, origin: { y: 0.7 }, zIndex: 9999 });
+          showSystemToast('Квест выполнен!', `Вам начислено ${amount} кредитов.`, 'check-square', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+          
+          loadBalances();
+          disableQuestBtn(btnId);
+
+      } catch (e) {
+          btn.disabled = false;
+          btn.innerHTML = ogHtml;
+          lucide.createIcons({ root: btn.parentNode });
+          showSystemToast('Внимание', e.message, 'alert-triangle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+      }
+  }
+
+  async function submitSpecialQuest(type) {
+      if (!currentUser) return showSystemToast('Доступ закрыт', 'Авторизуйтесь для выполнения квестов.', 'lock', 'text-amber-500', 'bg-amber-50');
+      
+      const inputId = type === 'article' ? 'questArticleLink' : 'questVideoLink';
+      const btnId = type === 'article' ? 'btnQuestArticle' : 'btnQuestVideo';
+      const linkInput = document.getElementById(inputId);
+      const link = linkInput.value.trim();
+
+      if (!link || !link.startsWith('http')) {
+          return showSystemToast('Ошибка', 'Введите корректную ссылку, начинающуюся с http:// или https://', 'alert-circle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+      }
+
+      const btn = document.getElementById(btnId);
+      const ogHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
+      lucide.createIcons({ root: btn.parentNode });
+
+      try {
+          // Создаем заявку в отдельной коллекции для админ-панели
+          await db.collection('quest_submissions').add({
+              userId: currentUser.uid,
+              userName: currentUserData.name || 'User',
+              userEmail: currentUser.email || 'Скрыт',
+              type: type,
+              link: link,
+              status: 'pending',
+              createdAt: new Date().toISOString()
+          });
+
+          linkInput.value = '';
+          btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Отправлено';
+          btn.className = "w-full sm:w-auto px-5 py-3 bg-emerald-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0 cursor-default";
+          lucide.createIcons({ root: btn.parentNode });
+          
+          showSystemToast('Заявка принята!', 'Ваша работа отправлена на ручную проверку. Награда будет начислена администратором.', 'send', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
+
+      } catch (e) {
+          btn.disabled = false;
+          btn.innerHTML = ogHtml;
+          lucide.createIcons({ root: btn.parentNode });
+          showSystemToast('Ошибка', 'Не удалось отправить заявку в базу.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+      }
+  }
 
   // --- ЛОГИКА АКТИВАЦИИ ПРОМОКОДОВ В МАГАЗИНЕ ---
   async function activatePromoCode(inputId = 'storePromoCodeInput', btnId = 'activateStorePromoBtn') {
