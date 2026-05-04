@@ -533,6 +533,36 @@
       </div>
   </div>
 </div>
+
+<!-- ЭНТЕРПРАЙЗ: QR-Share Engine Modal -->
+<div id="qrCodeModal" class="hidden fixed inset-0 z-[600] flex items-center justify-center bg-gray-900/80 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-800 text-center transform scale-95 transition-transform flex flex-col items-center" id="qrCodeContent">
+    <button onclick="closeQrModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-5 h-5"></i></button>
+
+    <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-2xl flex items-center justify-center mb-4 shadow-inner border border-indigo-100 dark:border-indigo-800/50">
+      <i data-lucide="qr-code" class="w-8 h-8"></i>
+    </div>
+
+    <h2 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight mb-2">Ваш QR-код</h2>
+    <p id="qrCodeDesc" class="text-xs text-gray-500 font-medium leading-relaxed mb-6">
+      Отсканируйте код, чтобы перейти по ссылке.
+    </p>
+
+    <div class="bg-white p-3 rounded-[2rem] shadow-lg border border-gray-100 dark:border-gray-700 mb-8 relative group">
+       <canvas id="qrCanvas" class="rounded-xl w-48 h-48 mx-auto"></canvas>
+       <div class="absolute inset-0 bg-indigo-500/10 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+    </div>
+
+    <div class="flex items-center justify-center gap-3 w-full">
+       <button onclick="downloadQrCode()" class="flex-1 py-3.5 text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 bg-gray-50 hover:bg-blue-50 dark:bg-gray-800 dark:hover:bg-blue-900/20 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 border border-gray-100 dark:border-gray-700">
+         <i data-lucide="download" class="w-4 h-4"></i> Сохранить
+       </button>
+       <button onclick="shareQrCode()" class="flex-1 py-3.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-white dark:hover:text-white bg-indigo-50 hover:bg-indigo-500 dark:bg-indigo-900/30 dark:hover:bg-indigo-600 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 border border-indigo-100 dark:border-indigo-800/50">
+         <i data-lucide="share-2" class="w-4 h-4"></i> Отправить
+       </button>
+    </div>
+  </div>
+</div>
   
   <!-- Пароль на проект (Enterprise Edition) -->
   <div id="passwordEntryModal" class="hidden fixed inset-0 z-[250] flex items-center justify-center bg-gray-900/80 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4">
@@ -925,9 +955,12 @@
       <label class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2">
         <i data-lucide="link" class="w-4 h-4"></i> Ваша уникальная ссылка
       </label>
-      <div class="flex flex-col sm:flex-row gap-4">
+      <div class="flex flex-col sm:flex-row gap-3">
         <input type="text" id="affiliateLinkInput" readonly class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:border-blue-500 rounded-2xl px-6 py-4 text-sm font-mono dark:text-gray-300 outline-none transition-colors shadow-sm">
-        <button onclick="copyAffiliateLink()" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap">
+        <button onclick="openQrModal('affiliateLinkInput', 'Отсканируйте этот код для мгновенного присоединения к вашей реферальной сети.')" class="px-6 py-4 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 font-bold rounded-2xl shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap border border-indigo-200 dark:border-indigo-800/50">
+          <i data-lucide="qr-code" class="w-5 h-5"></i> QR-код
+        </button>
+        <button onclick="copyAffiliateLink()" class="px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap">
           <i data-lucide="copy" class="w-5 h-5"></i> Скопировать
         </button>
       </div>
@@ -2341,6 +2374,7 @@ async function submitSupportTicket() {
       if (e.target.id === 'importBoardModal') closeImportModal();
       if (e.target.id === 'supportModal') closeSupportModal();
       if (e.target.id === 'manageAdminsModal') closeManageAdminsModal();
+      if (e.target.id === 'qrCodeModal') closeQrModal();
     });
   
 let toastTimeout;
@@ -2393,6 +2427,7 @@ document.addEventListener('keydown', (e) => {
     
     if (!document.getElementById('planDetailsModal').classList.contains('hidden')) closePlanDetails();
     if (!document.getElementById('customConfirmModal').classList.contains('hidden')) closeConfirmModal();
+    if (typeof closeQrModal === 'function' && !document.getElementById('qrCodeModal').classList.contains('hidden')) closeQrModal();
     
     if (typeof closePricingModal === 'function' && !document.getElementById('pricingModal').classList.contains('hidden') && document.getElementById('planDetailsModal').classList.contains('hidden')) {
       closePricingModal();
@@ -3322,6 +3357,88 @@ async function applyFrameColor(frameColor, glowColor) {
             loadAdminsList();
         } catch(e) {
             showSystemToast('Ошибка', 'Не удалось удалить администратора.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+        }
+    }
+
+    // --- ЭНТЕРПРАЙЗ: QR-SHARE ENGINE ---
+    let currentQrUrl = '';
+
+    function openQrModal(inputId, descText) {
+        const input = document.getElementById(inputId);
+        if (!input || !input.value) return;
+
+        currentQrUrl = input.value;
+        document.getElementById('qrCodeDesc').innerText = descText || 'Отсканируйте код, чтобы перейти по ссылке.';
+
+        const canvas = document.getElementById('qrCanvas');
+        
+        // Генерация QR-кода на лету
+        QRCode.toCanvas(canvas, currentQrUrl, {
+            width: 200,
+            margin: 1,
+            color: {
+                dark: "#0f172a", // Стилизация под Blocko Pro (Сланец)
+                light: "#ffffff"
+            }
+        }, function (error) {
+            if (error) console.error("QR Engine Error:", error);
+        });
+
+        const modal = document.getElementById('qrCodeModal');
+        const content = document.getElementById('qrCodeContent');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }, 10);
+    }
+
+    function closeQrModal() {
+        const modal = document.getElementById('qrCodeModal');
+        const content = document.getElementById('qrCodeContent');
+        modal.classList.add('opacity-0');
+        content.classList.remove('scale-100');
+        content.classList.add('scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    function downloadQrCode() {
+        const canvas = document.getElementById('qrCanvas');
+        const url = canvas.toDataURL("image/png");
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'BlockoPro_Access_QR.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showSystemToast('Успешно', 'QR-код сохранен на ваше устройство.', 'download', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+    }
+
+    async function shareQrCode() {
+        const canvas = document.getElementById('qrCanvas');
+        
+        try {
+            // Конвертируем canvas в Blob для отправки в системный шаринг
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const file = new File([blob], 'BlockoPro_Access_QR.png', { type: 'image/png' });
+
+            // Проверка поддержки нативного шаринга файлов (Web Share API Level 2)
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: 'Blocko Pro',
+                    text: 'Привет! Присоединяйся ко мне в Blocko Pro:\n' + currentQrUrl,
+                    files: [file]
+                });
+                showSystemToast('Отправлено', 'QR-код и ссылка успешно отправлены.', 'check-circle', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
+            } else {
+                throw new Error('Native file share is not supported');
+            }
+        } catch (error) {
+            console.warn('Share API fallback:', error);
+            // Фолбэк для десктопов, где шаринг файлов не поддерживается
+            navigator.clipboard.writeText(currentQrUrl);
+            showSystemToast('Скопировано', 'Файловый шаринг недоступен на этом устройстве. Ссылка скопирована в буфер.', 'copy', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
         }
     }
   </script>
