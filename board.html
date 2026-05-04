@@ -1341,14 +1341,6 @@ function highlightText(text, query) {
 
 let currentUser = null;
 let userPlan = localStorage.getItem('blocko_user_plan') || 'free';
-
-// ЭНТЕРПРАЙЗ: Системные лимиты тарифов
-const PLANS = {
-    FREE: { id: 'free', name: 'Free', boardsLimit: 1, aiLimit: 10, membersLimit: 3 },
-    FREELANCER: { id: 'freelancer', name: 'Freelancer', boardsLimit: 10, aiLimit: 50, membersLimit: 10 },
-    PRO: { id: 'pro', name: 'Company', boardsLimit: 999, aiLimit: 999, membersLimit: 999 }
-};
-
 let BOARD_ID = new URLSearchParams(window.location.search).get('b');
 let isLocalBoard = BOARD_ID && BOARD_ID.startsWith('local_');
 let columns = [], sortableInstances = [];
@@ -1433,13 +1425,12 @@ function getAvatarHTML(userObj, sizeClass, idAttr = '') {
   if (config.animation === 'flicker') animationClass = "animate-bounce"; 
   
   let badgeIconHtml = '';
-  // ЭНТЕРПРАЙЗ: Используем Inline SVG для мгновенного рендера бейджей (без задержек библиотеки Lucide)
   if (badge === 'ambassador') {
-    badgeIconHtml = `<div class="absolute -top-1.5 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 transform rotate-12 shadow border border-gray-200 dark:border-gray-700 z-10"><svg class="w-3.5 h-3.5 text-amber-500 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg></div>`;
+    badgeIconHtml = `<div class="absolute -top-1.5 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 transform rotate-12 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="crown" class="w-3.5 h-3.5 text-amber-500 fill-current"></i></div>`;
   } else if (badge === 'partner') {
-    badgeIconHtml = `<div class="absolute -bottom-1 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><svg class="w-2.5 h-2.5 text-amber-500 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg></div>`;
+    badgeIconHtml = `<div class="absolute -bottom-1 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="award" class="w-2.5 h-2.5 text-amber-500 fill-current"></i></div>`;
   } else if (badge === 'friend') {
-    badgeIconHtml = `<div class="absolute -bottom-1 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><svg class="w-2.5 h-2.5 text-blue-500 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2-1 4-2 7-2 2.94 0 5.48 1.05 7.29 1.95A1.5 1.5 0 0 1 20 6.3V13Z"/><path d="m9 12 2 2 4-4"/></svg></div>`;
+    badgeIconHtml = `<div class="absolute -bottom-1 -right-1.5 bg-white dark:bg-gray-900 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700 z-10"><i data-lucide="shield-check" class="w-2.5 h-2.5 text-blue-500 fill-current"></i></div>`;
   }
 
   // ЭНТЕРПРАЙЗ ИЗОЛЯЦИЯ: Выделяем эффекты наведения и фиксируем слои
@@ -2679,21 +2670,20 @@ function toggleMessageLike(msgId) {
   
   // ЭНТЕРПРАЙЗ: Optimistic UI. Обновляем интерфейс мгновенно ДО ответа сервера для эффекта нулевой задержки.
   if (btn && countSpan) {
-     const icon = btn.querySelector('svg'); // Библиотека Lucide заменяет теги <i> на <svg>
      const isCurrentlyLiked = btn.classList.contains('text-rose-500');
      let currentCount = parseInt(countSpan.innerText) || 0;
      
      if (isCurrentlyLiked) {
-         // Снимаем лайк в UI
+         // Снимаем лайк
          btn.classList.remove('text-rose-500', 'bg-white/95', 'dark:bg-gray-800/95', 'shadow-md');
          btn.classList.add('text-gray-400', 'opacity-0', 'group-hover/msg:opacity-100', 'shadow-sm');
-         if (icon) icon.classList.remove('fill-current');
+         btn.querySelector('i').classList.remove('fill-current');
          currentCount = Math.max(0, currentCount - 1);
      } else {
-         // Ставим лайк в UI
+         // Ставим лайк
          btn.classList.add('text-rose-500', 'bg-white/95', 'dark:bg-gray-800/95', 'shadow-md');
          btn.classList.remove('text-gray-400', 'opacity-0', 'group-hover/msg:opacity-100', 'shadow-sm');
-         if (icon) icon.classList.add('fill-current');
+         btn.querySelector('i').classList.add('fill-current');
          currentCount++;
          if(typeof fireConfetti === 'function') fireConfetti();
      }
@@ -2708,20 +2698,20 @@ function toggleMessageLike(msgId) {
      }
   }
 
-  // Фоновая синхронизация с Firebase (Без ожидания пользователя)
-      const msgRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc(msgId);
-      msgRef.get().then(doc => {
-        if (doc.exists) {
-          let likes = doc.data().likes || [];
-          if (likes.includes(currentUser.id)) {
-            likes = likes.filter(id => id !== currentUser.id);
-          } else {
-            likes.push(currentUser.id);
-          }
-          msgRef.update({ likes });
-        }
-      }).catch(err => console.error("Like sync failed:", err));
+  // Фоновая синхронизация с Firebase
+  const msgRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc(msgId);
+  msgRef.get().then(doc => {
+    if (doc.exists) {
+      let likes = doc.data().likes || [];
+      if (likes.includes(currentUser.id)) {
+        likes = likes.filter(id => id !== currentUser.id);
+      } else {
+        likes.push(currentUser.id);
+      }
+      msgRef.update({ likes });
     }
+  }).catch(err => console.error("Like sync failed:", err));
+}
 
 // ЭНТЕРПРАЙЗ: Voice-to-Text для командного чата
 let chatSpeechRecognition = null;
