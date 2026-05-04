@@ -2587,7 +2587,8 @@ function renderSingleMessage(msg, container, msgId) {
   const likesCount = msg.likes ? msg.likes.length : 0;
   const hasLiked = msg.likes && msg.likes.includes(currentUser.id);
   
-  const likeBtnHtml = `<button onclick="toggleMessageLike('${msgId}')" class="absolute -bottom-3 -right-2 flex items-center justify-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 active:scale-95 z-10 ${hasLiked ? 'text-rose-500 bg-white/90 dark:bg-gray-800/90 shadow-sm ring-1 ring-black/5 dark:ring-white/5' : 'text-gray-400 opacity-0 group-hover/msg:opacity-100 hover:text-rose-500 hover:bg-white/90 dark:hover:bg-gray-800/90'}" title="Нравится"><i data-lucide="heart" class="w-3.5 h-3.5 ${hasLiked ? 'fill-current' : ''}"></i> ${likesCount > 0 ? `<span class="ml-0.5">${likesCount}</span>` : ''}</button>`;
+  // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Убраны рамки (ring), добавлены мягкие тени и ID для Optimistic UI
+  const likeBtnHtml = `<button id="likeBtn_${msgId}" onclick="toggleMessageLike('${msgId}')" class="absolute -bottom-3 -right-2 flex items-center justify-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 active:scale-95 z-10 ${hasLiked ? 'text-rose-500 bg-white/95 dark:bg-gray-800/95 shadow-md' : 'text-gray-400 opacity-0 group-hover/msg:opacity-100 hover:text-rose-500 hover:bg-white/95 dark:hover:bg-gray-800/95 shadow-sm'}" title="Нравится"><i data-lucide="heart" class="w-3.5 h-3.5 ${hasLiked ? 'fill-current' : ''}"></i> <span id="likeCount_${msgId}" class="${likesCount > 0 ? 'ml-0.5' : 'hidden'}">${likesCount > 0 ? likesCount : ''}</span></button>`;
 
   container.innerHTML += `
     <div id="msg_${msgId}" class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'} mt-3 mb-2">
@@ -2628,7 +2629,42 @@ function sendChatSticker(iconName) {
 }
 
 function toggleMessageLike(msgId) {
-  if (isLocalBoard) return;
+  if (isLocalBoard || !currentUser) return;
+  
+  const btn = document.getElementById(`likeBtn_${msgId}`);
+  const countSpan = document.getElementById(`likeCount_${msgId}`);
+  
+  // ЭНТЕРПРАЙЗ: Optimistic UI. Обновляем интерфейс мгновенно ДО ответа сервера для эффекта нулевой задержки.
+  if (btn && countSpan) {
+     const isCurrentlyLiked = btn.classList.contains('text-rose-500');
+     let currentCount = parseInt(countSpan.innerText) || 0;
+     
+     if (isCurrentlyLiked) {
+         // Снимаем лайк
+         btn.classList.remove('text-rose-500', 'bg-white/95', 'dark:bg-gray-800/95', 'shadow-md');
+         btn.classList.add('text-gray-400', 'opacity-0', 'group-hover/msg:opacity-100', 'shadow-sm');
+         btn.querySelector('i').classList.remove('fill-current');
+         currentCount = Math.max(0, currentCount - 1);
+     } else {
+         // Ставим лайк
+         btn.classList.add('text-rose-500', 'bg-white/95', 'dark:bg-gray-800/95', 'shadow-md');
+         btn.classList.remove('text-gray-400', 'opacity-0', 'group-hover/msg:opacity-100', 'shadow-sm');
+         btn.querySelector('i').classList.add('fill-current');
+         currentCount++;
+         if(typeof fireConfetti === 'function') fireConfetti();
+     }
+     
+     countSpan.innerText = currentCount;
+     if (currentCount > 0) {
+         countSpan.classList.remove('hidden');
+         countSpan.classList.add('ml-0.5');
+     } else {
+         countSpan.classList.add('hidden');
+         countSpan.classList.remove('ml-0.5');
+     }
+  }
+
+  // Фоновая синхронизация с Firebase
   const msgRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc(msgId);
   msgRef.get().then(doc => {
     if (doc.exists) {
@@ -2637,11 +2673,10 @@ function toggleMessageLike(msgId) {
         likes = likes.filter(id => id !== currentUser.id);
       } else {
         likes.push(currentUser.id);
-        if(typeof fireConfetti === 'function') fireConfetti(); // Эмоциональный отклик на лайк
       }
       msgRef.update({ likes });
     }
-  });
+  }).catch(err => console.error("Like sync failed:", err));
 }
 
 // ЭНТЕРПРАЙЗ: Voice-to-Text для командного чата
