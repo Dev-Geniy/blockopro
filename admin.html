@@ -615,21 +615,22 @@
   </div>
 </div>
 
-<!-- CPA Inspect Premium Modal -->
-<div id="cpaInspectModal" class="hidden fixed inset-0 z-[500] flex items-center justify-center bg-gray-900/90 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4 py-10 overflow-y-auto">
+<!-- CPA Inspect Premium Modal (Полностью независимое окно) -->
+<div id="cpaInspectModal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/90 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4 py-10 overflow-y-auto">
   <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[2.5rem] w-full max-w-5xl shadow-2xl border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform relative flex flex-col my-auto" id="cpaInspectContent">
+    <!-- Декоративный градиент -->
     <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
     <button onclick="closeCpaInspectModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
 
-    <div class="flex flex-col md:flex-row gap-8">
+    <div class="flex flex-col md:flex-row gap-8 mt-2">
       <!-- Левая колонка: Профиль и Статистика -->
       <div class="w-full md:w-1/3 flex flex-col gap-6">
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
            <img id="cpaInspectAvatar" src="" class="w-16 h-16 rounded-full border-2 border-indigo-500/30 object-cover shadow-lg" />
-           <div>
-              <h3 class="text-xl font-black text-gray-900 dark:text-white line-clamp-1" id="cpaInspectName">Имя</h3>
-              <div class="text-xs text-gray-500 font-mono mt-0.5" id="cpaInspectEmail">email</div>
-              <div class="text-[10px] text-gray-400 font-mono mt-1">UID: <span id="cpaInspectUid"></span></div>
+           <div class="min-w-0">
+              <h3 class="text-lg font-black text-gray-900 dark:text-white truncate" id="cpaInspectName">Имя</h3>
+              <div class="text-[10px] text-gray-500 font-mono mt-0.5 truncate" id="cpaInspectEmail">email</div>
+              <div class="text-[9px] text-gray-400 font-mono mt-1 truncate">UID: <span id="cpaInspectUid"></span></div>
            </div>
         </div>
 
@@ -638,32 +639,35 @@
           <div class="space-y-4">
             <div class="flex justify-between items-center">
                <span class="text-xs font-bold text-gray-500 flex items-center gap-2"><i data-lucide="mouse-pointer-click" class="w-4 h-4 text-blue-500"></i> Клики (Хосты)</span>
-               <span class="text-sm font-black dark:text-white" id="cpaInspectClicks">0</span>
+               <span class="text-sm font-black text-gray-900 dark:text-white" id="cpaInspectClicks">0</span>
             </div>
             <div class="flex justify-between items-center">
                <span class="text-xs font-bold text-gray-500 flex items-center gap-2"><i data-lucide="user-plus" class="w-4 h-4 text-purple-500"></i> Регистрации</span>
-               <span class="text-sm font-black dark:text-white" id="cpaInspectSignups">0</span>
+               <span class="text-sm font-black text-gray-900 dark:text-white" id="cpaInspectSignups">0</span>
             </div>
             <div class="flex justify-between items-center">
                <span class="text-xs font-bold text-gray-500 flex items-center gap-2"><i data-lucide="shopping-cart" class="w-4 h-4 text-amber-500"></i> Продажи</span>
-               <span class="text-sm font-black dark:text-white" id="cpaInspectSales">0</span>
+               <span class="text-sm font-black text-gray-900 dark:text-white" id="cpaInspectSales">0</span>
             </div>
             <div class="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700/50">
                <span class="text-xs font-bold text-gray-500 flex items-center gap-2"><i data-lucide="link" class="w-4 h-4 text-gray-400"></i> Активных ссылок</span>
-               <span class="text-sm font-black dark:text-white" id="cpaInspectLinksCount">0</span>
+               <span class="text-sm font-black text-gray-900 dark:text-white" id="cpaInspectLinksCount">0</span>
             </div>
           </div>
         </div>
 
-        <div class="bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl p-5 border border-emerald-100 dark:border-emerald-800/50 shadow-inner">
-           <div class="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest mb-1">Доступно к выводу</div>
-           <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400" id="cpaInspectBal">$0.00</div>
-           <div class="mt-4 pt-4 border-t border-emerald-200 dark:border-emerald-800/50">
-              <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Ручная корректировка (+/-)</label>
-              <div class="flex gap-2">
-                 <input type="number" id="cpaInspectAdjustVal" placeholder="Сумма" class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-800 rounded-lg outline-none text-xs font-bold dark:text-white focus:border-emerald-500 transition-colors shadow-sm" />
-                 <button onclick="adjustCpaBalance()" class="px-4 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold rounded-lg shadow-md active:scale-95 transition-all"><i data-lucide="check" class="w-4 h-4"></i></button>
-              </div>
+        <div class="bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl p-5 border border-emerald-200 dark:border-emerald-800/50 shadow-inner relative overflow-hidden">
+           <div class="absolute -right-10 -top-10 w-24 h-24 bg-emerald-500/20 rounded-full blur-2xl"></div>
+           <div class="relative z-10">
+               <div class="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest mb-1">Доступно к выводу</div>
+               <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400" id="cpaInspectBal">$0.00</div>
+               <div class="mt-4 pt-4 border-t border-emerald-200 dark:border-emerald-800/50">
+                  <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Ручная корректировка (+/-)</label>
+                  <div class="flex gap-2">
+                     <input type="number" id="cpaInspectAdjustVal" placeholder="Сумма" class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-800 rounded-lg outline-none text-xs font-bold text-gray-900 dark:text-white focus:border-emerald-500 transition-colors shadow-sm" />
+                     <button onclick="adjustCpaBalance()" class="px-4 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold rounded-lg shadow-md active:scale-95 transition-all"><i data-lucide="check" class="w-4 h-4"></i></button>
+                  </div>
+               </div>
            </div>
         </div>
       </div>
@@ -671,17 +675,17 @@
       <!-- Правая колонка: Заявки и История -->
       <div class="w-full md:w-2/3 flex flex-col gap-6">
          <!-- Заявки на вывод -->
-         <div>
-            <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 flex items-center gap-2"><i data-lucide="arrow-up-circle" class="w-4 h-4 text-rose-500"></i> Запросы на вывод средств</h4>
-            <div id="cpaInspectWithdrawals" class="space-y-3 max-h-48 overflow-y-auto hide-scroll bg-gray-50 dark:bg-gray-800/30 p-3 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-inner">
+         <div class="bg-gray-50 dark:bg-gray-800/30 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col h-1/2">
+            <h4 class="text-xs font-black text-gray-900 dark:text-gray-300 uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><i data-lucide="arrow-up-circle" class="w-4 h-4 text-rose-500"></i> Запросы на вывод средств</h4>
+            <div id="cpaInspectWithdrawals" class="space-y-3 flex-1 overflow-y-auto hide-scroll pr-1">
                <!-- Injected by JS -->
             </div>
          </div>
 
          <!-- История транзакций -->
-         <div class="flex-1 flex flex-col">
-            <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-indigo-500"></i> Финансовая история</h4>
-            <div id="cpaInspectHistory" class="space-y-2 max-h-64 overflow-y-auto hide-scroll bg-gray-50 dark:bg-gray-800/30 p-3 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-inner">
+         <div class="bg-gray-50 dark:bg-gray-800/30 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col h-1/2">
+            <h4 class="text-xs font-black text-gray-900 dark:text-gray-300 uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-indigo-500"></i> Финансовая история</h4>
+            <div id="cpaInspectHistory" class="space-y-2 flex-1 overflow-y-auto hide-scroll pr-1">
                <!-- Injected by JS -->
             </div>
          </div>
@@ -1827,28 +1831,28 @@
           const totalSales = p.sales || 0;
           let rankName = 'Silver';
           let revShare = 30;
-          let rankColor = 'text-gray-400 bg-gray-800 border-gray-700';
+          let rankColor = 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800 border-gray-200 dark:border-gray-700'; // Премиальный светлый/темный серый
           
           if (totalSales >= 50) {
               rankName = 'Platinum';
               revShare = 50;
-              rankColor = 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30';
+              rankColor = 'text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30 shadow-[0_0_8px_rgba(99,102,241,0.2)]';
           } else if (totalSales >= 10) {
               rankName = 'Gold';
               revShare = 40;
-              rankColor = 'text-amber-400 bg-amber-500/10 border-amber-500/30';
+              rankColor = 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]';
           }
 
           const balance = (p.balanceUSD || 0).toFixed(2);
-          const metrics = `${p.clicks || 0} / ${p.signups || 0} / ${totalSales}`;
+          const metrics = `<span class="text-blue-500">${p.clicks || 0}</span> <span class="text-gray-400 mx-1">/</span> <span class="text-purple-500">${p.signups || 0}</span> <span class="text-gray-400 mx-1">/</span> <span class="text-amber-500">${totalSales}</span>`;
 
           return `
-            <tr class="hover:bg-gray-800/40 transition-colors group">
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors group">
                <td class="px-6 py-4">
                   <div class="flex items-center gap-3">
-                     <img src="${safeAvatar}" class="w-10 h-10 rounded-full border border-gray-700 object-cover shadow-sm" />
+                     <img src="${safeAvatar}" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 object-cover shadow-sm group-hover:scale-105 transition-transform" />
                      <div>
-                        <div class="text-sm font-bold text-white line-clamp-1">${safeName}</div>
+                        <div class="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">${safeName}</div>
                         <div class="text-[10px] text-gray-500 font-mono mt-0.5">${safeEmail}</div>
                      </div>
                   </div>
@@ -1856,20 +1860,21 @@
                <td class="px-6 py-4 text-center">
                   <div class="inline-flex flex-col items-center">
                      <span class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${rankColor}">${rankName}</span>
-                     <span class="text-[10px] text-gray-400 mt-1 font-bold">${revShare}% Share</span>
+                     <span class="text-[10px] text-gray-500 mt-1 font-bold">${revShare}% Share</span>
                   </div>
                </td>
-               <td class="px-6 py-4 text-center text-sm font-bold text-gray-300 tracking-wider">
+               <td class="px-6 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-300 tracking-wider">
                   ${metrics}
                </td>
                <td class="px-6 py-4 text-center">
-                  <span class="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20 shadow-inner">
+                  <span class="text-emerald-600 dark:text-emerald-400 font-black bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/50 shadow-sm">
                      $${balance}
                   </span>
                </td>
                <td class="px-6 py-4 text-right">
-                 <button onclick="inspectCpaPartner('${p.id}')" class="p-2 text-gray-400 hover:text-indigo-400 bg-gray-800 hover:bg-indigo-500/10 rounded-xl transition-all shadow-sm active:scale-95 border border-transparent hover:border-indigo-500/30 inline-block pointer-events-auto" title="Детали и Выплаты">
-                   <i data-lucide="external-link" class="w-4 h-4 pointer-events-none"></i>
+                 <!-- Бронебойная кнопка без лишних событий -->
+                 <button onclick="inspectCpaPartner('${p.id}')" class="p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-all shadow-sm border border-gray-200 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800/50 inline-flex items-center justify-center active:scale-95" title="Детали и Выплаты">
+                   <i data-lucide="external-link" class="w-4 h-4"></i>
                  </button>
                </td>
             </tr>
