@@ -598,7 +598,35 @@
             }
             return;
         }
-        
+
+
+
+
+      // ЭНТЕРПРАЙЗ: Железный занавес безопасности (Real-time RBAC Barrier)
+    const ownerEmail = 'uajerryua@gmail.com';
+    let hasAccess = user.email === ownerEmail;
+
+    if (!hasAccess && user.email) {
+        try {
+            const sysDoc = await db.collection('system').doc('admins').get();
+            if (sysDoc.exists && sysDoc.data().emails) {
+                if (sysDoc.data().emails.includes(user.email)) hasAccess = true;
+            }
+        } catch(e) {
+            console.error("Auth verify error", e);
+        }
+    }
+
+    if (!hasAccess) {
+        // Мгновенный кик из панели с эффектом стирания куки
+        document.body.innerHTML = '<div style="display:flex; height:100vh; align-items:center; justify-content:center; background:#0b0f19; color:#ef4444; font-family:sans-serif; font-size:24px; font-weight:bold;">ДОСТУП ЗАПРЕЩЕН / ACCESS DENIED</div>';
+        setTimeout(() => window.location.href = 'index.html', 1500);
+        return;
+    }
+
+
+
+      
         // Авторизация пройдена - грузим тяжелую дату
         loadEnterpriseData();
     } catch(e) {
