@@ -184,7 +184,51 @@
   </div>
 </div>
 
-<div id="globalToast" class="fixed bottom-6 right-6 z-[100] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
+<!-- Premium Confirm Modal -->
+<div id="customConfirmModal" class="hidden fixed inset-0 z-[300] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95" id="confirmModalContent">
+    <div id="confirmIconBg" class="mx-auto w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-inner border border-indigo-100 dark:border-indigo-800/50">
+      <i id="confirmIcon" data-lucide="shopping-bag" class="w-10 h-10"></i>
+    </div>
+    <h2 id="confirmTitle" class="text-2xl font-black mb-3 text-gray-900 dark:text-white tracking-tight">Подтверждение</h2>
+    <p id="confirmDesc" class="text-sm text-gray-500 mb-8 leading-relaxed font-medium">Вы уверены?</p>
+    <div class="flex gap-3">
+      <button onclick="closeConfirmModal()" class="flex-1 py-4 text-sm font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-2xl transition-colors">Отмена</button>
+      <button id="confirmBtnAction" onclick="executeConfirm()" class="flex-1 py-4 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-2xl shadow-lg shadow-indigo-500/25 active:scale-95 transition-all">Подтвердить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Epic Gift Link Modal -->
+<div id="giftLinkModal" class="hidden fixed inset-0 z-[400] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-xl opacity-0 transition-opacity duration-500 px-4">
+  <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[3rem] w-full max-w-lg shadow-2xl relative border border-gray-200 dark:border-gray-800 text-center transform scale-95 transition-transform duration-500 overflow-hidden" id="giftLinkContent">
+    
+    <!-- Неоновое свечение на фоне -->
+    <div class="absolute -top-32 -right-32 w-64 h-64 bg-rose-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+    <button onclick="closeGiftLinkModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
+
+    <div class="relative w-28 h-28 mx-auto mb-8 z-10">
+       <div class="absolute inset-0 bg-gradient-to-tr from-rose-500 to-pink-500 rounded-[2rem] blur-xl opacity-50 animate-pulse"></div>
+       <div class="relative w-full h-full bg-gradient-to-tr from-rose-500 to-pink-600 rounded-[2rem] flex items-center justify-center shadow-inner border border-rose-400/50">
+         <i data-lucide="gift" class="w-14 h-14 text-white"></i>
+       </div>
+    </div>
+
+    <h2 class="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mb-3 relative z-10 tracking-tight">Ваш подарок готов!</h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-10 relative z-10 leading-relaxed font-medium">Скопируйте уникальную ссылку ниже и отправьте её получателю. Распаковка подарит незабываемые эмоции.</p>
+
+    <div class="bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 p-2 pl-6 rounded-2xl flex items-center gap-3 relative z-10 transition-colors hover:border-rose-300 dark:hover:border-rose-700/50 shadow-inner group">
+       <input type="text" id="generatedGiftLink" readonly class="flex-1 bg-transparent border-none outline-none text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 truncate cursor-copy" onclick="copyGeneratedGiftLink()">
+       <button onclick="copyGeneratedGiftLink()" class="px-6 py-4 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-xl shadow-lg shadow-rose-500/25 active:scale-95 transition-all flex items-center gap-2 flex-shrink-0">
+         <i data-lucide="copy" class="w-4 h-4"></i> Копировать
+       </button>
+    </div>
+  </div>
+</div>
+
+<div id="globalToast" class="fixed bottom-6 right-6 z-[500] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
   <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30"><i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i></div>
   <div><h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4><p id="toastDesc" class="text-xs text-gray-500 leading-relaxed"></p></div>
 </div>
@@ -319,6 +363,76 @@
     setTimeout(() => modal.classList.add('hidden'), 500);
   }
 
+  // --- ЭНТЕРПРАЙЗ КОНТРОЛЛЕРЫ МОДАЛОК (Без системных окон) ---
+  let confirmCallback = null;
+
+  function openConfirmModal(title, desc, confirmText, isDanger, callback) {
+    document.getElementById('confirmTitle').innerText = title;
+    document.getElementById('confirmDesc').innerText = desc;
+    
+    const iconBg = document.getElementById('confirmIconBg');
+    const icon = document.getElementById('confirmIcon');
+    const btn = document.getElementById('confirmBtnAction');
+    
+    if (isDanger) {
+      iconBg.className = "mx-auto w-20 h-20 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-inner border border-red-100 dark:border-red-800/50";
+      icon.setAttribute('data-lucide', 'alert-triangle');
+      btn.className = "flex-1 py-4 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-2xl shadow-lg shadow-red-500/25 active:scale-95 transition-all";
+    } else {
+      iconBg.className = "mx-auto w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-inner border border-indigo-100 dark:border-indigo-800/50";
+      icon.setAttribute('data-lucide', 'shopping-bag');
+      btn.className = "flex-1 py-4 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-2xl shadow-lg shadow-indigo-500/25 active:scale-95 transition-all";
+    }
+    btn.innerText = confirmText;
+    lucide.createIcons();
+    confirmCallback = callback;
+    
+    const modal = document.getElementById('customConfirmModal');
+    const content = document.getElementById('confirmModalContent');
+    modal.classList.remove('hidden');
+    setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+  }
+
+  function closeConfirmModal() {
+    const modal = document.getElementById('customConfirmModal');
+    const content = document.getElementById('confirmModalContent');
+    modal.classList.add('opacity-0');
+    content.classList.remove('scale-100'); content.classList.add('scale-95');
+    setTimeout(() => { modal.classList.add('hidden'); confirmCallback = null; }, 300);
+  }
+
+  function executeConfirm() {
+    if (confirmCallback) confirmCallback();
+    closeConfirmModal();
+  }
+
+  function openGiftLinkModal(url) {
+     document.getElementById('generatedGiftLink').value = url;
+     const modal = document.getElementById('giftLinkModal');
+     const content = document.getElementById('giftLinkContent');
+     modal.classList.remove('hidden');
+     setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95');
+        content.classList.add('scale-100');
+     }, 10);
+  }
+
+  function closeGiftLinkModal() {
+     const modal = document.getElementById('giftLinkModal');
+     const content = document.getElementById('giftLinkContent');
+     modal.classList.add('opacity-0');
+     content.classList.remove('scale-100');
+     content.classList.add('scale-95');
+     setTimeout(() => modal.classList.add('hidden'), 500);
+  }
+
+  function copyGeneratedGiftLink() {
+     const input = document.getElementById('generatedGiftLink');
+     navigator.clipboard.writeText(input.value);
+     showSystemToast('Скопировано!', 'Уникальная ссылка готова к отправке.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+  }
+
   async function handlePurchase(prodId, currency, price) {
     if (currency === 'coins' && balances.coins < price) {
       openTopUpModal();
@@ -328,65 +442,65 @@
       return showSystemToast('Недостаточно кредитов', 'Приглашайте больше партнеров!', 'alert-circle', 'text-indigo-500', 'bg-indigo-50');
     }
 
-    if (!confirm('Подтвердить покупку?')) return;
+    const currencyName = currency === 'coins' ? 'монет' : 'бонусов';
+    
+    // Вызываем нашу премиальную модалку вместо системного confirm
+    openConfirmModal('Подтверждение покупки', `Вы собираетесь приобрести этот товар за ${price} ${currencyName}. Списать средства с баланса?`, 'Оплатить', false, async () => {
+      try {
+        const batch = db.batch();
+        const userRef = db.collection('users').doc(currentUser.uid);
+        const affRef = db.collection('affiliates').doc(currentUser.uid);
 
-    try {
-      const batch = db.batch();
-      const userRef = db.collection('users').doc(currentUser.uid);
-      const affRef = db.collection('affiliates').doc(currentUser.uid);
+        // Списание
+        if (currency === 'coins') batch.update(userRef, { coins: firebase.firestore.FieldValue.increment(-price) });
+        else batch.update(affRef, { earnedCredits: firebase.firestore.FieldValue.increment(-price) });
 
-      // Списание
-      if (currency === 'coins') batch.update(userRef, { coins: firebase.firestore.FieldValue.increment(-price) });
-      else batch.update(affRef, { earnedCredits: firebase.firestore.FieldValue.increment(-price) });
-
-      // Логика выдачи
-      if (prodId.startsWith('ai_')) {
-        if (prodId === 'ai_50') batch.set(userRef, { bonusAiLimit: firebase.firestore.FieldValue.increment(50) }, { merge: true });
-        if (prodId === 'ai_200') batch.set(userRef, { bonusAiLimit: firebase.firestore.FieldValue.increment(200) }, { merge: true });
-        if (prodId === 'ai_daily_sub') batch.set(userRef, { aiDailySub: true, aiSubExpires: Date.now() + (30*24*60*60*1000) }, { merge: true });
-      }
-      
-      if (prodId.startsWith('plan_')) batch.update(userRef, { plan: prodId.replace('plan_', '') });
-
-      let generatedCode = null;
-      if (prodId.startsWith('gift_')) {
-        const amount = parseInt(prodId.replace('gift_', '')) * 100;
-        generatedCode = 'GIFT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        // Логика выдачи
+        if (prodId.startsWith('ai_')) {
+          if (prodId === 'ai_50') batch.set(userRef, { bonusAiLimit: firebase.firestore.FieldValue.increment(50) }, { merge: true });
+          if (prodId === 'ai_200') batch.set(userRef, { bonusAiLimit: firebase.firestore.FieldValue.increment(200) }, { merge: true });
+          if (prodId === 'ai_daily_sub') batch.set(userRef, { aiDailySub: true, aiSubExpires: Date.now() + (30*24*60*60*1000) }, { merge: true });
+        }
         
-        // ЭНТЕРПРАЙЗ: Интегрируем Гифт-боксы прямо в наш новый Promo Engine!
-        batch.set(db.collection('promocodes').doc(generatedCode), { 
-          type: 'coins', 
-          rewardCoins: amount,
-          maxUses: 1,
-          uses: 0,
-          expiresAt: null,
-          isGiftBox: true,
-          createdAt: new Date().toISOString(),
-          createdBy: currentUser.uid 
-        });
-      }
+        if (prodId.startsWith('plan_')) batch.update(userRef, { plan: prodId.replace('plan_', '') });
 
-      await batch.commit();
-      
-      if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
-      
-      if (generatedCode) {
-        // ЭНТЕРПРАЙЗ: Формируем уникальную ссылку на премиальную страницу распаковки
-        const giftUrl = window.location.origin + window.location.pathname.replace('store.html', '') + 'gift.html?code=' + generatedCode;
-        showSystemToast('Гифт-бокс готов! 🎁', 'Секретная ссылка сгенерирована.', 'gift', 'text-rose-500', 'bg-rose-50 dark:bg-rose-900/30');
-        setTimeout(() => {
-           prompt("ЭТО ВАШ ПОДАРОК:\nСкопируйте ссылку ниже и отправьте её получателю. Она откроет красивую персональную страницу распаковки!", giftUrl);
-        }, 500);
-      } else {
-        showSystemToast('Поздравляем!', 'Покупка успешно завершена.', 'check-circle', 'text-green-500', 'bg-green-50 dark:bg-green-900/30');
+        let generatedCode = null;
+        if (prodId.startsWith('gift_')) {
+          const amount = parseInt(prodId.replace('gift_', '')) * 100;
+          generatedCode = 'GIFT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+          
+          batch.set(db.collection('promocodes').doc(generatedCode), { 
+            type: 'coins', 
+            rewardCoins: amount,
+            maxUses: 1,
+            uses: 0,
+            expiresAt: null,
+            isGiftBox: true,
+            createdAt: new Date().toISOString(),
+            createdBy: currentUser.uid 
+          });
+        }
+
+        await batch.commit();
+        
+        if (typeof confetti === 'function') confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, zIndex: 9999 });
+        
+        if (generatedCode) {
+          const giftUrl = window.location.origin + window.location.pathname.replace('store.html', '') + 'gift.html?code=' + generatedCode;
+          // Открываем роскошную витрину со ссылкой
+          openGiftLinkModal(giftUrl);
+        } else {
+          showSystemToast('Поздравляем!', 'Покупка успешно завершена.', 'check-circle', 'text-green-500', 'bg-green-50 dark:bg-green-900/30');
+        }
+        
+        loadBalances();
+      } catch (e) { 
+        console.error(e); 
+        showSystemToast('Ошибка', 'Сбой транзакции. Баланс не списан.', 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
       }
-      
-      loadBalances();
-    } catch (e) { 
-      console.error(e); 
-      showSystemToast('Ошибка', 'Сбой транзакции. Баланс не списан.', 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
-    }
+    });
   }
+
   // --- ЛОГИКА ПОПОЛНЕНИЯ (ИМИТАЦИЯ ОПЛАТЫ) ---
   function openTopUpModal() {
     const el = document.getElementById('topUpModal');
@@ -400,18 +514,19 @@
   }
 
   async function buyCoinsPack(amount, usdPrice) {
-    if(!confirm(`Имитация оплаты $${usdPrice}. Подтвердить начисление ${amount} монет?`)) return;
-    
-    closeTopUpModal();
-    try {
-      const userRef = db.collection('users').doc(currentUser.uid);
-      await userRef.set({ coins: firebase.firestore.FieldValue.increment(amount) }, { merge: true });
-      confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 } });
-      showSystemToast('Счет пополнен!', `Начислено ${amount} монет.`, 'coins', 'text-amber-500', 'bg-amber-50');
-      loadBalances();
-    } catch(e) {
-      showSystemToast('Ошибка', 'Не удалось пополнить счет.', 'x-circle', 'text-red-500', 'bg-red-50');
-    }
+    // Вызываем нашу премиальную модалку вместо системного confirm
+    openConfirmModal('Пополнить счет', `Имитация оплаты $${usdPrice}. Подтвердить начисление ${amount} B-Coins?`, 'Оплатить', false, async () => {
+      closeTopUpModal();
+      try {
+        const userRef = db.collection('users').doc(currentUser.uid);
+        await userRef.set({ coins: firebase.firestore.FieldValue.increment(amount) }, { merge: true });
+        if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 }, zIndex: 9999 });
+        showSystemToast('Счет пополнен!', `Начислено ${amount} монет.`, 'coins', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+        loadBalances();
+      } catch(e) {
+        showSystemToast('Ошибка', 'Не удалось пополнить счет.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+      }
+    });
   }
 
   function showSystemToast(title, desc, icon, color, bg) {
@@ -428,12 +543,16 @@
   // Закрытие модалок по клику на фон и Escape
   window.addEventListener('click', (e) => {
     if (e.target.id === 'topUpModal') closeTopUpModal();
+    if (e.target.id === 'customConfirmModal') closeConfirmModal();
+    if (e.target.id === 'giftLinkModal') closeGiftLinkModal();
   });
   
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       if (!document.getElementById('productDetailsModal').classList.contains('hidden')) closeDetails();
       if (!document.getElementById('topUpModal').classList.contains('hidden')) closeTopUpModal();
+      if (!document.getElementById('customConfirmModal').classList.contains('hidden')) closeConfirmModal();
+      if (!document.getElementById('giftLinkModal').classList.contains('hidden')) closeGiftLinkModal();
     }
   });
 
