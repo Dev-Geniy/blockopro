@@ -102,6 +102,33 @@
     /* ENTERPRISE: Оптимизация 60 FPS при быстром скролле (Debouncing) */
     body.is-scrolling-fast .card-item { box-shadow: none !important; transform: none !important; transition: none !important; backdrop-filter: none !important; }
     body.is-scrolling-fast .col-handle { backdrop-filter: none !important; }
+
+    /* ENTERPRISE: OLED Black / Monochrome Mode */
+    body.oled-mode { background-color: #000000 !important; background-image: none !important; }
+    body.oled-mode header, body.oled-mode aside, body.oled-mode .glass-modal > div { background-color: rgba(0, 0, 0, 0.95) !important; border-color: rgba(255,255,255,0.05) !important; backdrop-filter: blur(24px) !important; }
+    body.oled-mode .card-item, body.oled-mode [id^="cards-"] > div { background-color: #080808 !important; border-color: rgba(255,255,255,0.1) !important; }
+    body.oled-mode .bg-gray-100, body.oled-mode .bg-gray-50, body.oled-mode .dark\:bg-gray-800, body.oled-mode .dark\:bg-gray-900, body.oled-mode .dark\:bg-gray-950 { background-color: #050505 !important; }
+    
+    body.oled-mode .text-blue-500, body.oled-mode .text-indigo-500, body.oled-mode .text-emerald-500, body.oled-mode .text-rose-500, body.oled-mode .text-amber-500, body.oled-mode .text-purple-500, body.oled-mode .text-cyan-500,
+    body.oled-mode .text-blue-600, body.oled-mode .text-indigo-600, body.oled-mode .text-emerald-600, body.oled-mode .text-rose-600, body.oled-mode .text-amber-600, body.oled-mode .text-purple-600, body.oled-mode .text-cyan-600 {
+        color: #e5e7eb !important;
+    }
+    
+    body.oled-mode .bg-blue-50, body.oled-mode .bg-indigo-50, body.oled-mode .bg-emerald-50, body.oled-mode .bg-rose-50, body.oled-mode .bg-amber-50, body.oled-mode .bg-purple-50, body.oled-mode .bg-cyan-50,
+    body.oled-mode .dark\:bg-blue-900\/20, body.oled-mode .dark\:bg-indigo-900\/20, body.oled-mode .dark\:bg-emerald-900\/20, body.oled-mode .dark\:bg-rose-900\/20, body.oled-mode .dark\:bg-amber-900\/20, body.oled-mode .dark\:bg-purple-900\/20, body.oled-mode .dark\:bg-cyan-900\/20,
+    body.oled-mode .dark\:bg-blue-900\/30, body.oled-mode .dark\:bg-indigo-900\/30, body.oled-mode .dark\:bg-emerald-900\/30, body.oled-mode .dark\:bg-rose-900\/30, body.oled-mode .dark\:bg-amber-900\/30, body.oled-mode .dark\:bg-purple-900\/30, body.oled-mode .dark\:bg-cyan-900\/30 {
+        background-color: #111111 !important; border-color: #222222 !important;
+    }
+
+    body.oled-mode .bg-blue-500, body.oled-mode .bg-indigo-600, body.oled-mode .bg-emerald-500, body.oled-mode .bg-rose-500, body.oled-mode .bg-amber-500, body.oled-mode .bg-purple-500, body.oled-mode .bg-cyan-500,
+    body.oled-mode .bg-blue-600, body.oled-mode .bg-indigo-500, body.oled-mode .bg-emerald-600, body.oled-mode .bg-rose-600, body.oled-mode .bg-amber-600, body.oled-mode .bg-purple-600, body.oled-mode .bg-cyan-600 {
+        background-color: #222222 !important; color: #ffffff !important; border: 1px solid #444 !important;
+    }
+    
+    body.oled-mode .shadow-lg, body.oled-mode .shadow-xl, body.oled-mode .shadow-2xl, body.oled-mode .shadow-sm, body.oled-mode .shadow-md { box-shadow: none !important; }
+    body.oled-mode .bg-gradient-to-r, body.oled-mode .bg-gradient-to-br, body.oled-mode .bg-gradient-to-b { background: #111111 !important; }
+    body.oled-mode img:not(.avatar) { filter: grayscale(100%) contrast(1.1); }
+    body.oled-mode .text-transparent.bg-clip-text { color: #ffffff !important; background: none !important; -webkit-text-fill-color: initial !important; }
   </style>
   
   <script>
@@ -312,7 +339,7 @@
     <div class="flex-1 overflow-y-auto p-6 space-y-8 hide-scroll">
       
       <!-- Быстрые действия (Quick Actions) -->
-      <div class="grid grid-cols-3 gap-3">
+      <div class="grid grid-cols-2 gap-3">
         <button onclick="toggleTheme()" class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all group active:scale-95 shadow-sm hover:shadow">
           <div class="text-gray-500 group-hover:text-amber-500 transition-colors mb-1.5">
             <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
@@ -333,6 +360,13 @@
             <i data-lucide="maximize" class="w-5 h-5"></i>
           </div>
           <span id="focusTextLabel" class="text-[10px] font-bold text-gray-600 dark:text-gray-400">Фокус</span>
+        </button>
+
+        <button onclick="toggleOledMode()" id="btnOledToggle" class="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-800 transition-all group active:scale-95 shadow-sm hover:shadow" title="Ультра-премиальный монохромный режим">
+          <div id="oledIconWrap" class="text-gray-500 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors mb-1.5">
+            <i data-lucide="contrast" class="w-5 h-5"></i>
+          </div>
+          <span id="oledTextLabel" class="text-[10px] font-bold text-gray-600 dark:text-gray-400">OLED Black</span>
         </button>
       </div>
       
@@ -5990,6 +6024,67 @@ if (localStorage.getItem('blocko_compact') === 'true') {
 // Инициализация компактного режима при загрузке
 if (localStorage.getItem('blocko_compact') === 'true') {
   document.body.classList.add('compact-mode');
+}
+
+// ЭНТЕРПРАЙЗ: Интерактивный Режим OLED Black (Monochrome)
+function toggleOledMode() {
+  document.body.classList.toggle('oled-mode');
+  
+  // Автоматически включаем темную тему, если включаем OLED
+  if (document.body.classList.contains('oled-mode') && !document.documentElement.classList.contains('dark')) {
+      toggleTheme();
+  }
+
+  const isOled = document.body.classList.contains('oled-mode');
+  localStorage.setItem('blocko_oled', isOled ? 'true' : 'false');
+  
+  updateOledUI(isOled);
+  
+  showSystemToast(
+    'Интерфейс', 
+    isOled ? 'Активирован монохромный OLED-режим. Идеально для концентрации.' : 'Обычный режим восстановлен.', 
+    isOled ? 'contrast' : 'sun-dim', 
+    'text-gray-500', 
+    'bg-gray-50 dark:bg-gray-900/30'
+  );
+}
+
+function updateOledUI(isOled) {
+  const iconWrap = document.getElementById('oledIconWrap');
+  const textLabel = document.getElementById('oledTextLabel');
+  const btn = document.getElementById('btnOledToggle');
+  
+  if (iconWrap && textLabel && btn) {
+    iconWrap.innerHTML = `<i data-lucide="${isOled ? 'sun-dim' : 'contrast'}" class="w-5 h-5 pointer-events-none"></i>`;
+    textLabel.innerText = isOled ? 'Обычный' : 'OLED Black';
+    
+    if (isOled) {
+      btn.classList.add('bg-gray-200', 'dark:bg-gray-800', 'border-gray-400', 'dark:border-gray-600');
+      btn.classList.remove('bg-gray-50', 'dark:bg-gray-900/50', 'border-gray-100', 'dark:border-gray-800');
+      iconWrap.classList.add('text-gray-900', 'dark:text-white');
+      iconWrap.classList.remove('text-gray-500');
+      textLabel.classList.add('text-gray-900', 'dark:text-white');
+      textLabel.classList.remove('text-gray-600', 'dark:text-gray-400');
+    } else {
+      btn.classList.remove('bg-gray-200', 'dark:bg-gray-800', 'border-gray-400', 'dark:border-gray-600');
+      btn.classList.add('bg-gray-50', 'dark:bg-gray-900/50', 'border-gray-100', 'dark:border-gray-800');
+      iconWrap.classList.remove('text-gray-900', 'dark:text-white');
+      iconWrap.classList.add('text-gray-500');
+      textLabel.classList.remove('text-gray-900', 'dark:text-white');
+      textLabel.classList.add('text-gray-600', 'dark:text-gray-400');
+    }
+    lucide.createIcons({ root: btn });
+  }
+}
+
+// Инициализация OLED при загрузке
+if (localStorage.getItem('blocko_oled') === 'true') {
+  document.body.classList.add('oled-mode');
+  if (!document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+  }
+  setTimeout(() => updateOledUI(true), 100);
 }
 
 // ЭНТЕРПРАЙЗ: Интерактивный Режим Фокуса (Fullscreen API)
