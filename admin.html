@@ -615,8 +615,83 @@
   </div>
 </div>
 
+<!-- CPA Inspect Premium Modal -->
+<div id="cpaInspectModal" class="hidden fixed inset-0 z-[500] flex items-center justify-center bg-gray-900/90 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4 py-10 overflow-y-auto">
+  <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[2.5rem] w-full max-w-5xl shadow-2xl border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform relative flex flex-col my-auto" id="cpaInspectContent">
+    <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+    <button onclick="closeCpaInspectModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
+
+    <div class="flex flex-col md:flex-row gap-8">
+      <!-- Левая колонка: Профиль и Статистика -->
+      <div class="w-full md:w-1/3 flex flex-col gap-6">
+        <div class="flex items-center gap-4">
+           <img id="cpaInspectAvatar" src="" class="w-16 h-16 rounded-full border-2 border-indigo-500/30 object-cover shadow-lg" />
+           <div>
+              <h3 class="text-xl font-black text-gray-900 dark:text-white line-clamp-1" id="cpaInspectName">Имя</h3>
+              <div class="text-xs text-gray-500 font-mono mt-0.5" id="cpaInspectEmail">email</div>
+              <div class="text-[10px] text-gray-400 font-mono mt-1">UID: <span id="cpaInspectUid"></span></div>
+           </div>
+        </div>
+
+        <div class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-inner">
+          <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Глобальная статистика</div>
+          <div class="space-y-4">
+            <div class="flex justify-between items-center">
+               <span class="text-xs font-bold text-gray-500 flex items-center gap-2"><i data-lucide="mouse-pointer-click" class="w-4 h-4 text-blue-500"></i> Клики (Хосты)</span>
+               <span class="text-sm font-black dark:text-white" id="cpaInspectClicks">0</span>
+            </div>
+            <div class="flex justify-between items-center">
+               <span class="text-xs font-bold text-gray-500 flex items-center gap-2"><i data-lucide="user-plus" class="w-4 h-4 text-purple-500"></i> Регистрации</span>
+               <span class="text-sm font-black dark:text-white" id="cpaInspectSignups">0</span>
+            </div>
+            <div class="flex justify-between items-center">
+               <span class="text-xs font-bold text-gray-500 flex items-center gap-2"><i data-lucide="shopping-cart" class="w-4 h-4 text-amber-500"></i> Продажи</span>
+               <span class="text-sm font-black dark:text-white" id="cpaInspectSales">0</span>
+            </div>
+            <div class="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700/50">
+               <span class="text-xs font-bold text-gray-500 flex items-center gap-2"><i data-lucide="link" class="w-4 h-4 text-gray-400"></i> Активных ссылок</span>
+               <span class="text-sm font-black dark:text-white" id="cpaInspectLinksCount">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl p-5 border border-emerald-100 dark:border-emerald-800/50 shadow-inner">
+           <div class="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest mb-1">Доступно к выводу</div>
+           <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400" id="cpaInspectBal">$0.00</div>
+           <div class="mt-4 pt-4 border-t border-emerald-200 dark:border-emerald-800/50">
+              <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Ручная корректировка (+/-)</label>
+              <div class="flex gap-2">
+                 <input type="number" id="cpaInspectAdjustVal" placeholder="Сумма" class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-800 rounded-lg outline-none text-xs font-bold dark:text-white focus:border-emerald-500 transition-colors shadow-sm" />
+                 <button onclick="adjustCpaBalance()" class="px-4 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold rounded-lg shadow-md active:scale-95 transition-all"><i data-lucide="check" class="w-4 h-4"></i></button>
+              </div>
+           </div>
+        </div>
+      </div>
+
+      <!-- Правая колонка: Заявки и История -->
+      <div class="w-full md:w-2/3 flex flex-col gap-6">
+         <!-- Заявки на вывод -->
+         <div>
+            <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 flex items-center gap-2"><i data-lucide="arrow-up-circle" class="w-4 h-4 text-rose-500"></i> Запросы на вывод средств</h4>
+            <div id="cpaInspectWithdrawals" class="space-y-3 max-h-48 overflow-y-auto hide-scroll bg-gray-50 dark:bg-gray-800/30 p-3 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-inner">
+               <!-- Injected by JS -->
+            </div>
+         </div>
+
+         <!-- История транзакций -->
+         <div class="flex-1 flex flex-col">
+            <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-indigo-500"></i> Финансовая история</h4>
+            <div id="cpaInspectHistory" class="space-y-2 max-h-64 overflow-y-auto hide-scroll bg-gray-50 dark:bg-gray-800/30 p-3 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-inner">
+               <!-- Injected by JS -->
+            </div>
+         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
-<div id="adminToast" class="fixed bottom-6 right-6 z-[400] transform translate-y-24 opacity-0 transition-all duration-300 bg-emerald-500 text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 pointer-events-none border border-emerald-400/50">
+<div id="adminToast" class="fixed bottom-6 right-6 z-[600] transform translate-y-24 opacity-0 transition-all duration-300 bg-emerald-500 text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 pointer-events-none border border-emerald-400/50">
   <i data-lucide="check-circle-2" class="w-5 h-5"></i> <span id="toastText">Готово</span>
 </div>
 
@@ -1732,8 +1807,6 @@
       }
   }
 
-  let expandedCpaRowId = null;
-
   function renderCpaNetwork() {
       const tbody = document.getElementById('cpaPartnersTbody');
       if (!tbody) return;
@@ -1743,11 +1816,9 @@
           return;
       }
 
-      // Сортировка по балансу
       const sorted = allCpaPartners.sort((a, b) => (b.balanceUSD || 0) - (a.balanceUSD || 0));
 
-      let html = '';
-      sorted.forEach(p => {
+      tbody.innerHTML = sorted.map(p => {
           const userProfile = allUsers.find(u => u.uid === p.id) || {};
           const safeName = userProfile.name || 'Аноним Партнер';
           const safeEmail = userProfile.email || p.id;
@@ -1771,16 +1842,13 @@
           const balance = (p.balanceUSD || 0).toFixed(2);
           const metrics = `${p.clicks || 0} / ${p.signups || 0} / ${totalSales}`;
 
-          const isExpanded = expandedCpaRowId === p.id;
-          const rowBg = isExpanded ? 'bg-indigo-900/10 border-indigo-500/30' : 'hover:bg-gray-800/40 border-transparent';
-
-          html += `
-            <tr onclick="toggleCpaInspectRow('${p.id}')" class="transition-colors group cursor-pointer ${rowBg} border-b border-gray-800/50">
+          return `
+            <tr class="hover:bg-gray-800/40 transition-colors group">
                <td class="px-6 py-4">
                   <div class="flex items-center gap-3">
                      <img src="${safeAvatar}" class="w-10 h-10 rounded-full border border-gray-700 object-cover shadow-sm" />
                      <div>
-                        <div class="text-sm font-bold text-white line-clamp-1 group-hover:text-indigo-400 transition-colors">${safeName}</div>
+                        <div class="text-sm font-bold text-white line-clamp-1">${safeName}</div>
                         <div class="text-[10px] text-gray-500 font-mono mt-0.5">${safeEmail}</div>
                      </div>
                   </div>
@@ -1800,131 +1868,155 @@
                   </span>
                </td>
                <td class="px-6 py-4 text-right">
-                 <button class="p-2 text-gray-400 hover:text-indigo-400 bg-gray-800 hover:bg-indigo-500/10 rounded-xl transition-all shadow-sm border border-transparent hover:border-indigo-500/30 inline-block pointer-events-none" title="Развернуть детали">
-                   <i data-lucide="${isExpanded ? 'chevron-up' : 'chevron-down'}" class="w-4 h-4 pointer-events-none"></i>
+                 <button onclick="inspectCpaPartner('${p.id}')" class="p-2 text-gray-400 hover:text-indigo-400 bg-gray-800 hover:bg-indigo-500/10 rounded-xl transition-all shadow-sm active:scale-95 border border-transparent hover:border-indigo-500/30 inline-block" title="Детали и Выплаты">
+                   <i data-lucide="external-link" class="w-4 h-4"></i>
                  </button>
                </td>
             </tr>
           `;
-
-          if (isExpanded) {
-              const history = p.history || [];
-              let totalEarned = 0;
-              history.forEach(tx => {
-                  const amt = parseFloat(tx.amount) || 0;
-                  if (amt > 0) totalEarned += amt;
-              });
-
-              let historyHtml = '<div class="text-center text-xs text-gray-500 py-6 font-bold uppercase tracking-widest">Транзакций нет</div>';
-              if (history.length > 0) {
-                  const sortedHistory = [...history].sort((a, b) => {
-                      const timeA = a.date ? new Date(a.date).getTime() : 0;
-                      const timeB = b.date ? new Date(b.date).getTime() : 0;
-                      return timeB - timeA;
-                  });
-                  
-                  historyHtml = sortedHistory.map(tx => {
-                      const amt = parseFloat(tx.amount) || 0;
-                      const isPositive = amt > 0;
-                      const sign = isPositive ? '+' : '';
-                      const colorClass = isPositive ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-gray-400 bg-gray-800 border-gray-700';
-                      
-                      let dateStr = 'Неизвестно';
-                      if (tx.date) {
-                          const dObj = new Date(tx.date);
-                          if (!isNaN(dObj.getTime())) {
-                              dateStr = dObj.toLocaleDateString('ru-RU') + ' ' + dObj.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
-                          }
-                      }
-                      
-                      let actionHtml = '';
-                      if (amt < 0 && tx.status === 'pending') {
-                          actionHtml = `
-                            <div class="flex items-center gap-2 mt-2">
-                               <button onclick="event.stopPropagation(); approvePayout('${p.id}', '${tx.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded-lg transition-colors active:scale-95 shadow-sm">Одобрить</button>
-                               <button onclick="event.stopPropagation(); rejectPayout('${p.id}', '${tx.id}', ${Math.abs(amt)})" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold rounded-lg transition-colors active:scale-95 shadow-sm">Отклонить</button>
-                            </div>
-                          `;
-                      } else if (tx.status === 'approved') {
-                          actionHtml = `<div class="text-[9px] font-black text-emerald-500 uppercase mt-1 tracking-widest"><i data-lucide="check-circle" class="w-3 h-3 inline pb-0.5"></i> Выплачено</div>`;
-                      } else if (tx.status === 'rejected') {
-                          actionHtml = `<div class="text-[9px] font-black text-rose-500 uppercase mt-1 tracking-widest"><i data-lucide="x-circle" class="w-3 h-3 inline pb-0.5"></i> Отклонено</div>`;
-                      }
-
-                      return `
-                         <div class="p-3 bg-gray-800/50 rounded-xl border border-gray-700/50 flex justify-between items-start mb-2 transition-colors hover:border-gray-600 cursor-default" onclick="event.stopPropagation()">
-                            <div>
-                               <div class="text-xs font-bold text-gray-200">${tx.description || 'Транзакция'}</div>
-                               <div class="text-[9px] text-gray-500 font-mono mt-1">${dateStr}</div>
-                               ${actionHtml}
-                            </div>
-                            <div class="px-2.5 py-1 rounded-lg border text-xs font-black ${colorClass}">
-                               ${sign}$${Math.abs(amt).toFixed(2)}
-                            </div>
-                         </div>
-                      `;
-                  }).join('');
-              }
-
-              html += `
-                <tr class="bg-[#0b0f19]/80 border-b border-gray-800">
-                   <td colspan="5" class="p-0">
-                      <div class="p-6 bg-indigo-900/5 border-x border-b border-indigo-500/20 shadow-inner rounded-b-3xl mb-4 animate-fade-in-up">
-                         
-                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                             <div class="bg-gray-800/50 border border-gray-700 p-4 rounded-2xl text-center shadow-inner cursor-default" onclick="event.stopPropagation()">
-                                <div class="text-xl font-black text-white">${p.sales || 0}</div>
-                                <div class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mt-1">Оплаченные Лиды</div>
-                             </div>
-                             <div class="bg-emerald-900/10 border border-emerald-500/20 p-4 rounded-2xl text-center shadow-inner cursor-default" onclick="event.stopPropagation()">
-                                <div class="text-xl font-black text-emerald-400">$${(parseFloat(p.balanceUSD)||0).toFixed(2)}</div>
-                                <div class="text-[10px] uppercase tracking-widest text-emerald-600 font-bold mt-1">Текущий баланс</div>
-                             </div>
-                             <div class="bg-indigo-900/10 border border-indigo-500/20 p-4 rounded-2xl text-center shadow-inner cursor-default" onclick="event.stopPropagation()">
-                                <div class="text-xl font-black text-indigo-400">$${totalEarned.toFixed(2)}</div>
-                                <div class="text-[10px] uppercase tracking-widest text-indigo-600 font-bold mt-1">Заработано всего</div>
-                             </div>
-                         </div>
-
-                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                             <!-- Action Panel for Manual Adjustments -->
-                             <div class="bg-gray-800/30 border border-gray-700/50 p-5 rounded-3xl flex flex-col justify-between cursor-default" onclick="event.stopPropagation()">
-                                <div>
-                                   <h4 class="text-xs font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4"></i> Корректировка ($)</h4>
-                                   <p class="text-xs text-gray-500 mb-4 leading-relaxed">Введите положительное число для начисления или отрицательное для списания.</p>
-                                   <input type="number" id="cpaInspectAdjustVal" placeholder="Например: 50 или -10" class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-xl outline-none text-white focus:border-indigo-500 font-bold transition-colors shadow-inner mb-4" />
-                                </div>
-                                <button onclick="adjustCpaBalance()" class="w-full py-3.5 px-6 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg active:scale-95 transition-all">Применить транзакцию</button>
-                             </div>
-
-                             <!-- Transaction History -->
-                             <div class="cursor-default" onclick="event.stopPropagation()">
-                                <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4"></i> Транзакции и Выводы</h4>
-                                <div class="space-y-2 bg-gray-900/50 border border-gray-800 rounded-2xl p-2 max-h-[250px] overflow-y-auto hide-scroll shadow-inner">
-                                   ${historyHtml}
-                                </div>
-                             </div>
-                         </div>
-
-                      </div>
-                   </td>
-                </tr>
-              `;
-          }
-      });
-      
-      tbody.innerHTML = html;
+      }).join('');
       lucide.createIcons();
   }
 
-  function toggleCpaInspectRow(partnerId) {
-      if (expandedCpaRowId === partnerId) {
-          expandedCpaRowId = null; 
-      } else {
-          expandedCpaRowId = partnerId; 
-          currentEditUid = partnerId; // Set global UID for adjustCpaBalance
+  function inspectCpaPartner(partnerId) {
+      try {
+          const partner = allCpaPartners.find(p => p.id === partnerId);
+          const userProfile = allUsers.find(u => u.uid === partnerId) || {};
+          
+          if (!partner) {
+             alert(`Ошибка: Партнер не найден.`);
+             return;
+          }
+          
+          currentEditUid = partnerId; 
+          
+          let modal = document.getElementById('cpaInspectModal');
+          if (!modal) {
+             alert('Критическая ошибка: Элемент cpaInspectModal не существует в DOM.');
+             return;
+          }
+
+          const safeName = userProfile.name || 'Аноним Партнер';
+          const safeEmail = userProfile.email || partnerId;
+          const safeAvatar = userProfile.customAvatar || userProfile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+
+          document.getElementById('cpaInspectAvatar').src = safeAvatar;
+          document.getElementById('cpaInspectName').innerText = safeName;
+          document.getElementById('cpaInspectEmail').innerText = safeEmail;
+          document.getElementById('cpaInspectUid').innerText = partnerId;
+          
+          document.getElementById('cpaInspectClicks').innerText = partner.clicks || 0;
+          document.getElementById('cpaInspectSignups').innerText = partner.signups || 0;
+          document.getElementById('cpaInspectSales').innerText = partner.sales || 0;
+          document.getElementById('cpaInspectLinksCount').innerText = (partner.savedLinks || []).length;
+          
+          const currentBal = parseFloat(partner.balanceUSD) || 0;
+          document.getElementById('cpaInspectBal').innerText = '$' + currentBal.toFixed(2);
+          
+          const history = partner.history || [];
+          
+          // Рендер запросов на вывод
+          const withdrawalsEl = document.getElementById('cpaInspectWithdrawals');
+          const pendingWithdrawals = history.filter(tx => parseFloat(tx.amount) < 0 && tx.status === 'pending');
+          
+          if (pendingWithdrawals.length === 0) {
+              withdrawalsEl.innerHTML = '<div class="text-center text-xs text-gray-500 py-4 font-bold uppercase tracking-widest">Нет активных заявок</div>';
+          } else {
+              withdrawalsEl.innerHTML = pendingWithdrawals.map(tx => {
+                  const amt = Math.abs(parseFloat(tx.amount) || 0);
+                  let dateStr = 'Неизвестно';
+                  if (tx.date) {
+                      const dObj = new Date(tx.date);
+                      if (!isNaN(dObj.getTime())) {
+                          dateStr = dObj.toLocaleDateString('ru-RU') + ' ' + dObj.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+                      }
+                  }
+                  return `
+                     <div class="p-3 bg-white dark:bg-gray-800 rounded-xl border border-rose-200 dark:border-rose-900/50 flex justify-between items-center shadow-sm">
+                        <div>
+                           <div class="text-xs font-bold text-gray-900 dark:text-white">Заявка на вывод: <span class="text-rose-500 font-black">$${amt.toFixed(2)}</span></div>
+                           <div class="text-[9px] text-gray-500 font-mono mt-1">${dateStr}</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                           <button onclick="approvePayout('${partnerId}', '${tx.id}')" class="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors active:scale-95 shadow-sm border border-emerald-200 dark:border-emerald-800" title="Одобрить"><i data-lucide="check" class="w-4 h-4"></i></button>
+                           <button onclick="rejectPayout('${partnerId}', '${tx.id}', ${amt})" class="p-2 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition-colors active:scale-95 shadow-sm border border-rose-200 dark:border-rose-800" title="Отклонить"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        </div>
+                     </div>
+                  `;
+              }).join('');
+          }
+
+          // Рендер истории транзакций (без pending выводов)
+          const historyEl = document.getElementById('cpaInspectHistory');
+          const resolvedHistory = history.filter(tx => !(parseFloat(tx.amount) < 0 && tx.status === 'pending'));
+
+          if (resolvedHistory.length === 0) {
+              historyEl.innerHTML = '<div class="text-center text-xs text-gray-500 py-6 font-bold uppercase tracking-widest">Транзакций нет</div>';
+          } else {
+              const sortedHistory = [...resolvedHistory].sort((a, b) => {
+                  const timeA = a.date ? new Date(a.date).getTime() : 0;
+                  const timeB = b.date ? new Date(b.date).getTime() : 0;
+                  return timeB - timeA;
+              });
+              
+              historyEl.innerHTML = sortedHistory.map(tx => {
+                  const amt = parseFloat(tx.amount) || 0;
+                  const isPositive = amt > 0;
+                  const sign = isPositive ? '+' : '';
+                  const colorClass = isPositive ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/50' : 'text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+                  
+                  let dateStr = 'Неизвестно';
+                  if (tx.date) {
+                      const dObj = new Date(tx.date);
+                      if (!isNaN(dObj.getTime())) {
+                          dateStr = dObj.toLocaleDateString('ru-RU') + ' ' + dObj.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+                      }
+                  }
+                  
+                  let statusHtml = '';
+                  if (tx.status === 'approved') statusHtml = `<div class="text-[9px] font-black text-emerald-500 uppercase mt-1 tracking-widest"><i data-lucide="check-circle" class="w-3 h-3 inline pb-0.5"></i> Выплачено</div>`;
+                  if (tx.status === 'rejected') statusHtml = `<div class="text-[9px] font-black text-rose-500 uppercase mt-1 tracking-widest"><i data-lucide="x-circle" class="w-3 h-3 inline pb-0.5"></i> Отклонено</div>`;
+
+                  return `
+                     <div class="p-3 bg-white dark:bg-gray-800/80 rounded-xl border border-gray-100 dark:border-gray-700/50 flex justify-between items-center mb-2 shadow-sm">
+                        <div>
+                           <div class="text-xs font-bold text-gray-900 dark:text-gray-200">${tx.description || 'Транзакция'}</div>
+                           <div class="text-[9px] text-gray-500 font-mono mt-1">${dateStr}</div>
+                           ${statusHtml}
+                        </div>
+                        <div class="px-3 py-1.5 rounded-lg border text-sm font-black ${colorClass}">
+                           ${sign}$${Math.abs(amt).toFixed(2)}
+                        </div>
+                     </div>
+                  `;
+              }).join('');
+          }
+          
+          lucide.createIcons();
+          
+          const content = document.getElementById('cpaInspectContent');
+          modal.classList.remove('hidden');
+          modal.style.display = 'flex';
+          
+          setTimeout(() => {
+              modal.classList.remove('opacity-0');
+              content.classList.remove('scale-95');
+          }, 10);
+      } catch (err) {
+          console.error("Ошибка при открытии деталей партнера:", err);
+          alert("Критическая ошибка UI: " + err.message);
       }
-      renderCpaNetwork();
+  }
+
+  function closeCpaInspectModal() {
+      const modal = document.getElementById('cpaInspectModal');
+      const content = document.getElementById('cpaInspectContent');
+      modal.classList.add('opacity-0');
+      content.classList.add('scale-95');
+      setTimeout(() => {
+          modal.classList.add('hidden');
+          modal.style.display = ''; 
+      }, 300);
   }
 
   async function adjustCpaBalance() {
@@ -1943,7 +2035,8 @@
               id: 'tx_' + Date.now(),
               amount: val,
               description: val > 0 ? 'Ручная корректировка (Начисление)' : 'Ручная корректировка (Списание)',
-              date: new Date().toISOString()
+              date: new Date().toISOString(),
+              status: 'completed'
           });
 
           await ref.update({
@@ -1951,8 +2044,10 @@
               history: history
           });
 
+          input.value = '';
           showToast('Баланс партнера успешно обновлен!');
-          loadCpaNetwork(); // Перерендериваем таблицу админки
+          loadCpaNetwork(); 
+          setTimeout(() => inspectCpaPartner(currentEditUid), 500); 
 
       } catch (e) {
           console.error(e);
@@ -1961,6 +2056,7 @@
   }
 
   async function approvePayout(partnerId, txId) {
+      if(!confirm('Подтвердить выплату? Статус изменится на "Выплачено".')) return;
       try {
           const ref = db.collection('affiliates_cpa').doc(partnerId);
           const doc = await ref.get();
@@ -1973,6 +2069,7 @@
               await ref.update({ history: history });
               showToast('Выплата переведена в статус ОДОБРЕНО!');
               loadCpaNetwork();
+              setTimeout(() => inspectCpaPartner(partnerId), 500);
           }
       } catch (e) {
           showToast('Ошибка подтверждения');
@@ -1980,6 +2077,7 @@
   }
 
   async function rejectPayout(partnerId, txId, refundAmount) {
+      if(!confirm('Отклонить выплату? Средства будут возвращены на баланс партнера.')) return;
       try {
           const ref = db.collection('affiliates_cpa').doc(partnerId);
           const doc = await ref.get();
@@ -1990,12 +2088,12 @@
           if (txIndex > -1) {
               history[txIndex].status = 'rejected';
               
-              // Возвращаем средства через компенсационную транзакцию
               history.push({
                   id: 'tx_refund_' + Date.now(),
                   amount: refundAmount,
                   description: 'Возврат средств (отказ в выплате)',
-                  date: new Date().toISOString()
+                  date: new Date().toISOString(),
+                  status: 'completed'
               });
               
               await ref.update({ 
@@ -2005,11 +2103,13 @@
               
               showToast('Выплата отклонена. Средства возвращены партнеру.');
               loadCpaNetwork();
+              setTimeout(() => inspectCpaPartner(partnerId), 500);
           }
       } catch (e) {
           showToast('Ошибка отклонения');
       }
   }
+  
   // --- SYSTEM HELPERS ---
   function showToast(text) {
       const t = document.getElementById('adminToast');
