@@ -45,6 +45,16 @@
     <button id="navPromo" onclick="switchTab('viewPromo')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
       <i data-lucide="ticket" class="w-5 h-5"></i><span class="hidden lg:block text-sm">Промо акции</span>
     </button>
+    <button id="navQuests" onclick="switchTab('viewQuests')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
+      <div class="relative">
+        <i data-lucide="swords" class="w-5 h-5"></i>
+        <span id="questsBadge" class="hidden absolute -top-1 -right-1 flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+        </span>
+      </div>
+      <span class="hidden lg:block text-sm">Модерация Квестов</span>
+    </button>
     <button id="navSupport" onclick="switchTab('viewSupport')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
       <div class="relative">
         <i data-lucide="life-buoy" class="w-5 h-5"></i>
@@ -336,6 +346,46 @@
       </div>
     </div>
 
+    <!-- VIEW: QUESTS MODERATION -->
+    <div id="viewQuests" class="hidden animate-fade-in-up relative z-10">
+      <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md">
+         <div class="flex justify-between items-center mb-8">
+            <h3 class="text-2xl font-black text-white flex items-center gap-3"><i data-lucide="swords" class="w-8 h-8 text-emerald-500"></i> Заявки на награды</h3>
+            <button onclick="loadQuestSubmissions()" class="p-3 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-xl transition-colors border border-gray-700 shadow-sm" title="Обновить"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+         </div>
+
+         <!-- Статистика модерации -->
+         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ожидают проверки</div>
+                <div class="text-2xl font-black text-white" id="statPendingQuests">0</div>
+              </div>
+              <div class="p-3 bg-blue-500/10 text-blue-500 rounded-xl"><i data-lucide="clock" class="w-6 h-6"></i></div>
+            </div>
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Одобрено (Награждены)</div>
+                <div class="text-2xl font-black text-emerald-400" id="statApprovedQuests">0</div>
+              </div>
+              <div class="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl"><i data-lucide="check-circle" class="w-6 h-6"></i></div>
+            </div>
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Отклонено (Спам/Брак)</div>
+                <div class="text-2xl font-black text-rose-400" id="statRejectedQuests">0</div>
+              </div>
+              <div class="p-3 bg-rose-500/10 text-rose-500 rounded-xl"><i data-lucide="x-circle" class="w-6 h-6"></i></div>
+            </div>
+         </div>
+
+         <!-- Список заявок -->
+         <div class="grid grid-cols-1 gap-4" id="questsList">
+            <!-- JS INJECT -->
+         </div>
+      </div>
+    </div>
+
   </div>
 </main>
 
@@ -596,6 +646,7 @@
       renderTable();
       loadPromos(); // ЭНТЕРПРАЙЗ: Загрузка модуля промо-кампаний
       loadSupportTickets(); // ЭНТЕРПРАЙЗ: Загрузка Helpdesk
+      loadQuestSubmissions(); // ЭНТЕРПРАЙЗ: Загрузка модерации квестов
 
       // Убираем лоадер
       const loader = document.getElementById('loader');
@@ -1012,13 +1063,14 @@
 
   // --- TAB ROUTER ---
   function switchTab(tabId) {
-     ['viewDatabase', 'viewPromo', 'viewSupport', 'viewLogs'].forEach(id => {
+     ['viewDatabase', 'viewPromo', 'viewQuests', 'viewSupport', 'viewLogs'].forEach(id => {
          document.getElementById(id).classList.add('hidden');
      });
      
      const baseClass = "flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start";
      document.getElementById('navDatabase').className = baseClass;
      document.getElementById('navPromo').className = baseClass;
+     document.getElementById('navQuests').className = baseClass;
      document.getElementById('navSupport').className = baseClass;
      document.getElementById('navLogs').className = baseClass;
 
@@ -1028,6 +1080,8 @@
          document.getElementById('navDatabase').className = "flex items-center gap-3 p-3 lg:px-4 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold border border-indigo-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
      } else if (tabId === 'viewPromo') {
          document.getElementById('navPromo').className = "flex items-center gap-3 p-3 lg:px-4 bg-amber-500/10 text-amber-400 rounded-xl font-bold border border-amber-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
+     } else if (tabId === 'viewQuests') {
+         document.getElementById('navQuests').className = "flex items-center gap-3 p-3 lg:px-4 bg-emerald-500/10 text-emerald-400 rounded-xl font-bold border border-emerald-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
      } else if (tabId === 'viewSupport') {
          document.getElementById('navSupport').className = "flex items-center gap-3 p-3 lg:px-4 bg-rose-500/10 text-rose-400 rounded-xl font-bold border border-rose-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
      } else if (tabId === 'viewLogs') {
@@ -1404,6 +1458,141 @@
      } catch(e) {
          alert("Ошибка обновления статуса: " + e.message);
      }
+  }
+
+  // --- QUEST MODERATION ENGINE ---
+  let allQuestSubmissions = [];
+
+  async function loadQuestSubmissions() {
+      try {
+          const snap = await db.collection('quest_submissions').orderBy('createdAt', 'desc').get();
+          allQuestSubmissions = [];
+          let pendingCount = 0;
+          let approvedCount = 0;
+          let rejectedCount = 0;
+
+          snap.forEach(doc => {
+              const q = { id: doc.id, ...doc.data() };
+              allQuestSubmissions.push(q);
+              if (q.status === 'pending') pendingCount++;
+              else if (q.status === 'approved') approvedCount++;
+              else if (q.status === 'rejected') rejectedCount++;
+          });
+
+          // Обновляем статистику
+          document.getElementById('statPendingQuests').innerText = pendingCount;
+          document.getElementById('statApprovedQuests').innerText = approvedCount;
+          document.getElementById('statRejectedQuests').innerText = rejectedCount;
+
+          // Обновляем бейдж в меню
+          const badge = document.getElementById('questsBadge');
+          if (pendingCount > 0) badge.classList.remove('hidden');
+          else badge.classList.add('hidden');
+
+          renderQuestSubmissions();
+      } catch (e) { console.error("Quests load error:", e); }
+  }
+
+  function renderQuestSubmissions() {
+      const list = document.getElementById('questsList');
+      
+      // Показываем сначала те, что ждут проверки
+      const sorted = allQuestSubmissions.sort((a, b) => {
+          if (a.status === 'pending' && b.status !== 'pending') return -1;
+          if (a.status !== 'pending' && b.status === 'pending') return 1;
+          return 0; // Остальные по дате (уже отсортировано из БД)
+      });
+
+      if (sorted.length === 0) {
+          list.innerHTML = `<div class="p-10 text-center text-gray-500 font-bold uppercase tracking-widest"><i data-lucide="inbox" class="w-10 h-10 mx-auto mb-4 opacity-50"></i> Заявок пока нет</div>`;
+          lucide.createIcons();
+          return;
+      }
+
+      list.innerHTML = sorted.map(q => {
+          const isPending = q.status === 'pending';
+          const isArticle = q.type === 'article';
+          
+          const typeBadge = isArticle 
+             ? `<span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest"><i data-lucide="edit-3" class="w-3 h-3 inline mr-1 mb-0.5"></i> Эпическое (Статья)</span>`
+             : `<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest"><i data-lucide="video" class="w-3 h-3 inline mr-1 mb-0.5"></i> Мифическое (Видео)</span>`;
+          
+          const rewardText = isArticle ? '+300 кредитов' : 'Тариф COMPANY';
+
+          let statusUi = '';
+          if (q.status === 'approved') statusUi = `<div class="px-4 py-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Одобрено</div>`;
+          else if (q.status === 'rejected') statusUi = `<div class="px-4 py-2 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-xl font-bold text-sm flex items-center gap-2"><i data-lucide="x-circle" class="w-4 h-4"></i> Отклонено</div>`;
+          else {
+              statusUi = `
+                <div class="flex gap-2 w-full sm:w-auto">
+                   <button onclick="reviewQuest('${q.id}', '${q.userId}', '${q.type}', 'reject')" class="flex-1 sm:flex-none px-4 py-2 bg-gray-800 hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 border border-gray-700 hover:border-rose-500/50 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"><i data-lucide="x" class="w-4 h-4"></i> Отклонить</button>
+                   <button onclick="reviewQuest('${q.id}', '${q.userId}', '${q.type}', 'approve')" class="flex-1 sm:flex-none px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Выдать награду</button>
+                </div>
+              `;
+          }
+
+          return `
+            <div class="bg-gray-800/40 border ${isPending ? 'border-gray-600' : 'border-gray-700/50 opacity-60'} p-5 rounded-2xl flex flex-col gap-4 transition-all">
+               <div class="flex justify-between items-start gap-4">
+                  <div class="flex items-center gap-3">
+                     <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(q.userName)}&background=3b82f6&color=fff" class="w-10 h-10 rounded-full border border-gray-600">
+                     <div>
+                        <div class="font-bold text-white text-sm">${q.userName} <span class="text-gray-500 text-xs ml-2 font-normal">${q.userEmail}</span></div>
+                        <div class="text-[10px] text-gray-400 font-mono mt-0.5">UID: ${q.userId} • Дата: ${formatFirebaseDate(q.createdAt)}</div>
+                     </div>
+                  </div>
+                  <div class="hidden sm:block">${typeBadge}</div>
+               </div>
+               
+               <div class="sm:hidden">${typeBadge}</div>
+
+               <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-700">
+                  <div class="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Ссылка на работу пользователя:</div>
+                  <a href="${q.link}" target="_blank" class="text-blue-400 hover:text-blue-300 font-medium text-sm break-all flex items-center gap-2 group"><i data-lucide="external-link" class="w-4 h-4 group-hover:scale-110 transition-transform"></i> ${q.link}</a>
+               </div>
+
+               <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-2 pt-4 border-t border-gray-700">
+                  <div class="text-xs font-bold text-gray-400">Награда к выдаче: <span class="text-white">${rewardText}</span></div>
+                  ${statusUi}
+               </div>
+            </div>
+          `;
+      }).join('');
+      lucide.createIcons();
+  }
+
+  async function reviewQuest(questId, userId, type, action) {
+      if (!confirm(`Вы уверены, что хотите ${action === 'approve' ? 'ОДОБРИТЬ и ВЫДАТЬ НАГРАДУ' : 'ОТКЛОНИТЬ'} эту работу?`)) return;
+
+      try {
+          const batch = db.batch();
+          const questRef = db.collection('quest_submissions').doc(questId);
+          
+          if (action === 'approve') {
+              if (type === 'article') {
+                  // Выдаем 300 кредитов
+                  batch.set(db.collection('affiliates').doc(userId), {
+                      earnedCredits: firebase.firestore.FieldValue.increment(300)
+                  }, { merge: true });
+              } else if (type === 'video') {
+                  // Выдаем тариф Company пожизненно (или сбрасываем лимит)
+                  batch.update(db.collection('users').doc(userId), {
+                      plan: 'pro',
+                      planExpiresAt: firebase.firestore.FieldValue.delete()
+                  });
+              }
+              batch.update(questRef, { status: 'approved', processedAt: new Date().toISOString() });
+              showToast('Работа одобрена. Награда выдана!');
+          } else {
+              batch.update(questRef, { status: 'rejected', processedAt: new Date().toISOString() });
+              showToast('Работа отклонена.');
+          }
+
+          await batch.commit();
+          loadQuestSubmissions(); // Перезагружаем список
+      } catch (e) {
+          alert('Ошибка обработки: ' + e.message);
+      }
   }
 
   // --- SYSTEM HELPERS ---
