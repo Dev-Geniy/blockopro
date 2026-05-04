@@ -635,18 +635,59 @@
         </div>
 
         <div id="animationSettingsBlock" class="hidden">
-          <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Эффект артефакта</label>
-          <select id="frameAnimationSelect" onchange="updateProfileEffects()" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none dark:text-white cursor-pointer hover:border-blue-500 transition-colors">
-            <option value="none">Без анимации</option>
-            <option value="pulse">Пульсация (Мягкая)</option>
-            <option value="rainbow">Радужный перелив (Epic)</option>
-            <option value="flicker">Неоновое мерцание</option>
-          </select>
+              <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Эффект артефакта</label>
+              <select id="frameAnimationSelect" onchange="updateProfileEffects()" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none dark:text-white cursor-pointer hover:border-blue-500 transition-colors">
+                <option value="none">Без анимации</option>
+                <option value="pulse">Пульсация (Мягкая)</option>
+                <option value="rainbow">Радужный перелив (Epic)</option>
+                <option value="flicker">Неоновое мерцание</option>
+              </select>
+            </div>
+            
+            <!-- ЭНТЕРПРАЙЗ: Защищенный блок администратора -->
+            <div id="adminControlsBlock" class="hidden mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
+              <label class="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <i data-lucide="shield-alert" class="w-4 h-4"></i> Панель управления
+              </label>
+              <div class="flex gap-2">
+                <button id="btnOpenAdminPanel" onclick="window.location.href='admin.html'" class="flex-1 py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 border border-gray-700 dark:border-gray-200">
+                  <i data-lucide="database" class="w-4 h-4"></i> Админ Панель
+                </button>
+                <button id="btnManageAdmins" onclick="openManageAdminsModal()" class="hidden flex-1 py-3.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-500/25 active:scale-95 transition-all items-center justify-center gap-2">
+                  <i data-lucide="users" class="w-4 h-4"></i> Доступ
+                </button>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
+
+    <!-- Модальное окно управления доступом (Только для Владельца) -->
+    <div id="manageAdminsModal" class="hidden fixed inset-0 z-[500] flex items-center justify-center bg-gray-900/80 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4">
+      <div class="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform" id="manageAdminsContent">
+        <button onclick="closeManageAdminsModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 rounded-full transition-colors z-20"><i data-lucide="x" class="w-5 h-5"></i></button>
+        
+        <div class="flex items-center gap-3 mb-6">
+          <div class="p-3 bg-rose-50 dark:bg-rose-900/30 text-rose-500 rounded-xl border border-rose-100 dark:border-rose-800/50 shadow-sm"><i data-lucide="shield" class="w-6 h-6"></i></div>
+          <div>
+            <h2 class="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none">Администраторы</h2>
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Доступ к Command Center</p>
+          </div>
+        </div>
+        
+        <div class="flex gap-2 mb-6">
+          <input type="email" id="newAdminEmail" placeholder="Email нового администратора..." class="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 dark:text-white transition-all shadow-inner">
+          <button onclick="addAdmin()" class="px-5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"><i data-lucide="user-plus" class="w-5 h-5"></i></button>
+        </div>
+        
+        <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 pl-2">Список доступа:</div>
+        <div id="adminsList" class="space-y-2 max-h-48 overflow-y-auto hide-scroll pr-1">
+          <!-- JS Injects admins here -->
+        </div>
+      </div>
+    </div>
   
   <!-- Пуш уведомление -->
   <div id="globalToast" class="fixed bottom-6 right-6 z-[100] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
@@ -2288,19 +2329,20 @@ async function submitSupportTicket() {
 }
 
 // Закрытие модалок по клику на затемненный фон
-window.addEventListener('click', (e) => {
-  if (e.target.id === 'createBoardModal') closeCreateModal();
-  if (e.target.id === 'joinBoardModal') closeJoinModal();
-  if (e.target.id === 'backupModal') closeBackupModal();
-  if (e.target.id === 'pricingModal') closePricingModal();
-  if (e.target.id === 'affiliateModal') closeAffiliateModal();
-  if (e.target.id === 'topUpModal') closeTopUpModal();
-  if (e.target.id === 'aboutModal') closeAboutModal();
-  if (e.target.id === 'customConfirmModal') closeConfirmModal();
-  if (e.target.id === 'planDetailsModal') closePlanDetails();
-  if (e.target.id === 'importBoardModal') closeImportModal();
-  if (e.target.id === 'supportModal') closeSupportModal();
-});
+    window.addEventListener('click', (e) => {
+      if (e.target.id === 'createBoardModal') closeCreateModal();
+      if (e.target.id === 'joinBoardModal') closeJoinModal();
+      if (e.target.id === 'backupModal') closeBackupModal();
+      if (e.target.id === 'pricingModal') closePricingModal();
+      if (e.target.id === 'affiliateModal') closeAffiliateModal();
+      if (e.target.id === 'topUpModal') closeTopUpModal();
+      if (e.target.id === 'aboutModal') closeAboutModal();
+      if (e.target.id === 'customConfirmModal') closeConfirmModal();
+      if (e.target.id === 'planDetailsModal') closePlanDetails();
+      if (e.target.id === 'importBoardModal') closeImportModal();
+      if (e.target.id === 'supportModal') closeSupportModal();
+      if (e.target.id === 'manageAdminsModal') closeManageAdminsModal();
+    });
   
 let toastTimeout;
 function showSystemToast(title, desc, iconName, iconColor, bgColor) {
@@ -2890,16 +2932,44 @@ async function openProfileSettings() {
     }
 
     // 3. Анимации (уровень Ambassador)
-    if (rewards.includes('ambassador')) {
-      document.getElementById('animationSettingsBlock').classList.remove('hidden');
-      document.getElementById('frameAnimationSelect').value = data.badgeConfig?.animation || 'none';
-    } else {
-      document.getElementById('animationSettingsBlock').classList.add('hidden');
-    }
+        if (rewards.includes('ambassador')) {
+          document.getElementById('animationSettingsBlock').classList.remove('hidden');
+          document.getElementById('frameAnimationSelect').value = data.badgeConfig?.animation || 'none';
+        } else {
+          document.getElementById('animationSettingsBlock').classList.add('hidden');
+        }
 
-    updateProfilePreview(data);
-    
-    modal.classList.remove('hidden');
+        // ЭНТЕРПРАЙЗ: Интеллектуальная проверка прав (RBAC)
+        const ownerEmail = 'uajerryua@gmail.com';
+        const userEmail = data.email || (currentUser && currentUser.email) || '';
+        let isAdmin = userEmail === ownerEmail;
+        let isOwner = userEmail === ownerEmail;
+
+        if (!isAdmin && userEmail) {
+          try {
+            const sysDoc = await db.collection('system').doc('admins').get();
+            if (sysDoc.exists && sysDoc.data().emails) {
+               if (sysDoc.data().emails.includes(userEmail)) isAdmin = true;
+            }
+          } catch(e) {}
+        }
+
+        if (isAdmin) {
+            document.getElementById('adminControlsBlock').classList.remove('hidden');
+            if (isOwner) {
+                document.getElementById('btnManageAdmins').classList.remove('hidden');
+                document.getElementById('btnManageAdmins').classList.add('flex');
+            } else {
+                document.getElementById('btnManageAdmins').classList.add('hidden');
+                document.getElementById('btnManageAdmins').classList.remove('flex');
+            }
+        } else {
+            document.getElementById('adminControlsBlock').classList.add('hidden');
+        }
+
+        updateProfilePreview(data);
+        
+        modal.classList.remove('hidden');
     setTimeout(() => { 
       modal.classList.remove('opacity-0'); 
       content.classList.remove('scale-95'); 
@@ -3129,32 +3199,132 @@ async function applyFrameColor(frameColor, glowColor) {
 }
 
 // 4. Сохранение анимации (для Амбассадоров)
-async function updateProfileEffects() {
-  if (!currentUser) return;
-  const animation = document.getElementById('frameAnimationSelect').value;
-  
-  const userDoc = await db.collection('users').doc(currentUser.id).get();
-  const currentConfig = userDoc.data().badgeConfig || {};
-  const newConfig = { ...currentConfig, animation };
-  
-  await db.collection('users').doc(currentUser.id).set({
-    badgeConfig: newConfig
-  }, { merge: true });
-  
-  await syncUserProfileToBoards({ badgeConfig: newConfig });
-  
-  const updatedDoc = await db.collection('users').doc(currentUser.id).get();
-  currentUser.badgeConfig = newConfig;
-  updateProfilePreview(updatedDoc.data());
-  
-  const dashAvatarEl = document.getElementById('dashAvatar');
-  if(dashAvatarEl) {
-      dashAvatarEl.outerHTML = renderUserAvatar(updatedDoc.data(), 'w-11 h-11', 'dashAvatar', 'openProfileSettings()');
-      lucide.createIcons();
-  }
-  
-  showSystemToast('Сохранено', 'Анимация обновлена везде!', 'zap', 'text-amber-500', 'bg-amber-50');
-}
-</script>
+    async function updateProfileEffects() {
+      if (!currentUser) return;
+      const animation = document.getElementById('frameAnimationSelect').value;
+      
+      const userDoc = await db.collection('users').doc(currentUser.id).get();
+      const currentConfig = userDoc.data().badgeConfig || {};
+      const newConfig = { ...currentConfig, animation };
+      
+      await db.collection('users').doc(currentUser.id).set({
+        badgeConfig: newConfig
+      }, { merge: true });
+      
+      await syncUserProfileToBoards({ badgeConfig: newConfig });
+      
+      const updatedDoc = await db.collection('users').doc(currentUser.id).get();
+      currentUser.badgeConfig = newConfig;
+      updateProfilePreview(updatedDoc.data());
+      
+      const dashAvatarEl = document.getElementById('dashAvatar');
+      if(dashAvatarEl) {
+          dashAvatarEl.outerHTML = renderUserAvatar(updatedDoc.data(), 'w-11 h-11', 'dashAvatar', 'openProfileSettings()');
+          lucide.createIcons();
+      }
+      
+      showSystemToast('Сохранено', 'Анимация обновлена везде!', 'zap', 'text-amber-500', 'bg-amber-50');
+    }
+
+    // --- ЭНТЕРПРАЙЗ: ЛОГИКА УПРАВЛЕНИЯ ДОСТУПОМ (RBAC) ---
+    function openManageAdminsModal() {
+        const modal = document.getElementById('manageAdminsModal');
+        const content = document.getElementById('manageAdminsContent');
+        closeProfileModal();
+        
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }, 10);
+        
+        loadAdminsList();
+    }
+
+    function closeManageAdminsModal() {
+        const modal = document.getElementById('manageAdminsModal');
+        const content = document.getElementById('manageAdminsContent');
+        modal.classList.add('opacity-0');
+        content.classList.remove('scale-100');
+        content.classList.add('scale-95');
+        // Возвращаемся в профиль после закрытия
+        setTimeout(() => { modal.classList.add('hidden'); openProfileSettings(); }, 300);
+    }
+
+    async function loadAdminsList() {
+        const list = document.getElementById('adminsList');
+        list.innerHTML = '<div class="text-center py-6"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto text-rose-500"></i></div>';
+        lucide.createIcons();
+        
+        try {
+            const doc = await db.collection('system').doc('admins').get();
+            let emails = [];
+            if (doc.exists) emails = doc.data().emails || [];
+            
+            if (emails.length === 0) {
+                list.innerHTML = `
+                  <div class="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl text-center border border-gray-200 dark:border-gray-700 border-dashed">
+                    <i data-lucide="users" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
+                    <div class="text-xs text-gray-500 font-bold">Список пуст. Вы единственный владелец.</div>
+                  </div>`;
+                lucide.createIcons();
+                return;
+            }
+            
+            list.innerHTML = emails.map(email => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-rose-300 dark:hover:border-rose-700 transition-colors group">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                       <div class="p-2 bg-white dark:bg-gray-900 rounded-lg shadow-sm group-hover:text-rose-500 transition-colors border border-gray-100 dark:border-gray-800"><i data-lucide="user" class="w-4 h-4"></i></div>
+                       <span class="text-sm font-bold text-gray-700 dark:text-gray-200 truncate">${email}</span>
+                    </div>
+                    <button onclick="removeAdmin('${email}')" class="text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 p-2 rounded-lg transition-all" title="Отозвать доступ"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        } catch(e) {
+            list.innerHTML = '<div class="text-xs text-red-500 text-center py-4 font-bold">Ошибка загрузки базы данных</div>';
+        }
+    }
+
+    async function addAdmin() {
+        const input = document.getElementById('newAdminEmail');
+        const email = input.value.trim().toLowerCase();
+        if (!email) return;
+        
+        const btn = input.nextElementSibling;
+        const ogBtn = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>';
+        lucide.createIcons({ root: btn });
+        
+        try {
+            await db.collection('system').doc('admins').set({
+                emails: firebase.firestore.FieldValue.arrayUnion(email)
+            }, { merge: true });
+            
+            input.value = '';
+            showSystemToast('Доступ выдан', `Пользователь ${email} теперь администратор.`, 'shield-check', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+            loadAdminsList();
+        } catch(e) {
+            showSystemToast('Ошибка', 'Не удалось добавить администратора.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+        } finally {
+            btn.innerHTML = ogBtn;
+            lucide.createIcons({ root: btn });
+        }
+    }
+
+    async function removeAdmin(email) {
+        if (!confirm(`Отозвать права администратора у ${email}?`)) return;
+        try {
+            await db.collection('system').doc('admins').update({
+                emails: firebase.firestore.FieldValue.arrayRemove(email)
+            });
+            showSystemToast('Доступ закрыт', 'Права администратора успешно отозваны.', 'trash-2', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+            loadAdminsList();
+        } catch(e) {
+            showSystemToast('Ошибка', 'Не удалось удалить администратора.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+        }
+    }
+  </script>
 </body>
 </html>
