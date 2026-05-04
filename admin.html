@@ -615,8 +615,61 @@
   </div>
 </div>
 
+<!-- CPA Inspect Modal -->
+<div id="cpaInspectModal" class="hidden fixed inset-0 z-[300] flex items-center justify-center bg-black/80 glass-panel opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-gray-900 p-8 rounded-[2rem] w-full max-w-4xl shadow-2xl border border-gray-800 transform scale-95 transition-transform relative flex flex-col max-h-[90vh]" id="cpaInspectContent">
+    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-emerald-500"></div>
+    <div class="flex justify-between items-start mb-6 flex-shrink-0">
+      <div class="flex items-center gap-4">
+         <img id="cpaInspectAvatar" src="" class="w-16 h-16 rounded-full border-2 border-gray-700 object-cover shadow-lg" />
+         <div>
+            <h3 class="text-2xl font-black text-white flex items-center gap-2" id="cpaInspectName">Имя</h3>
+            <div class="text-xs text-gray-400 font-mono mt-1" id="cpaInspectEmail">email</div>
+            <div class="text-[10px] text-gray-600 font-mono mt-1 leading-tight">UID: <span id="cpaInspectUid"></span></div>
+         </div>
+      </div>
+      <button onclick="closeCpaInspectModal()" class="text-gray-500 hover:text-white transition-colors bg-gray-800 p-2 rounded-xl border border-transparent hover:border-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto pr-2 space-y-6 hide-scroll">
+      <!-- Stats -->
+      <div class="grid grid-cols-3 gap-4">
+         <div class="bg-gray-800/50 border border-gray-700 p-4 rounded-2xl text-center shadow-inner">
+            <div class="text-xl font-black text-white" id="cpaInspectSales">0</div>
+            <div class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mt-1">Оплаченные Лиды (Sales)</div>
+         </div>
+         <div class="bg-emerald-900/10 border border-emerald-500/20 p-4 rounded-2xl text-center shadow-inner">
+            <div class="text-xl font-black text-emerald-400" id="cpaInspectBal">$0.00</div>
+            <div class="text-[10px] uppercase tracking-widest text-emerald-600 font-bold mt-1">Текущий баланс</div>
+         </div>
+         <div class="bg-indigo-900/10 border border-indigo-500/20 p-4 rounded-2xl text-center shadow-inner">
+            <div class="text-xl font-black text-indigo-400" id="cpaInspectTotal">$0.00</div>
+            <div class="text-[10px] uppercase tracking-widest text-indigo-600 font-bold mt-1">Заработано за всё время</div>
+         </div>
+      </div>
+
+      <!-- Action Panel for Manual Adjustments -->
+      <div class="bg-gray-800/30 border border-gray-700/50 p-5 rounded-3xl flex flex-col sm:flex-row gap-4 items-end">
+         <div class="flex-1 w-full">
+            <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Корректировка баланса ($)</label>
+            <input type="number" id="cpaInspectAdjustVal" placeholder="Например: 50 или -10" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-indigo-500 font-bold transition-colors shadow-inner" />
+         </div>
+         <button onclick="adjustCpaBalance()" class="w-full sm:w-auto py-3 px-6 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg active:scale-95 transition-all">Применить</button>
+      </div>
+
+      <!-- Transaction History -->
+      <div>
+         <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4"></i> Транзакции и Запросы на вывод</h4>
+         <div id="cpaInspectHistory" class="space-y-2 bg-gray-900 border border-gray-800 rounded-2xl p-2 max-h-64 overflow-y-auto hide-scroll shadow-inner">
+            <!-- Injected by JS -->
+         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
-<div id="adminToast" class="fixed bottom-6 right-6 z-[200] transform translate-y-24 opacity-0 transition-all duration-300 bg-emerald-500 text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 pointer-events-none border border-emerald-400/50">
+<div id="adminToast" class="fixed bottom-6 right-6 z-[400] transform translate-y-24 opacity-0 transition-all duration-300 bg-emerald-500 text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 pointer-events-none border border-emerald-400/50">
   <i data-lucide="check-circle-2" class="w-5 h-5"></i> <span id="toastText">Готово</span>
 </div>
 
@@ -1807,7 +1860,182 @@
   }
 
   function inspectCpaPartner(partnerId) {
-      showToast('Детальный инспект партнера находится в разработке. ID: ' + partnerId);
+      const partner = allCpaPartners.find(p => p.id === partnerId);
+      const userProfile = allUsers.find(u => u.uid === partnerId) || {};
+      
+      if (!partner) return;
+      
+      currentEditUid = partnerId; // Глобальный ID для операций корректировки
+      
+      const safeName = userProfile.name || 'Аноним Партнер';
+      const safeEmail = userProfile.email || partnerId;
+      const safeAvatar = userProfile.customAvatar || userProfile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+
+      document.getElementById('cpaInspectAvatar').src = safeAvatar;
+      document.getElementById('cpaInspectName').innerText = safeName;
+      document.getElementById('cpaInspectEmail').innerText = safeEmail;
+      document.getElementById('cpaInspectUid').innerText = partnerId;
+      
+      document.getElementById('cpaInspectSales').innerText = partner.sales || 0;
+      document.getElementById('cpaInspectBal').innerText = '$' + (partner.balanceUSD || 0).toFixed(2);
+      
+      // Вычисляем суммарный заработок
+      const history = partner.history || [];
+      let totalEarned = 0;
+      history.forEach(tx => {
+          if (tx.amount > 0) totalEarned += tx.amount;
+      });
+      document.getElementById('cpaInspectTotal').innerText = '$' + totalEarned.toFixed(2);
+      
+      // Рендер истории
+      const historyEl = document.getElementById('cpaInspectHistory');
+      if (history.length === 0) {
+          historyEl.innerHTML = '<div class="text-center text-xs text-gray-500 py-6 font-bold uppercase tracking-widest">Транзакций нет</div>';
+      } else {
+          const sortedHistory = history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          historyEl.innerHTML = sortedHistory.map(tx => {
+              const isPositive = tx.amount > 0;
+              const sign = isPositive ? '+' : '';
+              const colorClass = isPositive ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-gray-400 bg-gray-800 border-gray-700';
+              const dateStr = new Date(tx.date).toLocaleDateString('ru-RU') + ' ' + new Date(tx.date).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+              
+              let actionHtml = '';
+              // Если транзакция - это запрос на вывод
+              if (tx.amount < 0 && tx.status === 'pending') {
+                  actionHtml = `
+                    <div class="flex items-center gap-2 mt-2">
+                       <button onclick="approvePayout('${partnerId}', '${tx.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded-lg transition-colors active:scale-95 shadow-sm">Одобрить</button>
+                       <button onclick="rejectPayout('${partnerId}', '${tx.id}', ${Math.abs(tx.amount)})" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold rounded-lg transition-colors active:scale-95 shadow-sm">Отклонить</button>
+                    </div>
+                  `;
+              } else if (tx.status === 'approved') {
+                  actionHtml = `<div class="text-[9px] font-black text-emerald-500 uppercase mt-1 tracking-widest"><i data-lucide="check-circle" class="w-3 h-3 inline pb-0.5"></i> Выплачено</div>`;
+              } else if (tx.status === 'rejected') {
+                  actionHtml = `<div class="text-[9px] font-black text-rose-500 uppercase mt-1 tracking-widest"><i data-lucide="x-circle" class="w-3 h-3 inline pb-0.5"></i> Отклонено</div>`;
+              }
+
+              return `
+                 <div class="p-3 bg-gray-800/50 rounded-xl border border-gray-700/50 flex justify-between items-start mb-2 group transition-colors hover:border-gray-600">
+                    <div>
+                       <div class="text-xs font-bold text-gray-200">${tx.description}</div>
+                       <div class="text-[9px] text-gray-500 font-mono mt-1">${dateStr}</div>
+                       ${actionHtml}
+                    </div>
+                    <div class="px-2.5 py-1 rounded-lg border text-xs font-black ${colorClass}">
+                       ${sign}$${Math.abs(tx.amount).toFixed(2)}
+                    </div>
+                 </div>
+              `;
+          }).join('');
+      }
+      
+      lucide.createIcons();
+      
+      const modal = document.getElementById('cpaInspectModal');
+      const content = document.getElementById('cpaInspectContent');
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+          modal.classList.remove('opacity-0');
+          content.classList.remove('scale-95');
+      }, 10);
+  }
+
+  function closeCpaInspectModal() {
+      const modal = document.getElementById('cpaInspectModal');
+      const content = document.getElementById('cpaInspectContent');
+      modal.classList.add('opacity-0');
+      content.classList.add('scale-95');
+      setTimeout(() => modal.classList.add('hidden'), 300);
+  }
+
+  async function adjustCpaBalance() {
+      if(!currentEditUid) return;
+      const input = document.getElementById('cpaInspectAdjustVal');
+      const val = parseFloat(input.value);
+      if(isNaN(val)) return showToast('Введите числовое значение');
+
+      try {
+          const ref = db.collection('affiliates_cpa').doc(currentEditUid);
+          const doc = await ref.get();
+          if (!doc.exists) return;
+          
+          let history = doc.data().history || [];
+          history.push({
+              id: 'tx_' + Date.now(),
+              amount: val,
+              description: val > 0 ? 'Ручная корректировка (Начисление)' : 'Ручная корректировка (Списание)',
+              date: new Date().toISOString()
+          });
+
+          await ref.update({
+              balanceUSD: firebase.firestore.FieldValue.increment(val),
+              history: history
+          });
+
+          input.value = '';
+          showToast('Баланс партнера успешно обновлен!');
+          loadCpaNetwork(); // Перерендериваем таблицу админки
+          setTimeout(() => inspectCpaPartner(currentEditUid), 500); // Обновляем модалку
+
+      } catch (e) {
+          console.error(e);
+          showToast('Ошибка при обновлении баланса');
+      }
+  }
+
+  async function approvePayout(partnerId, txId) {
+      if(!confirm('Подтвердить выплату? Статус изменится на "Выплачено".')) return;
+      try {
+          const ref = db.collection('affiliates_cpa').doc(partnerId);
+          const doc = await ref.get();
+          if(!doc.exists) return;
+          
+          let history = doc.data().history || [];
+          const txIndex = history.findIndex(t => t.id === txId);
+          if (txIndex > -1) {
+              history[txIndex].status = 'approved';
+              await ref.update({ history: history });
+              showToast('Выплата переведена в статус ОДОБРЕНО!');
+              loadCpaNetwork();
+              setTimeout(() => inspectCpaPartner(partnerId), 500);
+          }
+      } catch (e) {
+          showToast('Ошибка подтверждения');
+      }
+  }
+
+  async function rejectPayout(partnerId, txId, refundAmount) {
+      if(!confirm('Отклонить выплату? Средства будут возвращены на баланс партнера.')) return;
+      try {
+          const ref = db.collection('affiliates_cpa').doc(partnerId);
+          const doc = await ref.get();
+          if(!doc.exists) return;
+          
+          let history = doc.data().history || [];
+          const txIndex = history.findIndex(t => t.id === txId);
+          if (txIndex > -1) {
+              history[txIndex].status = 'rejected';
+              
+              // Возвращаем средства через компенсационную транзакцию
+              history.push({
+                  id: 'tx_refund_' + Date.now(),
+                  amount: refundAmount,
+                  description: 'Возврат средств (отказ в выплате)',
+                  date: new Date().toISOString()
+              });
+              
+              await ref.update({ 
+                  history: history,
+                  balanceUSD: firebase.firestore.FieldValue.increment(refundAmount)
+              });
+              
+              showToast('Выплата отклонена. Средства возвращены партнеру.');
+              loadCpaNetwork();
+              setTimeout(() => inspectCpaPartner(partnerId), 500);
+          }
+      } catch (e) {
+          showToast('Ошибка отклонения');
+      }
   }
 
   // --- SYSTEM HELPERS ---
