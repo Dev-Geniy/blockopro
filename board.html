@@ -2670,20 +2670,21 @@ function toggleMessageLike(msgId) {
   
   // ЭНТЕРПРАЙЗ: Optimistic UI. Обновляем интерфейс мгновенно ДО ответа сервера для эффекта нулевой задержки.
   if (btn && countSpan) {
+     const icon = btn.querySelector('svg'); // Библиотека Lucide заменяет теги <i> на <svg>
      const isCurrentlyLiked = btn.classList.contains('text-rose-500');
      let currentCount = parseInt(countSpan.innerText) || 0;
      
      if (isCurrentlyLiked) {
-         // Снимаем лайк
+         // Снимаем лайк в UI
          btn.classList.remove('text-rose-500', 'bg-white/95', 'dark:bg-gray-800/95', 'shadow-md');
          btn.classList.add('text-gray-400', 'opacity-0', 'group-hover/msg:opacity-100', 'shadow-sm');
-         btn.querySelector('i').classList.remove('fill-current');
+         if (icon) icon.classList.remove('fill-current');
          currentCount = Math.max(0, currentCount - 1);
      } else {
-         // Ставим лайк
+         // Ставим лайк в UI
          btn.classList.add('text-rose-500', 'bg-white/95', 'dark:bg-gray-800/95', 'shadow-md');
          btn.classList.remove('text-gray-400', 'opacity-0', 'group-hover/msg:opacity-100', 'shadow-sm');
-         btn.querySelector('i').classList.add('fill-current');
+         if (icon) icon.classList.add('fill-current');
          currentCount++;
          if(typeof fireConfetti === 'function') fireConfetti();
      }
@@ -2697,6 +2698,21 @@ function toggleMessageLike(msgId) {
          countSpan.classList.remove('ml-0.5');
      }
   }
+
+  // Фоновая синхронизация с Firebase (Без ожидания пользователя)
+  const msgRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc(msgId);
+  msgRef.get().then(doc => {
+    if (doc.exists) {
+      let likes = doc.data().likes || [];
+      if (likes.includes(currentUser.id)) {
+        likes = likes.filter(id => id !== currentUser.id);
+      } else {
+        likes.push(currentUser.id);
+      }
+      msgRef.update({ likes });
+    }
+  }).catch(err => console.error("Like sync failed:", err));
+}
 
   // Фоновая синхронизация с Firebase
   const msgRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc(msgId);
