@@ -366,14 +366,42 @@
       // Генератор ссылок (Первичный бинд)
       updatePromoLink();
 
-      // Таблица истории (Мок для начала)
+      // Таблица истории
       const list = document.getElementById('transactionsList');
       const history = cpaProfile.history || [];
       
       if (history.length === 0) {
           list.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs font-bold uppercase tracking-widest bg-gray-50/50 dark:bg-gray-800/30 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">Транзакций пока нет</div>`;
       } else {
-          // Здесь будет логика рендера массива history
+          // Сортируем историю от новых к старым
+          const sortedHistory = history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          
+          list.innerHTML = sortedHistory.map(tx => {
+              const isPositive = tx.amount > 0;
+              const sign = isPositive ? '+' : '';
+              const colorClass = isPositive ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800' : 'text-gray-500 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+              const icon = isPositive ? 'arrow-down-left' : 'arrow-up-right';
+              
+              const dateObj = new Date(tx.date);
+              const dateStr = dateObj.toLocaleDateString('ru-RU') + ' ' + dateObj.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+
+              return `
+                <div class="flex items-center justify-between p-4 rounded-2xl border ${colorClass} transition-all hover:shadow-md">
+                   <div class="flex items-center gap-3">
+                      <div class="p-2 rounded-xl bg-white dark:bg-gray-900 shadow-sm flex-shrink-0">
+                         <i data-lucide="${icon}" class="w-4 h-4"></i>
+                      </div>
+                      <div class="flex flex-col">
+                         <span class="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">${tx.description}</span>
+                         <span class="text-[10px] text-gray-500 font-mono mt-0.5">${dateStr}</span>
+                      </div>
+                   </div>
+                   <div class="text-sm font-black whitespace-nowrap ml-3">
+                      ${sign}$${Math.abs(tx.amount).toFixed(2)}
+                   </div>
+                </div>
+              `;
+          }).join('');
       }
 
       lucide.createIcons();
