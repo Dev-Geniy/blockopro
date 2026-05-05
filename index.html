@@ -59,7 +59,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-  
+    <!-- Client ID -->
+  <script src="https://www.paypal.com/sdk/js?client-id=AaLW-O9Lrf97E4ok5qaUwz9ml1bJAqPNTjAufRMMmEfrC53NSXdzGSherMK3WaXbbXzU8omY7IKnMym_&currency=USD"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
@@ -169,26 +170,42 @@
     </div>
   </header>
 
-  <main class="p-8 max-w-7xl mx-auto w-full flex-1">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
-      <div>
-        <h2 class="text-3xl font-bold tracking-tight mb-1">Рабочие пространства</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Синхронизированные и локальные проекты.</p>
-      </div>
-      
-      <div class="flex flex-wrap gap-3 w-full md:w-auto">
-        <button onclick="openImportModal()" class="flex-1 md:flex-none bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white px-4 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
-          <i data-lucide="upload" class="w-4 h-4 text-emerald-500"></i> Загрузить
-        </button>
-        
-        <button onclick="promptJoinById()" class="flex-1 md:flex-none bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white px-4 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
-          <i data-lucide="user-plus" class="w-4 h-4 text-blue-500"></i> Войти по ID
-        </button>
+  <main class="p-4 sm:p-8 max-w-7xl mx-auto w-full flex-1 flex flex-col">
+    
+    <!-- ЭНТЕРПРАЙЗ: Premium Smart Welcome Dashboard -->
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-[2.5rem] p-6 sm:p-10 mb-8 shadow-sm relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-8 group">
+       <!-- Декоративные градиенты -->
+       <div class="absolute -top-32 -right-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/20 transition-colors duration-700"></div>
+       <div class="absolute -bottom-32 -left-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-500/20 transition-colors duration-700"></div>
+       
+       <div class="relative z-10 flex-1 w-full text-center lg:text-left">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-4 border border-blue-100 dark:border-blue-800/50 shadow-sm">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Экосистема Blocko Pro
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3 text-gray-900 dark:text-white">
+            <span id="dashWelcomeGreeting">Добро пожаловать</span>, <span id="dashWelcomeName" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Пользователь</span>!
+          </h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">Создавайте синхронизированные и офлайн-проекты, работайте с командой и масштабируйте свою продуктивность с помощью встроенного AI-ассистента.</p>
+       </div>
 
-        <button onclick="openCreateModal()" class="flex-1 md:flex-none bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
-          <i data-lucide="plus" class="w-5 h-5"></i> Создать проект
-        </button>
-      </div>
+       <div class="relative z-10 flex flex-col sm:flex-row flex-wrap justify-center lg:justify-end gap-3 w-full lg:w-auto">
+          <button onclick="openImportModal()" class="w-full sm:w-auto bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white px-6 py-3.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all group/btn">
+            <i data-lucide="upload" class="w-4 h-4 text-emerald-500 group-hover/btn:scale-110 transition-transform"></i> Загрузить
+          </button>
+          
+          <button onclick="promptJoinById()" class="w-full sm:w-auto bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white px-6 py-3.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all group/btn">
+            <i data-lucide="key" class="w-4 h-4 text-blue-500 group-hover/btn:scale-110 transition-transform"></i> Вход по ID
+          </button>
+
+          <button onclick="openCreateModal()" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-3.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all group/btn">
+            <i data-lucide="plus" class="w-5 h-5 group-hover/btn:rotate-90 transition-transform"></i> Новый проект
+          </button>
+       </div>
+    </div>
+
+    <!-- Заголовок сетки -->
+    <div class="flex justify-between items-center mb-6 px-2">
+       <h3 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2"><i data-lucide="layout-grid" class="w-5 h-5 text-gray-400"></i> Ваши проекты</h3>
     </div>
     
     <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-10">
@@ -782,7 +799,7 @@
         <ul class="space-y-5 mb-10 flex-1 relative z-10">
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 mt-0.5"></i> 1 облачный проект (Cloud)</li>
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 mt-0.5"></i> <b>Безлимит</b> Device-проектов</li>
-          <li class="flex items-start gap-3 text-sm text-gray-400"><i data-lucide="alert-circle" class="w-5 h-5 mt-0.5"></i> Ограниченный AI ассистент</li>
+          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 mt-0.5"></i> Ограниченный AI ассистент (5/день)</li>
         </ul>
         <div class="space-y-3 mt-auto relative z-10 w-full">
           <button id="btnUpgrade_free" onclick="upgradeTo('free')" class="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl">Активировать план</button>
@@ -808,7 +825,7 @@
         <ul class="space-y-5 mb-10 flex-1 relative z-10">
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> 10 облачных проектов</li>
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> 10 участников на доску</li>
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> Увеличенный лимит AI</li>
+          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> Увеличенный AI лимит (30/день)</li>
         </ul>
         <div class="space-y-3 mt-auto relative z-10 w-full">
           <button id="btnUpgrade_freelancer" onclick="upgradeTo('freelancer')" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all">Активировать план</button>
@@ -842,6 +859,27 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- ЭНТЕРПРАЙЗ: Горизонтальный Эпический Баннер (Только для Infinity) -->
+    <div id="infinityBannerWrapper" class="hidden mt-8 w-full relative overflow-hidden bg-gray-900 dark:bg-black border border-purple-500/30 rounded-[2.5rem] p-8 sm:p-10 shadow-2xl shadow-purple-500/20 items-center justify-between gap-6 flex-col lg:flex-row text-left group">
+        <div class="absolute inset-0 bg-gradient-to-r from-purple-600/20 via-fuchsia-600/20 to-indigo-600/20 opacity-50 blur-xl pointer-events-none group-hover:opacity-100 transition-opacity duration-700"></div>
+        <div class="relative z-10 flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-6 w-full">
+            <div class="w-20 h-20 bg-purple-500/10 text-purple-400 rounded-2xl flex items-center justify-center border border-purple-500/30 shadow-inner flex-shrink-0">
+                <i data-lucide="crown" class="w-10 h-10 animate-pulse"></i>
+            </div>
+            <div class="text-center sm:text-left flex-1">
+                <h3 class="text-3xl font-black text-white tracking-tight mb-2 uppercase">GOD MODE <span class="text-purple-400">Активен</span></h3>
+                <p class="text-gray-400 text-sm font-medium leading-relaxed max-w-2xl mx-auto sm:mx-0">
+                    Ваш аккаунт имеет эксклюзивный статус <b class="text-gray-200">Infinity</b>. Вам доступны абсолютно все ресурсы экосистемы Blocko Pro без каких-либо лимитов и ограничений.
+                </p>
+            </div>
+        </div>
+        <div class="relative z-10 flex-shrink-0 w-full lg:w-auto mt-2 lg:mt-0">
+           <button onclick="openPlanDetails('infinity')" class="w-full lg:w-auto px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-2xl shadow-lg shadow-purple-500/25 active:scale-95 transition-all flex items-center justify-center gap-2">
+               <i data-lucide="sparkles" class="w-5 h-5"></i> Детали
+           </button>
+        </div>
     </div>
   </div>
 </div>
@@ -991,8 +1029,8 @@
       </button>
     </div>
 
-    <div class="space-y-4">
-      <button onclick="buyCoinsPack(1000, 10)" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
+    <div id="packsContainer" class="space-y-4 block">
+      <button onclick="preparePayPalPayment(1000, 10, 'Набор Новичка')" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
         <div class="flex items-center gap-3">
           <i data-lucide="circle-dollar-sign" class="w-6 h-6 text-amber-500"></i>
           <div class="text-left"><div class="font-bold dark:text-white">Набор Новичка</div><div class="text-xs text-gray-500">1 000 Монет</div></div>
@@ -1000,7 +1038,7 @@
         <div class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl text-sm group-hover:scale-105 transition-transform">$10.00</div>
       </button>
 
-      <button onclick="buyCoinsPack(5000, 45)" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-amber-300 dark:border-amber-600 relative overflow-hidden group shadow-lg shadow-amber-500/10">
+      <button onclick="preparePayPalPayment(5000, 45, 'Популярный')" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-amber-300 dark:border-amber-600 relative overflow-hidden group shadow-lg shadow-amber-500/10">
         <div class="absolute -right-4 -top-4 w-16 h-16 bg-amber-500/10 rounded-full blur-xl"></div>
         <div class="flex items-center gap-3 relative z-10">
           <i data-lucide="gem" class="w-6 h-6 text-amber-500"></i>
@@ -1008,6 +1046,29 @@
         </div>
         <div class="px-4 py-2 bg-amber-500 text-white font-bold rounded-xl text-sm group-hover:scale-105 transition-transform relative z-10">$45.00</div>
       </button>
+
+      <button onclick="preparePayPalPayment(12000, 100, 'Максимальный')" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
+        <div class="flex items-center gap-3">
+          <i data-lucide="crown" class="w-6 h-6 text-amber-500"></i>
+          <div class="text-left"><div class="font-bold dark:text-white">Максимальный</div><div class="text-xs text-gray-500">12 000 Монет (Бонус 2000)</div></div>
+        </div>
+        <div class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl text-sm group-hover:scale-105 transition-transform">$100.00</div>
+      </button>
+    </div>
+
+    <!-- БЛОК ОПЛАТЫ PAYPAL (Скрыт по умолчанию) -->
+    <div id="paypalPaymentContainer" class="hidden flex-col items-center">
+       <button onclick="backToPacks()" class="mb-4 text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-2 self-start transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i> Назад к выбору</button>
+       
+       <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-2xl w-full text-center mb-6">
+         <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">К оплате</p>
+         <div class="text-2xl font-black text-blue-600 dark:text-blue-400" id="checkoutTotal">$0.00</div>
+         <div class="text-sm font-bold text-gray-900 dark:text-white mt-1" id="checkoutItemName">Набор</div>
+       </div>
+       
+       <div id="paypal-button-container" class="w-full relative min-h-[150px]">
+          <!-- Сюда скрипт вставит кнопки PayPal -->
+       </div>
     </div>
   </div>
 </div>
@@ -1138,6 +1199,13 @@ auth.onAuthStateChanged(async (user) => {
         else if (hour >= 18 && hour < 23) greeting = 'Добрый вечер';
         
         document.getElementById('dashUserName').innerText = `${greeting}, ${currentUser.name.split(' ')[0]}!`;
+        
+        // Обновление нового Smart Welcome Дашборда
+        const welcomeGreetingEl = document.getElementById('dashWelcomeGreeting');
+        const welcomeNameEl = document.getElementById('dashWelcomeName');
+        if (welcomeGreetingEl) welcomeGreetingEl.innerText = greeting;
+        if (welcomeNameEl) welcomeNameEl.innerText = currentUser.name.split(' ')[0];
+
         subscribeToBoards(user.uid);
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -1613,27 +1681,100 @@ async function upgradeTo(planId) {
   }
 }
 
-// --- ЛОГИКА ПОПОЛНЕНИЯ И АКТИВАЦИИ ПРОМОКОДОВ ---
-function openTopUpModal() {
-  const el = document.getElementById('topUpModal');
-  const content = document.getElementById('topUpContent');
-  document.getElementById('promoCodeInput').value = '';
-  el.classList.remove('hidden');
-  setTimeout(() => {
-     el.classList.remove('opacity-0');
-     content.classList.remove('scale-95');
-     content.classList.add('scale-100');
-  }, 10);
-}
+// --- ЛОГИКА ПОПОЛНЕНИЯ (РЕАЛЬНАЯ ОПЛАТА PAYPAL) ---
+  function openTopUpModal() {
+    const el = document.getElementById('topUpModal');
+    backToPacks(); // Сбрасываем вид на выбор пакетов при открытии
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.remove('opacity-0'), 10);
+  }
 
-function closeTopUpModal() {
-  const el = document.getElementById('topUpModal');
-  const content = document.getElementById('topUpContent');
-  el.classList.add('opacity-0');
-  content.classList.remove('scale-100');
-  content.classList.add('scale-95');
-  setTimeout(() => el.classList.add('hidden'), 300);
-}
+  function closeTopUpModal() {
+    const el = document.getElementById('topUpModal');
+    el.classList.add('opacity-0');
+    setTimeout(() => { 
+        el.classList.add('hidden'); 
+        backToPacks();
+    }, 300);
+  }
+
+  function backToPacks() {
+     document.getElementById('packsContainer').classList.remove('hidden');
+     document.getElementById('paypalPaymentContainer').classList.add('hidden');
+     document.getElementById('paypalPaymentContainer').classList.remove('flex');
+     document.getElementById('paypal-button-container').innerHTML = ''; // Очищаем старые кнопки
+  }
+
+  function preparePayPalPayment(amountCoins, usdPrice, itemName) {
+     document.getElementById('packsContainer').classList.add('hidden');
+     document.getElementById('paypalPaymentContainer').classList.remove('hidden');
+     document.getElementById('paypalPaymentContainer').classList.add('flex');
+     
+     document.getElementById('checkoutTotal').innerText = `$${usdPrice.toFixed(2)}`;
+     document.getElementById('checkoutItemName').innerText = `${itemName} (${amountCoins} Монет)`;
+
+     const container = document.getElementById('paypal-button-container');
+     container.innerHTML = '<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="loader-2" class="w-8 h-8 animate-spin text-blue-500"></i></div>';
+     lucide.createIcons({ root: container });
+
+     if (typeof paypal === 'undefined') {
+         container.innerHTML = '<div class="text-sm text-red-500 font-bold p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">Ошибка: скрипт PayPal не загружен. Проверьте интернет или блокировщики рекламы.</div>';
+         return;
+     }
+
+     setTimeout(() => {
+         container.innerHTML = ''; // Убираем лоадер
+         
+         // Инициализация Smart Buttons
+         paypal.Buttons({
+            style: {
+                color:  'gold',
+                shape:  'rect',
+                label:  'paypal',
+                height: 45
+            },
+            createOrder: function(data, actions) {
+              return actions.order.create({
+                purchase_units: [{
+                  description: `Blocko Pro: ${itemName} (${amountCoins} Coins)`,
+                  amount: {
+                    currency_code: "USD",
+                    value: usdPrice.toString()
+                  }
+                }]
+              });
+            },
+            onApprove: function(data, actions) {
+              container.innerHTML = '<div class="p-6 text-center bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-200 dark:border-emerald-800"><i data-lucide="loader-2" class="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-3"></i><p class="text-sm font-bold text-emerald-700 dark:text-emerald-400">Транзакция подтверждена. Начисляем монеты...</p></div>';
+              lucide.createIcons({ root: container });
+
+              return actions.order.capture().then(async function(details) {
+                try {
+                  const userRef = db.collection('users').doc(currentUser.uid);
+                  await userRef.set({ coins: firebase.firestore.FieldValue.increment(amountCoins) }, { merge: true });
+                  
+                  closeTopUpModal();
+                  
+                  if (typeof confetti === 'function') confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, zIndex: 9999 });
+                  showSystemToast('Оплата прошла успешно!', `Вам начислено ${amountCoins} B-Coins. Открываем окно тарифов...`, 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+                  
+                  // В index.html возвращаем пользователя к окну тарифов после пополнения
+                  setTimeout(() => openPricingModal(), 2000);
+
+                } catch(e) {
+                  showSystemToast('Сбой зачисления', 'Оплата прошла, но база данных не ответила. Напишите в поддержку.', 'alert-triangle', 'text-red-500', 'bg-red-50');
+                }
+              });
+            },
+            onCancel: function (data) {
+              showSystemToast('Отменено', 'Вы закрыли окно оплаты.', 'info', 'text-gray-500', 'bg-gray-50 dark:bg-gray-900/30');
+            },
+            onError: function (err) {
+              showSystemToast('Ошибка PayPal', 'Не удалось инициализировать платеж.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+            }
+         }).render('#paypal-button-container');
+     }, 300);
+  }
 
 async function activatePromoCode(inputId = 'promoCodeInput', btnId = 'activatePromoBtn') {
   if (!currentUser) return showSystemToast('Ошибка', 'Авторизуйтесь для активации.', 'lock', 'text-amber-500', 'bg-amber-50');
@@ -1731,30 +1872,15 @@ async function activatePromoCode(inputId = 'promoCodeInput', btnId = 'activatePr
   }
 }
 
-async function buyCoinsPack(amount, usdPrice) {
-  openConfirmModal('Пополнить счет?', `Имитация оплаты $${usdPrice}. Подтвердить начисление ${amount} монет?`, 'Оплатить', false, async () => {
-    closeTopUpModal();
-    try {
-      // ИСПРАВЛЕНИЕ: здесь тоже используем currentUser.id
-      const userRef = db.collection('users').doc(currentUser.id);
-      await userRef.set({ coins: firebase.firestore.FieldValue.increment(amount) }, { merge: true });
-      confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 }, zIndex: 9999 });
-      showSystemToast('Счет пополнен!', `Начислено ${amount} монет. Вы можете вернуться к оплате тарифа.`, 'coins', 'text-amber-500', 'bg-amber-50');
-      setTimeout(() => openPricingModal(), 2000); 
-    } catch(e) {
-      showSystemToast('Ошибка', 'Не удалось пополнить счет.', 'x-circle', 'text-red-500', 'bg-red-50');
-    }
-  });
-}
-
 // Открытие модалки тарифов
 function openPricingModal() {
   const modal = document.getElementById('pricingModal');
   const content = document.getElementById('pricingContent');
   if (!modal) return;
   
-  // ЭНТЕРПРАЙЗ: Динамическое выделение активного тарифа (Single Source of Truth)
+  // ЭНТЕРПРАЙЗ: Итерируем ТОЛЬКО по видимым тарифам
   const plans = ['free', 'freelancer', 'pro'];
+  
   plans.forEach(p => {
     const card = document.getElementById('planCard_' + p);
     const btn = document.getElementById('btnUpgrade_' + p);
@@ -1782,6 +1908,29 @@ function openPricingModal() {
       }
     }
   });
+
+  // ЭНТЕРПРАЙЗ: Управление баннером Infinity
+  const infinityBanner = document.getElementById('infinityBannerWrapper');
+  if (userPlan === 'infinity') {
+      // Блокируем кнопки других тарифов
+      plans.forEach(p => {
+          const btn = document.getElementById('btnUpgrade_' + p);
+          if (btn) {
+              btn.innerText = "Заблокировано (GOD MODE)";
+              btn.className = "w-full py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-500 font-bold rounded-2xl cursor-not-allowed transition-colors";
+              btn.onclick = null;
+          }
+      });
+      if (infinityBanner) {
+          infinityBanner.classList.remove('hidden');
+          infinityBanner.classList.add('flex');
+      }
+  } else {
+      if (infinityBanner) {
+          infinityBanner.classList.add('hidden');
+          infinityBanner.classList.remove('flex');
+      }
+  }
 
   modal.classList.remove('hidden');
   setTimeout(() => {
@@ -2538,7 +2687,7 @@ const PLAN_DETAILS_MAP = {
       { icon: 'cloud', val: '1 Проект', title: 'Облачное хранилище' },
       { icon: 'users', val: 'До 3-х', title: 'Членов команды' },
       { icon: 'hard-drive', val: '∞', title: 'Офлайн проекты' },
-      { icon: 'bot', val: 'Базовый', title: 'AI Ассистент' }
+      { icon: 'bot', val: '5 / день', title: 'AI Ассистент' }
     ]
   },
   'freelancer': {
@@ -2548,7 +2697,7 @@ const PLAN_DETAILS_MAP = {
     features: [
       { icon: 'cloud', val: '10 Проектов', title: 'Облачное хранилище' },
       { icon: 'users', val: 'До 10-ти', title: 'В каждой команде' },
-      { icon: 'bot', val: 'Продвинутый', title: 'AI Ассистент' },
+      { icon: 'bot', val: '30 / день', title: 'AI Ассистент' },
       { icon: 'headphones', val: '24/7', title: 'Саппорт' }
     ]
   },
@@ -2560,7 +2709,18 @@ const PLAN_DETAILS_MAP = {
       { icon: 'cloud', val: 'Безлимит', title: 'Облачные проекты' },
       { icon: 'users', val: 'Безлимит', title: 'Команды и роли' },
       { icon: 'flame', val: 'Сгорающие', title: 'Файлы в чате' },
-      { icon: 'sparkles', val: 'Максимум', title: 'Мощь нейросетей' }
+      { icon: 'sparkles', val: 'Безлимит', title: 'Мощь нейросетей' }
+    ]
+  },
+  'infinity': {
+    name: 'GOD MODE (Infinity)',
+    desc: 'Эксклюзивный доступ для разработчиков и VIP-клиентов. Абсолютный безлимит на все ресурсы системы Blocko Pro.',
+    color: 'purple', icon: 'crown',
+    features: [
+      { icon: 'infinity', val: 'Infinity', title: 'Облачные проекты' },
+      { icon: 'infinity', val: 'Infinity', title: 'Участники и роли' },
+      { icon: 'infinity', val: 'Infinity', title: 'Файлы в чате' },
+      { icon: 'infinity', val: 'Infinity', title: 'Нейросети' }
     ]
   }
 };
@@ -2976,32 +3136,48 @@ async function openProfileSettings() {
           document.getElementById('animationSettingsBlock').classList.add('hidden');
         }
 
-        // ЭНТЕРПРАЙЗ: Интеллектуальная проверка прав (RBAC)
-        const ownerEmail = 'uajerryua@gmail.com';
-        const userEmail = data.email || (currentUser && currentUser.email) || '';
-        let isAdmin = userEmail === ownerEmail;
-        let isOwner = userEmail === ownerEmail;
+        // ЭНТЕРПРАЙЗ: Усовершенствованный RBAC Engine (Role-Based Access Control)
+        // Определяем константу главного архитектора системы (тебя)
+        const MASTER_OWNER_EMAIL = 'uajerryua@gmail.com'; 
+        const userEmail = (data.email || auth.currentUser?.email || '').toLowerCase();
+        
+        let isSystemAdmin = false;
+        let isSystemOwner = (userEmail === MASTER_OWNER_EMAIL);
 
-        if (!isAdmin && userEmail) {
-          try {
-            const sysDoc = await db.collection('system').doc('admins').get();
-            if (sysDoc.exists && sysDoc.data().emails) {
-               if (sysDoc.data().emails.includes(userEmail)) isAdmin = true;
+        // 1. Проверка на главного владельца
+        if (isSystemOwner) {
+            isSystemAdmin = true;
+        } else {
+            // 2. Проверка дополнительных админов через защищенную коллекцию
+            try {
+                const sysDoc = await db.collection('system').doc('admins').get();
+                if (sysDoc.exists) {
+                    const adminList = sysDoc.data().emails || [];
+                    if (adminList.map(e => e.toLowerCase()).includes(userEmail)) {
+                        isSystemAdmin = true;
+                    }
+                }
+            } catch(e) {
+                console.warn("RBAC System: Access to system/admins restricted.");
             }
-          } catch(e) {}
         }
 
-        if (isAdmin) {
-            document.getElementById('adminControlsBlock').classList.remove('hidden');
-            if (isOwner) {
-                document.getElementById('btnManageAdmins').classList.remove('hidden');
-                document.getElementById('btnManageAdmins').classList.add('flex');
+        // Рендерим блок управления, если права подтверждены
+        const adminBlock = document.getElementById('adminControlsBlock');
+        const btnManageAdmins = document.getElementById('btnManageAdmins');
+
+        if (isSystemAdmin) {
+            adminBlock.classList.remove('hidden');
+            // Кнопка "Доступ" (управление другими админами) видна только главному Владельцу
+            if (isSystemOwner) {
+                btnManageAdmins.classList.remove('hidden');
+                btnManageAdmins.classList.add('flex');
             } else {
-                document.getElementById('btnManageAdmins').classList.add('hidden');
-                document.getElementById('btnManageAdmins').classList.remove('flex');
+                btnManageAdmins.classList.add('hidden');
+                btnManageAdmins.classList.remove('flex');
             }
         } else {
-            document.getElementById('adminControlsBlock').classList.add('hidden');
+            adminBlock.classList.add('hidden');
         }
 
         updateProfilePreview(data);
@@ -3444,6 +3620,150 @@ async function applyFrameColor(frameColor, glowColor) {
             showSystemToast('Скопировано', 'Файловый шаринг недоступен на этом устройстве. Ссылка скопирована в буфер.', 'copy', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
         }
     }
-  </script>
+
+  function navigateToKnowledgeBase() {
+    // Здесь укажите ссылку на вашу страницу Базы Знаний
+    // Например: window.location.href = 'knowledge-base.html';
+    showSystemToast('Загрузка', 'Переходим в базу знаний...', 'book-open', 'text-indigo-500', 'bg-indigo-50');
+    
+    setTimeout(() => {
+        // Логика перехода
+        console.log("Redirecting to Knowledge Base...");
+    }, 800);
+}
+
+/**
+ * ЭНТЕРПРАЙЗ ENGINE: Sequence Onboarding Controller
+ * Управляет поочередным отображением карточек при клике в любое место экрана.
+ */
+const OnboardingEngine = {
+    steps: ['knowledge', 'referral', 'plan'],
+    currentIndex: 0,
+    isProcessing: false,
+
+    init() {
+        // Запуск первой карточки через 2 секунды после загрузки
+        setTimeout(() => this.showStep(0), 2000);
+        
+        // Глобальный слушатель клика по экрану
+        window.addEventListener('click', (e) => {
+            // Проверяем, что клик не по самой карточке, чтобы не сбивать навигацию по кнопке
+            if (e.target.closest('#onboardingSequenceContainer')) return;
+            this.handleGlobalClick();
+        });
+    },
+
+    showStep(index) {
+        if (index >= this.steps.length) return;
+        
+        const stepKey = this.steps[index];
+        const card = document.getElementById(`obCard_${stepKey}`);
+        
+        if (card) {
+            // Если это карточка тарифа, обновляем имя текущего плана
+            if (stepKey === 'plan') {
+                const plan = localStorage.getItem('blocko_user_plan') || 'FREE';
+                document.getElementById('obUserPlanName').innerText = plan.toUpperCase();
+            }
+            
+            card.classList.remove('hidden');
+            card.classList.add('flex');
+            lucide.createIcons({ root: card });
+        }
+    },
+
+    hideCurrentStep() {
+        const stepKey = this.steps[this.currentIndex];
+        const card = document.getElementById(`obCard_${stepKey}`);
+        
+        if (card) {
+            card.classList.add('opacity-0', 'translate-y-10');
+            setTimeout(() => {
+                card.classList.add('hidden');
+                card.classList.remove('flex', 'opacity-0', 'translate-y-10');
+            }, 500);
+        }
+    },
+
+    handleGlobalClick() {
+        if (this.isProcessing || this.currentIndex >= this.steps.length) return;
+
+        const currentCard = document.getElementById(`obCard_${this.steps[this.currentIndex]}`);
+        // Если текущая карточка отображена, скрываем её и готовим следующую
+        if (currentCard && !currentCard.classList.contains('hidden')) {
+            this.isProcessing = true;
+            this.hideCurrentStep();
+            this.currentIndex++;
+
+            // Если есть следующий шаг, запускаем его через 2.5 секунды
+            if (this.currentIndex < this.steps.length) {
+                setTimeout(() => {
+                    this.showStep(this.currentIndex);
+                    this.isProcessing = false;
+                }, 2500);
+            }
+        }
+    }
+};
+
+// Инициализация при загрузке документа
+document.addEventListener('DOMContentLoaded', () => OnboardingEngine.init());
+</script>
+
+<!-- ЭНТЕРПРАЙЗ: High-Density Smart Onboarding Engine -->
+<div id="onboardingSequenceContainer" class="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[100] w-[calc(100vw-2rem)] sm:w-[380px] pointer-events-none">
+  
+  <!-- Карточка 1: Академия -->
+  <div id="obCard_knowledge" class="hidden pointer-events-auto bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-3xl p-5 shadow-2xl border border-white/50 dark:border-gray-700/50 relative overflow-hidden group hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-500 animate-fade-in-up cursor-pointer hover:scale-[1.02]" onclick="window.location.href='knowledge-base.html'">
+    <div class="absolute -top-16 -right-16 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl group-hover:bg-indigo-500/30 transition-colors"></div>
+    <div class="relative z-10 flex gap-4 items-start">
+      <div class="w-12 h-12 flex-shrink-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform duration-500">
+        <i data-lucide="book-open" class="w-6 h-6 text-white"></i>
+      </div>
+      <div class="flex flex-col">
+        <h3 class="text-lg font-extrabold text-gray-900 dark:text-white mb-1 tracking-tight leading-tight">Академия Blocko</h3>
+        <p class="text-[13px] font-medium text-gray-600 dark:text-gray-300 mb-2.5 leading-snug">Профессиональные инструменты и секреты эффективной работы.</p>
+        <div class="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-bold text-sm group-hover:gap-2.5 transition-all">
+          Начать обучение <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Карточка 2: Реферальная программа -->
+  <div id="obCard_referral" class="hidden pointer-events-auto bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-3xl p-5 shadow-2xl border border-white/50 dark:border-gray-700/50 relative overflow-hidden group hover:border-emerald-300 dark:hover:border-emerald-600 transition-all duration-500 animate-fade-in-up cursor-pointer hover:scale-[1.02]" onclick="openAffiliateModal()">
+    <div class="absolute -top-16 -right-16 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl group-hover:bg-emerald-500/30 transition-colors"></div>
+    <div class="relative z-10 flex gap-4 items-start">
+      <div class="w-12 h-12 flex-shrink-0 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-105 transition-transform duration-500">
+        <i data-lucide="users" class="w-6 h-6 text-white"></i>
+      </div>
+      <div class="flex flex-col">
+        <h3 class="text-lg font-extrabold text-gray-900 dark:text-white mb-1 tracking-tight leading-tight">Сеть Коллег</h3>
+        <p class="text-[13px] font-medium text-gray-600 dark:text-gray-300 mb-2.5 leading-snug">Приглашайте друзей и получайте кредиты за их активность.</p>
+        <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm group-hover:gap-2.5 transition-all">
+          Реферальная программа <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Карточка 3: Тарифы -->
+  <div id="obCard_plan" class="hidden pointer-events-auto bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-3xl p-5 shadow-2xl border border-white/50 dark:border-gray-700/50 relative overflow-hidden group hover:border-amber-300 dark:hover:border-amber-600 transition-all duration-500 animate-fade-in-up cursor-pointer hover:scale-[1.02]" onclick="openPricingModal()">
+    <div class="absolute -top-16 -right-16 w-32 h-32 bg-amber-500/20 rounded-full blur-2xl group-hover:bg-amber-500/30 transition-colors"></div>
+    <div class="relative z-10 flex gap-4 items-start">
+      <div class="w-12 h-12 flex-shrink-0 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30 group-hover:scale-105 transition-transform duration-500">
+        <i data-lucide="zap" class="w-6 h-6 text-white"></i>
+      </div>
+      <div class="flex flex-col">
+        <h3 class="text-lg font-extrabold text-gray-900 dark:text-white mb-1 tracking-tight leading-tight">Тариф <span id="obUserPlanName" class="text-amber-500 uppercase">FREE</span></h3>
+        <p class="text-[13px] font-medium text-gray-600 dark:text-gray-300 mb-2.5 leading-snug">Разблокируйте мощь AI и командную работу на 100%.</p>
+        <div class="flex items-center gap-1.5 text-amber-600 dark:text-orange-400 font-bold text-sm group-hover:gap-2.5 transition-all">
+          Улучшить план <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  
 </body>
 </html>
