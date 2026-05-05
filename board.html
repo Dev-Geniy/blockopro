@@ -153,12 +153,16 @@
   </div>
 </div>
 
-<div id="headerWrapper" class="group/header w-full relative z-20 flex flex-col shadow-sm transition-all duration-300">
-  <header class="px-6 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl flex justify-between items-center z-20 relative">
+<div id="headerWrapper" class="group/header w-full relative z-[60] flex flex-col shadow-sm transition-all duration-300">
+  <header class="px-6 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl flex justify-between items-center z-[60] relative">
     <div class="flex items-center gap-3">
       <a href="index.html" class="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400" title="На главную">
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
       </a>
+      <!-- ЭНТЕРПРАЙЗ: Кнопка переключения лейаута Пространств -->
+      <button onclick="toggleSpacesLayout()" class="hidden md:flex p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-gray-500 dark:text-gray-400 hover:text-indigo-500 transition-colors active:scale-95" title="Переключить вид панели досок (Сверху / Сбоку)">
+        <i data-lucide="sidebar-open" class="w-5 h-5 pointer-events-none"></i>
+      </button>
       <div class="flex items-center gap-3">
         <h1 id="boardTitleHeader" onclick="renameBoard()" class="text-xl font-bold tracking-tight cursor-pointer hover:text-blue-500 hover:underline transition-all truncate max-w-[150px] sm:max-w-xs" title="Нажмите, чтобы переименовать">Загрузка...</h1>
         
@@ -170,17 +174,17 @@
     </div>
     
     <div class="flex-1 items-center justify-between mx-4 gap-4 hidden md:flex">
-          <div class="relative" id="shareMenuWrapper">
-            <div id="shareLinkContainer" class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full pl-4 pr-1.5 py-1.5 border border-transparent dark:border-gray-700 w-40 cursor-pointer group hover:border-blue-300 dark:hover:border-blue-700 transition-colors shadow-sm" onclick="toggleShareMenu()" title="Поделиться доской">
-              <div class="flex-1 truncate text-[10px] font-black text-gray-600 dark:text-gray-300 uppercase tracking-widest select-none text-center flex justify-center items-center gap-1" id="shareUrlText"><i data-lucide="link" class="w-3 h-3"></i> Поделиться</div>
-              <div class="ml-1 p-1 bg-white dark:bg-gray-900 rounded-full text-gray-400 group-hover:text-blue-500 shadow-sm transition-colors"><i data-lucide="chevron-down" class="w-3 h-3"></i></div>
+        <div class="relative z-[100]" id="shareMenuWrapper">
+          <div id="shareLinkContainer" class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full pl-4 pr-1.5 py-1.5 border border-transparent dark:border-gray-700 w-40 cursor-pointer group hover:border-blue-300 dark:hover:border-blue-700 transition-colors shadow-sm" onclick="toggleShareMenu()" title="Поделиться доской">
+            <div class="flex-1 truncate text-[10px] font-black text-gray-600 dark:text-gray-300 uppercase tracking-widest select-none text-center flex justify-center items-center gap-1" id="shareUrlText"><i data-lucide="link" class="w-3 h-3"></i> Поделиться</div>
+            <div class="ml-1 p-1 bg-white dark:bg-gray-900 rounded-full text-gray-400 group-hover:text-blue-500 shadow-sm transition-colors"><i data-lucide="chevron-down" class="w-3 h-3"></i></div>
+          </div>
+          
+          <!-- Выпадающий список ролей -->
+          <div id="shareMenuDropdown" class="hidden absolute top-full mt-2 left-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl w-64 z-[100] overflow-hidden transform origin-top-left transition-all">
+            <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
+              <i data-lucide="copy" class="w-3 h-3"></i> Скопировать ссылку
             </div>
-            
-            <!-- Выпадающий список ролей -->
-            <div id="shareMenuDropdown" class="hidden absolute top-full mt-2 left-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl w-64 z-50 overflow-hidden transform origin-top-left transition-all">
-              <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
-                <i data-lucide="copy" class="w-3 h-3"></i> Скопировать ссылку
-              </div>
               <button onclick="copyShareLink('editor')" class="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center justify-between transition-colors border-b border-gray-100 dark:border-gray-800 group">
                 <div class="flex items-start gap-3">
                   <div class="mt-0.5 p-1.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></div>
@@ -271,9 +275,9 @@
     </div>
   </div>
 
-  <!-- Мобильный тогл (Кнопка-стрелка) -->
-  <button onclick="forceToggleSpaces()" id="mobileSpacesToggle" class="md:hidden absolute -bottom-3.5 left-1/2 -translate-x-1/2 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-0.5 shadow-sm text-gray-400 hover:text-blue-500 transition-transform">
-     <i data-lucide="chevron-up" id="mobileSpacesToggleIcon" class="w-3.5 h-3.5"></i>
+  <!-- Мобильный тогл (Кнопка-стрелка, смещенная в бок) -->
+  <button onclick="forceToggleSpaces()" id="mobileSpacesToggle" class="md:hidden absolute -bottom-5 right-6 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-2 shadow-lg text-gray-500 hover:text-blue-500 hover:scale-110 active:scale-95 transition-all">
+     <i data-lucide="chevron-up" id="mobileSpacesToggleIcon" class="w-4 h-4"></i>
   </button>
 </div>
 
@@ -314,8 +318,23 @@
   </div>
 </div>
 
-<div class="flex flex-1 overflow-hidden relative">
-  <main id="mainScroll" class="flex-1 overflow-x-auto overflow-y-hidden p-6 h-full cursor-grab active:cursor-grabbing w-full">
+<div class="flex flex-1 overflow-hidden relative w-full">
+  <!-- ЭНТЕРПРАЙЗ: Вертикальная панель Пространств (Linear Style) -->
+  <aside id="spacesVerticalSidebar" class="hidden w-64 border-r border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30 flex-col transition-all duration-300 overflow-y-auto hide-scroll z-10 flex-shrink-0">
+     <div class="px-4 pt-5 pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+        <i data-lucide="folders" class="w-3.5 h-3.5"></i> Доски проекта
+     </div>
+     <div class="px-3 pb-4 flex flex-col gap-1.5" id="boardSpacesContainerVertical">
+       <!-- JS Injects Tabs Here -->
+     </div>
+     <div class="px-4 pb-6 mt-auto">
+       <button onclick="addSpace()" class="w-full flex items-center justify-center gap-1.5 px-4 py-3 bg-white dark:bg-gray-800 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all border border-gray-200 dark:border-gray-700 font-bold text-xs shadow-sm active:scale-95 group">
+          <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform pointer-events-none"></i> Новая доска
+       </button>
+     </div>
+  </aside>
+
+  <main id="mainScroll" class="flex-1 overflow-x-auto overflow-y-hidden p-6 h-full cursor-grab active:cursor-grabbing w-full transition-all duration-300">
     <div id="board" class="flex gap-6 h-full items-start pb-4 min-w-max"></div>
   </main>
   
@@ -521,8 +540,7 @@
   </aside>
 </div>
 
-<div id="editCardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200">
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700">
+<div id="editCardModal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200">  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700">
     <div class="flex justify-between items-center mb-5 pb-4 border-b border-gray-100 dark:border-gray-700/50">
       <input id="editTitle" placeholder="Введите название задачи..." class="text-2xl font-bold bg-transparent outline-none w-full dark:text-white placeholder-gray-400 dark:placeholder-gray-600" />
       <button onclick="closeEditModal()" class="ml-4 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -632,8 +650,7 @@
   </div>
 </div>
 
-<div id="colModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-200">
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-sm shadow-2xl border border-gray-200 dark:border-gray-700">
+<div id="colModal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-200">  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-sm shadow-2xl border border-gray-200 dark:border-gray-700">
     <div class="flex justify-between items-center mb-5"><h2 class="text-xl font-bold dark:text-white">Настройки колонки</h2><button onclick="closeColModal()" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button></div>
     <span class="text-xs font-bold text-gray-500 uppercase block mb-2">Название</span>
     <input id="colNameInput" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none mb-4 dark:text-white focus:ring-2 focus:ring-blue-500" />
@@ -855,17 +872,26 @@
   </div>
 </div>
 
-<div id="contentViewModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 px-4">
-  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700 relative overflow-hidden">
-    <button onclick="closeContentViewModal()" class="absolute top-6 right-6 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2.5 rounded-2xl transition-colors z-20 border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
-      <i data-lucide="x" class="w-6 h-6"></i>
-    </button>
+<div id="contentViewModal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 px-4">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700 relative overflow-hidden">
+    <button onclick="closeContentViewModal()" class="absolute top-6 right-6 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2.5 rounded-2xl transition-colors z-20 border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
 
-    <div class="flex-1 overflow-y-auto pr-2 hide-scroll">
-      <div id="cvHeader" class="mb-6"></div>
-      <h2 id="cvTitle" class="text-3xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"></h2>
-      
-      <div id="cvBody" class="mb-8"></div>
+    <div class="flex-1 overflow-y-auto pr-2 hide-scroll">
+      <div id="cvHeader" class="mb-6"></div>
+      <h2 id="cvTitle" class="text-3xl font-bold text-gray-900 dark:text-white mb-4 leading-tight"></h2>
+      
+      <!-- БЛОК ИНФОРМАЦИИ ОБ АВТОРЕ -->
+      <div class="flex items-center gap-2.5 mb-6 bg-gray-50 dark:bg-gray-900/50 w-fit px-3 py-1.5 rounded-2xl border border-gray-100 dark:border-gray-700">
+          <div id="viewAuthorAvatarWrap" class="flex-shrink-0"></div>
+          <div class="text-xs font-medium text-gray-500">
+              Создал(а): <span id="viewAuthorName" class="font-bold text-gray-900 dark:text-white"></span>
+          </div>
+      </div>
+      <!-- /КОНЕЦ БЛОКА АВТОРА -->
+
+      <div id="cvBody" class="mb-8"></div>
 
       <div class="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700">
         <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
@@ -978,6 +1004,21 @@
     <div class="flex gap-3">
       <button onclick="closeConfirmModal()" class="flex-1 py-3.5 text-sm font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors">Отмена</button>
       <button id="confirmBtnAction" onclick="executeConfirm()" class="flex-1 py-3.5 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg shadow-red-500/25 active:scale-95 transition-all">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<div id="customPromptModal" class="hidden fixed inset-0 z-[600] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95" id="promptModalContent">
+    <div class="mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
+      <i data-lucide="folder-plus" class="w-8 h-8"></i>
+    </div>
+    <h2 id="promptTitle" class="text-xl font-bold mb-2 text-gray-900 dark:text-white">Введите данные</h2>
+    <p id="promptDesc" class="text-sm text-gray-500 mb-6 leading-relaxed"></p>
+    <input type="text" id="promptInput" onkeypress="if(event.key==='Enter') executePrompt()" class="w-full px-4 py-3.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none mb-6 dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow text-sm font-bold text-center placeholder-gray-400" />
+    <div class="flex gap-3">
+      <button onclick="closePromptModal()" class="flex-1 py-3.5 text-sm font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors">Отмена</button>
+      <button id="promptBtnAction" onclick="executePrompt()" class="flex-1 py-3.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all">Сохранить</button>
     </div>
   </div>
 </div>
@@ -1347,39 +1388,101 @@ let selectedColColor = 'default';
 let boardData = {};
 let isFirstChatLoad = true; // ОДНА переменная чата
 let currentSpaceId = 'default'; // ЭНТЕРПРАЙЗ: Активное пространство (Вкладка доски)
+let spacesLayoutMode = localStorage.getItem('blocko_spaces_layout') || 'horizontal';
 
-// ЭНТЕРПРАЙЗ: Управление Пространствами (Sub-boards)
+function toggleSpacesLayout() {
+    spacesLayoutMode = spacesLayoutMode === 'horizontal' ? 'vertical' : 'horizontal';
+    localStorage.setItem('blocko_spaces_layout', spacesLayoutMode);
+    renderSpacesUI();
+}
+
+// ЭНТЕРПРАЙЗ: Управление Пространствами (Sub-boards) с поддержкой 2х режимов отображения
 function renderSpacesUI() {
-   const container = document.getElementById('boardSpacesContainer');
+   const containerHorizontal = document.getElementById('boardSpacesContainer');
+   const containerVertical = document.getElementById('boardSpacesContainerVertical');
+   const subHeaderWrapper = document.getElementById('spacesSubHeaderWrapper');
    const subHeader = document.getElementById('spacesSubHeader');
+   const verticalSidebar = document.getElementById('spacesVerticalSidebar');
    
    if (!boardData.spaces || boardData.spaces.length === 0) {
        boardData.spaces = [{ id: 'default', name: 'Главная доска' }];
    }
    
-   subHeader.classList.remove('hidden');
+   // Логика переключения контейнеров (на мобильных принудительно горизонт)
+   const isDesktop = window.innerWidth >= 768;
+   
+   if (spacesLayoutMode === 'vertical' && isDesktop) {
+       subHeaderWrapper.classList.add('hidden');
+       verticalSidebar.classList.remove('hidden');
+       verticalSidebar.classList.add('flex');
+   } else {
+       subHeaderWrapper.classList.remove('hidden');
+       subHeader.classList.remove('hidden'); // Принудительный показ внутренней панели
+       if(verticalSidebar) {
+           verticalSidebar.classList.add('hidden');
+           verticalSidebar.classList.remove('flex');
+       }
+   }
 
-   container.innerHTML = boardData.spaces.map(space => {
+   const generateTabs = (isVertical) => boardData.spaces.map(space => {
        const isActive = space.id === currentSpaceId;
-       const activeClasses = isActive 
-          ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm border-gray-200 dark:border-gray-600' 
-          : 'bg-transparent text-gray-500 hover:bg-white/50 dark:hover:bg-gray-800 border-transparent';
+       
+       let activeClasses = '';
+       if (isVertical) {
+           activeClasses = isActive 
+              ? 'bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-400 shadow-sm border-blue-200/50 dark:border-blue-700/50 z-10' 
+              : 'bg-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-gray-800/60 border-transparent';
+       } else {
+           activeClasses = isActive 
+              ? 'bg-gradient-to-b from-blue-50 to-white dark:from-blue-900/40 dark:to-gray-800 text-blue-700 dark:text-blue-400 shadow-md border-blue-200/50 dark:border-blue-700/50 scale-105 z-10' 
+              : 'bg-white/60 dark:bg-gray-800/60 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-700 border-gray-200/50 dark:border-gray-700/50';
+       }
+       
+       const layoutClasses = isVertical ? 'w-full py-2.5 px-3 justify-start' : 'px-4 py-2';
        
        return `
-          <div class="flex items-center group/space relative">
-              <button onclick="switchSpace('${space.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${activeClasses} flex items-center gap-1.5 whitespace-nowrap">
-                 <i data-lucide="${isActive ? 'layout' : 'folder'}" class="w-3.5 h-3.5 ${isActive ? 'text-blue-500' : 'text-gray-400'}"></i>
-                 ${space.name}
+          <div class="flex items-center group/space relative space-tab-item ${isVertical ? 'w-full' : ''}" data-id="${space.id}">
+              <button onclick="switchSpace('${space.id}')" class="rounded-xl text-xs font-bold transition-all border ${activeClasses} flex items-center gap-2.5 select-none ${layoutClasses}">
+                 <i data-lucide="${isActive ? 'layout' : 'folder'}" class="w-4 h-4 flex-shrink-0 ${isActive ? 'text-blue-500' : 'text-gray-400 group-hover/space:text-gray-600 dark:group-hover/space:text-gray-300'} pointer-events-none"></i>
+                 <span class="truncate">${space.name}</span>
               </button>
               ${isActive && boardData.spaces.length > 1 ? `
-              <button onclick="deleteSpace('${space.id}')" class="absolute -top-1 -right-1 opacity-0 group-hover/space:opacity-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-0.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all shadow-sm" title="Удалить доску">
-                 <i data-lucide="x" class="w-3 h-3"></i>
+              <button onclick="event.stopPropagation(); deleteSpace('${space.id}')" class="absolute ${isVertical ? 'right-2 top-1/2 -translate-y-1/2' : '-top-1.5 -right-1.5'} opacity-0 group-hover/space:opacity-100 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/50 p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-red-500 transition-all shadow-md active:scale-95 z-20" title="Удалить доску">
+                 <i data-lucide="x" class="w-3 h-3 pointer-events-none"></i>
               </button>
               ` : ''}
           </div>
        `;
    }).join('');
-   lucide.createIcons({ root: container });
+
+   if (spacesLayoutMode === 'vertical' && isDesktop) {
+       if(containerVertical) {
+           containerVertical.innerHTML = generateTabs(true);
+           lucide.createIcons({ root: containerVertical });
+           initSpacesSortable(containerVertical);
+       }
+   } else {
+       if(containerHorizontal) {
+           containerHorizontal.innerHTML = generateTabs(false);
+           lucide.createIcons({ root: containerHorizontal });
+           initSpacesSortable(containerHorizontal);
+       }
+   }
+}
+
+function initSpacesSortable(container) {
+   if (window.spacesSortable) window.spacesSortable.destroy();
+   window.spacesSortable = new Sortable(container, {
+       animation: 250,
+       ghostClass: 'opacity-40',
+       dragClass: 'scale-105',
+       onEnd: function (evt) {
+           const movedSpace = boardData.spaces.splice(evt.oldIndex, 1)[0];
+           boardData.spaces.splice(evt.newIndex, 0, movedSpace);
+           updateBoardData({ spaces: boardData.spaces });
+           if (!isLocalBoard) logActivity(`Изменил(а) порядок вкладок доски`, 'move');
+       }
+   });
 }
 
 function switchSpace(spaceId) {
@@ -1391,17 +1494,57 @@ function switchSpace(spaceId) {
 function addSpace() {
     // ЭНТЕРПРАЙЗ: Проверка тарифа для вкладки "Spaces"
     if (userPlan === 'free') {
-        return showSystemToast('Премиум функция', 'Вложенные доски (Spaces) доступны только на тарифах Freelancer и Company. Обновите тариф в магазине!', 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+        return showSystemToast('Лимит тарифа Free', 'Множественные доски внутри проекта доступны на тарифах Freelancer и Company. Масштабируйте процессы без ограничений!', 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
     }
     
-    const name = prompt("Название новой вложенной доски (например: Маркетинг, Гранты):");
-    if (name && name.trim()) {
-        const newId = 'space_' + Date.now();
-        boardData.spaces.push({ id: newId, name: name.trim() });
-        updateBoardData({ spaces: boardData.spaces });
-        switchSpace(newId);
-        if (!isLocalBoard) logActivity(`Создал(а) новую вкладку: "${name}"`, 'plus-square');
-    }
+    openCustomPrompt('Новая доска', 'Введите название для нового пространства (например: Маркетинг, Back-end, CRM)', 'Название пространства...', 'Создать', (name) => {
+        if (name && name.trim()) {
+            const newId = 'space_' + Date.now();
+            boardData.spaces.push({ id: newId, name: name.trim() });
+            updateBoardData({ spaces: boardData.spaces });
+            switchSpace(newId);
+            if (!isLocalBoard) logActivity(`Создал(а) новую вкладку: "${name}"`, 'plus-square');
+            showSystemToast('Пространство создано', `Доска "${name}" готова к работе.`, 'folder-plus', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+        }
+    });
+}
+
+let promptCallback = null;
+
+function openCustomPrompt(title, desc, placeholder, btnText, callback) {
+    document.getElementById('promptTitle').innerText = title;
+    document.getElementById('promptDesc').innerText = desc;
+    const input = document.getElementById('promptInput');
+    input.placeholder = placeholder;
+    input.value = '';
+    document.getElementById('promptBtnAction').innerText = btnText;
+    
+    promptCallback = callback;
+    
+    const modal = document.getElementById('customPromptModal');
+    const content = document.getElementById('promptModalContent');
+    modal.classList.remove('hidden');
+    setTimeout(() => { 
+        modal.classList.remove('opacity-0'); 
+        content.classList.remove('scale-95'); 
+        content.classList.add('scale-100'); 
+        input.focus();
+    }, 10);
+}
+
+function closePromptModal() {
+    const modal = document.getElementById('customPromptModal');
+    const content = document.getElementById('promptModalContent');
+    modal.classList.add('opacity-0');
+    content.classList.remove('scale-100'); 
+    content.classList.add('scale-95');
+    setTimeout(() => { modal.classList.add('hidden'); promptCallback = null; }, 300);
+}
+
+function executePrompt() {
+    const val = document.getElementById('promptInput').value;
+    if (promptCallback) promptCallback(val);
+    closePromptModal();
 }
 
 let spacesCollapsed = false;
@@ -2871,24 +3014,29 @@ function toggleModal(modalId, show) {
 
 // ЭКСПЕРТНОЕ РЕШЕНИЕ: УНИФИЦИРОВАННЫЙ КОНТРОЛЛЕР МОДАЛЬНЫХ ОКОН
 function openViewModal(colId, cardId) {
-    const col = columns.find(c => c.id == colId);
-    const card = col.cards.find(c => c.id == cardId);
-    if (!card) return;
+    const col = columns.find(c => c.id == colId);
+    if (!col) return; // БЕЗОПАСНОСТЬ: если колонка не найдена
+    
+    const card = col.cards?.find(c => c.id == cardId);
+    if (!card) return; // БЕЗОПАСНОСТЬ: если карточка не найдена
 
-    activeContentView = { colId, cardId, type: card.type || 'task' };
-    viewingCard = card; 
-    currentColumn = colId;
+    activeContentView = { colId, cardId, type: card.type || 'task' };
+    viewingCard = card; 
+    currentColumn = colId;
 
-    const body = document.getElementById('cvBody');
-    const header = document.getElementById('cvHeader');
-    document.getElementById('cvTitle').innerText = card.title;
-    
-    // ЭНТЕРПРАЙЗ: Динамический аватар автора в модалке
-    const actualAuthor = (card.author && boardData.users && boardData.users[card.author.id]) ? boardData.users[card.author.id] : card.author;
-    if (actualAuthor) {
-       document.getElementById('viewAuthorAvatarWrap').innerHTML = getAvatarHTML(actualAuthor, 'w-6 h-6');
-       document.getElementById('viewAuthorName').innerText = actualAuthor.name;
-    }
+    const body = document.getElementById('cvBody');
+    const header = document.getElementById('cvHeader');
+    document.getElementById('cvTitle').innerText = card.title;
+    
+    // ЭНТЕРПРАЙЗ: Динамический аватар автора в модалке
+    const actualAuthor = (card.author && boardData.users && boardData.users[card.author.id]) ? boardData.users[card.author.id] : card.author;
+    if (actualAuthor) {
+       const avatarWrap = document.getElementById('viewAuthorAvatarWrap');
+       const nameEl = document.getElementById('viewAuthorName');
+       
+       if (avatarWrap) avatarWrap.innerHTML = getAvatarHTML(actualAuthor, 'w-6 h-6');
+       if (nameEl) nameEl.innerText = actualAuthor.name;
+    }
 
     if (card.type === 'poll') {
             header.innerHTML = `<div class="flex items-center gap-2 text-purple-500 mb-2"><i data-lucide="bar-chart-3" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Результаты опроса</span></div>`;
@@ -3711,45 +3859,81 @@ function toggleChecklistView(index) {
   elements.forEach(el => lucide.createIcons({ root: el }));
 }
 
-// --- ENTERPRISE EVENT DELEGATION ENGINE v4.2 (Secure Routing) ---
+// --- ENTERPRISE EVENT DELEGATION ENGINE v4.3 (Reactive Routing) ---
 /**
  * Единый центр управления событиями Blocko Pro.
- * Решает проблему блокировки кнопок в модальных окнах и оптимизирует потребление памяти.
+ * РЕШЕНО: Исправлен баг, при котором клик по карточке в колонке не открывал модальное окно просмотра.
+ * Внедрена интеллектуальная фильтрация событий для поддержки интерактивных элементов внутри карточки.
  */
 if (!window.blockoDelegationInited) {
-  // Слушатель для всей поверхности документа для корректной работы с динамическими модалками
   document.addEventListener('click', (e) => {
-    const target = e.target.closest('[data-action]');
-    if (!target) return;
+    // Находим ближайшую цель с действием
+    const actionTarget = e.target.closest('[data-action]');
+    
+    if (actionTarget) {
+      const { action, col, card, type, opt } = actionTarget.dataset;
 
-    const { action, col, card, type, opt } = target.dataset;
+      // Если клик внутри доски или по карточке — блокируем стандартное поведение, кроме инпутов
+      if (e.target.closest('#board') || e.target.closest('.card-item')) {
+        if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
 
-    // Прерываем всплытие только для элементов внутри доски, чтобы не ломать нативные инпуты
-    if (e.target.closest('#board') || e.target.closest('.card-item')) {
-      e.preventDefault();
-      e.stopPropagation();
+      switch(action) {
+        case 'viewCard': 
+          if (col && card) openViewModal(col, card); 
+          break;
+        case 'editCard': 
+          openEditModal(col, card); 
+          break;
+        case 'saveCard': 
+          saveCard(); 
+          break;
+        case 'deleteCard': 
+          deleteCardDirectly(col, card, type); 
+          break;
+        case 'openTable': 
+          openTableEditor(col, card); 
+          break;
+        case 'votePoll': 
+          votePoll(col, card, parseInt(opt)); 
+          break;
+        case 'toggleAudio': 
+          toggleAudioPlayer(actionTarget, col, card); 
+          break;
+        case 'editCol': 
+          openColModal(col); 
+          break;
+        case 'moreAdd': 
+          openMoreAddModal(col); 
+          break;
+        case 'setColSort': 
+          const updatedCols = columns.map(c => c.id == col ? {...c, sortBy: opt} : c);
+          updateBoardData({ columns: updatedCols });
+          break;
+        case 'closeEdit': 
+          closeEditModal(); 
+          break;
+        case 'archiveCard': 
+          archiveCard(); 
+          break;
+      }
+    } else {
+      // КРИТИЧЕСКИЙ ФИКС: Если кликнули по самой карточке, но не по конкретной кнопке (edit/delete)
+      const cardContainer = e.target.closest('.card-item');
+      if (cardContainer && cardContainer.dataset.id) {
+        const colId = cardContainer.dataset.col || cardContainer.closest('[data-id]')?.dataset.id;
+        if (colId) {
+          e.preventDefault();
+          e.stopPropagation();
+          openViewModal(colId, cardContainer.dataset.id);
+        }
+      }
     }
+  }, true);
 
-    switch(action) {
-      case 'viewCard': openViewModal(col, card); break;
-      case 'editCard': openEditModal(col, card); break;
-      case 'saveCard': saveCard(); break; // Восстановление критической связи
-      case 'deleteCard': deleteCardDirectly(col, card, type); break;
-      case 'openTable': openTableEditor(col, card); break;
-      case 'votePoll': votePoll(col, card, parseInt(opt)); break;
-      case 'toggleAudio': toggleAudioPlayer(target, col, card); break;
-      case 'editCol': openColModal(col); break;
-      case 'moreAdd': openMoreAddModal(col); break;
-      case 'setColSort': 
-        const updatedCols = columns.map(c => c.id == col ? {...c, sortBy: opt} : c);
-        updateBoardData({ columns: updatedCols });
-        break;
-      case 'closeEdit': closeEditModal(); break;
-      case 'archiveCard': archiveCard(); break;
-    }
-  }, true); // Используем capture phase для приоритетной обработки
-
-  // Обработка быстрых действий через двойной клик
   document.getElementById('board')?.addEventListener('dblclick', (e) => {
     const target = e.target.closest('[data-dblaction]');
     if (!target) return;
@@ -4191,8 +4375,14 @@ function render() {
         easing: "cubic-bezier(0.25, 1, 0.5, 1)", 
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
-        forceFallback: true, // Решает проблему залипания Drag&Drop элементов в Safari/Chrome на iOS
+        
+        // ЭНТЕРПРАЙЗ: Оптимизация Drag and Drop. Отключаем forceFallback для десктопов, 
+        // чтобы работал нативный HTML5 Drag API (он идеально следует за курсором), 
+        // но оставляем fallback для мобилок (fallbackTolerance защищает клики от ложных свайпов).
+        forceFallback: /Mobi|Android/i.test(navigator.userAgent), 
         fallbackClass: 'sortable-fallback',
+        fallbackOnBody: true, 
+        fallbackTolerance: 5, 
         
         // ВЕРНУЛИ КАК БЫЛО: Фикс для карточек разного размера (Аудио над Картинкой)
         invertSwap: true, 
@@ -4200,8 +4390,7 @@ function render() {
         swapThreshold: 0.6, 
         
         disabled: isViewer,
-        delay: 150, 
-        delayOnTouchOnly: true, 
+        delay: /Mobi|Android/i.test(navigator.userAgent) ? 150 : 0, // Задержка только на мобильных, на десктопе клики проходят мгновенно
         filter: '.empty-state-placeholder', 
         emptyInsertThreshold: 100, 
         
@@ -4322,13 +4511,14 @@ function render() {
       handle: '.col-handle', 
       ghostClass: 'sortable-ghost', 
       dragClass: 'sortable-drag', 
-      forceFallback: true, // Плавный Drag&Drop для мобильных устройств
+      forceFallback: /Mobi|Android/i.test(navigator.userAgent), 
       fallbackClass: 'sortable-fallback',
+      fallbackOnBody: true,
+      fallbackTolerance: 5,
       invertSwap: true, 
       swapThreshold: 0.8,
       disabled: isViewer,
-      delay: 150, 
-      delayOnTouchOnly: true,
+      delay: /Mobi|Android/i.test(navigator.userAgent) ? 150 : 0,
       
       // ЭНТЕРПРАЙЗ: Огромная зона горизонтального листания
       scroll: true,
@@ -4941,6 +5131,7 @@ window.addEventListener('click', (e) => {
   if (e.target.id === 'quickAddModal') closeQuickAdd();
   if (e.target.id === 'fileTypeModal') closeFileTypeModal();
   if (e.target.id === 'customConfirmModal') closeConfirmModal();
+  if (e.target.id === 'customPromptModal') closePromptModal();
   if (e.target.id === 'voiceMemoModal') closeVoiceMemoModal();
   if (e.target.id === 'pollStatsModal') closePollStatsModal();
 
